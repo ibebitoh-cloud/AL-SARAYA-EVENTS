@@ -139,7 +139,7 @@ export function SarayaBrandHeader({
             type="button"
             onClick={toggleSound}
             aria-label={soundEnabled ? 'Mute' : 'Enable audio'}
-            className="p-2 text-slate-400 hover:text-amber-300 transition-colors rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800"
+            className="hidden sm:flex p-2 text-slate-400 hover:text-amber-300 transition-colors rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800"
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
           </button>
@@ -153,7 +153,7 @@ export function SarayaBrandHeader({
             }}
             aria-label={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الداكن' : 'Dark theme')}
             title={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الداكن' : 'Dark theme')}
-            className="saraya-theme-toggle"
+            className="saraya-theme-toggle hidden sm:inline-flex"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             <span className="hidden xl:inline">{theme === 'dark' ? (isAr ? 'فاتح' : 'Light') : (isAr ? 'داكن' : 'Dark')}</span>
@@ -166,7 +166,7 @@ export function SarayaBrandHeader({
               sound.click(700);
               onToggleLanguage();
             }}
-            className="px-2.5 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors whitespace-nowrap"
+            className="hidden sm:inline-flex px-2.5 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors whitespace-nowrap"
           >
             {isAr ? 'EN' : 'العربية'}
           </button>
@@ -205,9 +205,11 @@ export function SarayaBrandHeader({
               sound.chime();
               onOpenBookingModal();
             }}
-            className="px-3.5 sm:px-4 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-lg transition-all shadow-[0_0_15px_rgba(212,175,55,0.4)] hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+            className="px-3 py-2 sm:px-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-lg transition-all shadow-[0_0_15px_rgba(212,175,55,0.4)] whitespace-nowrap"
           >
-            {isAr ? 'احجز مناسبتك' : 'Book Your Event'}
+            <Calendar className="inline h-4 w-4 sm:hidden" />
+            <span className="hidden sm:inline">{isAr ? 'احجز مناسبتك' : 'Book Your Event'}</span>
+            <span className="sm:hidden">{isAr ? 'احجز' : 'Book'}</span>
           </button>
 
           {/* Mobile Menu Hamburger */}
@@ -232,6 +234,18 @@ export function SarayaBrandHeader({
             transition={{ duration: 0.2 }}
             className="lg:hidden border-b border-amber-500/20 bg-slate-950/98 px-4 py-4 space-y-2 backdrop-blur-xl"
           >
+            <div className="mb-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-3">
+              {isManagementMode ? (
+                <button type="button" onClick={() => { setIsMobileMenuOpen(false); onExitManagementMode(); }} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-slate-950">
+                  <ArrowRight className="h-4 w-4" />{isAr ? 'العودة إلى الموقع الرئيسي' : 'Back to Customer Website'}
+                </button>
+              ) : (
+                <button type="button" onClick={() => { setIsMobileMenuOpen(false); onOpenManagementPortal(); }} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-extrabold text-slate-950 shadow-sm">
+                  <Shield className="h-5 w-5" />{isAr ? 'بوابة الإدارة والتشغيل' : 'Staff Management Portal'}<ArrowRight className="h-4 w-4" />
+                </button>
+              )}
+              <p className="mt-2 text-center text-[11px] text-slate-400">{isAr ? 'للموظفين والإدارة' : 'For staff and management'}</p>
+            </div>
             {navLinks.map((link) => (
               <a
                 key={link.id}
@@ -249,18 +263,10 @@ export function SarayaBrandHeader({
               </a>
             ))}
 
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  onOpenManagementPortal();
-                }}
-                className="flex items-center gap-2 text-xs text-amber-400 hover:text-amber-300 py-1"
-              >
-                <Shield className="w-4 h-4" />
-                <span>{isAr ? 'بوابة إدارة وتشغيل القاعات' : 'Staff Management Portal'}</span>
-              </button>
+            <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-800 pt-3">
+              <button type="button" onClick={() => { setIsMobileMenuOpen(false); onToggleLanguage(); }} className="flex min-h-11 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{isAr ? 'English' : 'العربية'}</button>
+              <button type="button" onClick={() => { setIsMobileMenuOpen(false); onToggleTheme(); }} className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{isAr ? (theme === 'dark' ? 'فاتح' : 'داكن') : (theme === 'dark' ? 'Light' : 'Dark')}</button>
+              <button type="button" onClick={toggleSound} className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}{isAr ? 'الصوت' : 'Sound'}</button>
             </div>
           </motion.div>
         )}
