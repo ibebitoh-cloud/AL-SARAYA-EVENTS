@@ -172,7 +172,7 @@ export function SarayaCustomerHomepage({
 
       {/* DESIGNER FEATURE — INTERVIEW ONLY */}
       <section id="planner" className="mt-20 overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-slate-900 to-slate-950 scroll-mt-24">
-        <div className="grid items-center lg:grid-cols-2">
+        <div className="grid items-center">
           <div className="p-7 sm:p-10 lg:p-14">
             <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '04 · التخطيط والتصميم' : '04 · EVENT PLANNING & DESIGN'}</div>
             <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'نخطط لمناسبتك معك قبل التنفيذ' : 'We plan your event with you before execution'}</h2>
@@ -182,25 +182,7 @@ export function SarayaCustomerHomepage({
             </div>
             <div className="mt-7 inline-flex items-center rounded-xl border border-amber-400/30 bg-amber-400/5 px-5 py-3 text-sm font-semibold text-amber-300">{isAr ? 'التخطيط التفصيلي متاح خلال جلسة استشارة مع فريق السرايا' : 'Detailed event planning is available during a consultation with the Saraya team'}</div>
           </div>
-          <div className="relative min-h-[340px] bg-slate-950 p-5 sm:p-7">
-            <div className="grid h-full grid-cols-2 gap-3">
-              {[displayPhotos[1 % displayPhotos.length], displayPhotos[2 % displayPhotos.length]].map((photo, index) => (
-                <div key={photo?.id ?? index} className="relative min-h-[280px] overflow-hidden rounded-2xl border border-amber-400/20 bg-slate-900">
-                  <img
-                    src={photo?.src}
-                    alt={isAr ? 'تصور ثلاثي الأبعاد للمناسبة' : '3D event visualization'}
-                    className="h-full w-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent p-3 pt-10">
-                    <span className="rounded-lg border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur">
-                      {isAr ? (index === 0 ? 'التصور الأول' : 'التصور الثاني') : (index === 0 ? 'PREVIEW 01' : 'PREVIEW 02')}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </div>
       </section>
 
