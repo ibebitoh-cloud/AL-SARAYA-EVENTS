@@ -501,39 +501,4 @@ export function NewBookingModal({
       </div>
     </AnimatePresence>
   );
-}            {!customerMode && (
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                ملاحظات الحجز أو طلبات خاصة من العميل
-              </label>
-              <textarea
-                rows={2}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="تفاصيل الترتيبات، تفضيلات الزفة، مواعيد التسليم والتجهيز..."
-                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"
-              />
-            </div>
-
-            {/* Actions Footer */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
-              >
-                حفظ وتسجيل الحجز رسمياً
-              </button>
-            </div>
-          </form>
-        </motion.div>
-      </div>
-    </AnimatePresence>
-  );
 }
