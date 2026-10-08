@@ -74,6 +74,24 @@ export interface ContractAgreement {
   termsApproved: boolean;
 }
 
+export interface HallLayoutItem {
+  id: string;
+  type: string;
+  labelEn: string;
+  labelAr: string;
+  x: number;
+  y: number;
+  rotation: number;
+  quantity?: number;
+  seats?: number;
+}
+
+export interface Hall3DProfile {
+  width: number;
+  depth: number;
+  items: HallLayoutItem[];
+}
+
 export interface Hall {
   id: string;
   name: string;
@@ -86,6 +104,7 @@ export interface Hall {
   descriptionEn?: string;
   photo?: string;
   photoUrl?: string;
+  default3D?: Hall3DProfile;
 }
 
 export interface BookingServiceItem {
