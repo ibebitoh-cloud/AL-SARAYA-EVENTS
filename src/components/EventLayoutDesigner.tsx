@@ -28,16 +28,6 @@ type EventKind = 'engagement' | 'wedding' | 'conference' | 'summit' | 'birthday'
 type LocationKind = 'saraya' | 'client' | 'custom';
 
 type LayoutItem = HallLayoutItem;
-  id: string;
-  type: string;
-  labelEn: string;
-  labelAr: string;
-  x: number;
-  y: number;
-  rotation: number;
-  quantity?: number;
-  seats?: number;
-};
 
 const ITEM_LIBRARY = [
   { type: 'table', labelEn: 'Round Table', labelAr: 'طاولة دائرية', icon: Users },
