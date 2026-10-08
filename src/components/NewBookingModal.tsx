@@ -23,6 +23,7 @@ interface NewBookingModalProps {
   existingBookings: Booking[];
   onCreateBooking: (newBooking: Booking) => void;
   preselectedHallId?: string;
+  customerMode?: boolean;
 }
 
 export function NewBookingModal({
@@ -33,6 +34,7 @@ export function NewBookingModal({
   existingBookings,
   onCreateBooking,
   preselectedHallId,
+  customerMode = false,
 }: NewBookingModalProps) {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
@@ -47,7 +49,7 @@ export function NewBookingModal({
   const [basePrice, setBasePrice] = useState(initialHall?.basePrice || 45000);
   const [deposit, setDeposit] = useState(15000);
   const [securityDeposit, setSecurityDeposit] = useState(5000);
-  const [status, setStatus] = useState<'confirmed' | 'tentative'>('confirmed');
+  const [status, setStatus] = useState<'confirmed' | 'tentative'>(customerMode ? 'tentative' : 'confirmed');
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
@@ -181,7 +183,7 @@ export function NewBookingModal({
             <h3 className="text-xl font-bold text-white">تسجيل حجز مناسبة وقاعة جديد</h3>
           </div>
           <p className="text-xs text-slate-400 mb-6">
-            تسجيل بيانات العميل، اختيار القاعة، تحديد باقة الخدمات والإضافات، وإثبات العربون والتأمين.
+            {customerMode ? 'اختر القاعة والخدمات المناسبة وأرسل طلب الحجز — سيؤكد فريق السرايا التفاصيل معك.' : 'تسجيل بيانات العميل، اختيار القاعة، تحديد باقة الخدمات والإضافات، وإثبات العربون والتأمين.'}
           </p>
 
           {/* Conflict Alert Banner */}
@@ -281,7 +283,7 @@ export function NewBookingModal({
                   >
                     {halls.map((h) => (
                       <option key={h.id} value={h.id}>
-                        {h.name} (سعة {h.capacity} فرد - {h.basePrice.toLocaleString()} ج.م)
+                        {h.name} (سعة {h.capacity} فرد)
                       </option>
                     ))}
                   </select>
@@ -393,7 +395,7 @@ export function NewBookingModal({
                           />
                         )}
                         <span className="font-mono text-indigo-300 font-bold">
-                          {srv.defaultPrice.toLocaleString()} ج.م
+                          {customerMode ? 'متاح للاختيار' : `${srv.defaultPrice.toLocaleString()} ج.م`}
                         </span>
                       </div>
                     </div>
