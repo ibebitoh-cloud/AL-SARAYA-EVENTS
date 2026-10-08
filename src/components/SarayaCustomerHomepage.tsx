@@ -38,8 +38,8 @@ export function SarayaCustomerHomepage({
   const Arrow = isAr ? ArrowLeft : ArrowRight;
   const sourcePhotos = photos?.length ? photos : ALSARAYA_PHOTOS;
   const isOutdoorVenue = (value: string) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(value);
-  const displayPhotos = sourcePhotos.filter(photo => photo.category !== 'garden' && !isOutdoorVenue([photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' ')));
-  const availableHalls = halls.filter(hall => !isOutdoorVenue(`${hall.name} ${hall.nameAr}`));
+  const displayPhotos = sourcePhotos.filter(photo => (photo.category as string) !== 'garden' && !isOutdoorVenue([photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' ')));
+  const availableHalls = halls.filter(hall => !isOutdoorVenue(`${hall.name} ${hall.nameEn || ''}`));
   const [event, setEvent] = useState<EventKey>('wedding');
   const [gallery, setGallery] = useState<VenuePhoto | null>(null);
 
