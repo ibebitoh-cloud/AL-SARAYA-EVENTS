@@ -92,6 +92,7 @@ export function HallPhotoManagerModal({
     return counts;
   }, {});
   const hasDuplicateSources = Object.values(sourceCounts).some((count) => count > 1);
+  const hasEmptySources = localPhotos.some((photo) => !photo.src?.trim());
   const filteredPhotos = localPhotos.filter((photo) => {
     if (photoCategoryFilter === 'all') return true;
     if (photoCategoryFilter === 'wedding') return ['wedding', 'ballroom', 'kosha', 'dining'].includes(photo.category);
@@ -268,13 +269,13 @@ export function HallPhotoManagerModal({
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
                 <h3 className="text-base sm:text-lg font-serif font-bold text-white">
-                  {isAr ? 'إدارة وتعديل القاعات والصور (وضع العرض التوضيحي Demo)' : 'Edit Halls & Photos Manager (Demo Studio)'}
+                  {isAr ? 'مكتبة صور المناسبات وإدارة القاعات' : 'Event Photo Library & Venue Manager'}
                 </h3>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
                 {isAr
-                  ? 'يمكنك تعديل أسماء القاعات، السعات، الأسعار، واستبدال الصور بالرابط أو برفع ملفات من جهازك فوراً.'
-                  : 'Customize hall titles, capacities, pricing, and swap gallery photos via URL or local file upload.'}
+                  ? 'نظّم صور الأفراح والخطوبة وأعياد الميلاد والمؤتمرات، وارفع صوراً جديدة أو اربطها بقاعة.'
+                  : 'Organize wedding, engagement, birthday and conference photos; upload new images or assign them to a hall.'}
               </p>
             </div>
 
@@ -569,6 +570,7 @@ export function HallPhotoManagerModal({
                     ))}
                   </div>
                   {hasDuplicateSources && <p className="mb-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-2 text-[11px] text-rose-300">{isAr ? 'هناك صور مكررة بنفس المصدر. احذف التكرار أو غيّر الرابط قبل الحفظ.' : 'Duplicate image sources found. Remove duplicates or change the image URL before saving.'}</p>}
+                  {hasEmptySources && <p className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-200">{isAr ? 'أكمل رابط الصورة أو ارفع ملفاً لكل صورة جديدة قبل الحفظ.' : 'Add an image URL or upload a file for each new photo before saving.'}</p>}
                   <div className="space-y-2 max-h-[55vh] overflow-y-auto pe-1">
                     {filteredPhotos.map((p) => {
                       const isSelected = p.id === selectedPhotoId;
@@ -766,7 +768,7 @@ export function HallPhotoManagerModal({
           <div className="flex items-center justify-between px-6 py-4 border-t border-amber-500/15 bg-slate-950/90">
             <div className="text-xs text-slate-400 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>{isAr ? 'المكتبة تحفظ صور المناسبات حسب الفئة على هذا الجهاز.' : 'The event photo library is saved by category on this device.'}</span>
+              <span>{isAr ? 'تُحفظ المكتبة في مساحة التخزين المحلية لهذا المتصفح.' : 'The library is saved in this browser’s local storage.'}</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -784,7 +786,7 @@ export function HallPhotoManagerModal({
               <button
                 type="button"
                 onClick={handleSaveAll}
-                disabled={hasDuplicateSources}
+                disabled={hasDuplicateSources || hasEmptySources}
                 className={`px-6 py-2.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-xl transition-all shadow-lg flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-40`}
               >
                 {isSavedSuccess ? (
