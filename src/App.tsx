@@ -73,7 +73,11 @@ export default function App() {
   const [servicesCatalogue, setServicesCatalogue] = useState<ServiceDefinition[]>(INITIAL_SERVICES);
   const [payments, setPayments] = useState<PaymentReceipt[]>(INITIAL_PAYMENTS);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
-  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_INVENTORY;
+    try { return JSON.parse(window.localStorage.getItem('saraya-inventory') || '') || INITIAL_INVENTORY; } catch { return INITIAL_INVENTORY; }
+  });
+  useEffect(() => { window.localStorage.setItem('saraya-inventory', JSON.stringify(inventory)); }, [inventory]);
   const [staff, setStaff] = useState<Employee[]>(INITIAL_STAFF);
   const [clients, setClients] = useState(INITIAL_CLIENTS);
   const [companyProfile, setCompanyProfile] = useState(() => {
@@ -98,6 +102,7 @@ export default function App() {
   const handleAddService = (newService: ServiceDefinition) => setServicesCatalogue((prev) => [...prev, newService]);
   const handleUpdateInventoryQty = (itemId: string, newQty: number, damagedQty?: number) => setInventory((prev) => prev.map((item) => item.id === itemId ? { ...item, quantity: newQty, damagedQuantity: damagedQty !== undefined ? damagedQty : item.damagedQuantity } : item));
   const handleAddInventoryItem = (newItem: InventoryItem) => setInventory((prev) => [...prev, newItem]);
+  const handleEditInventoryItem = (updatedItem: InventoryItem) => setInventory((prev) => prev.map((item) => item.id === updatedItem.id ? updatedItem : item));
   const handleAddStaff = (newStaff: Employee) => setStaff((prev) => [...prev, newStaff]);
   const handleUpdateStaffAttendance = (staffId: string, status: Employee['attendanceStatus']) => setStaff((prev) => prev.map((emp) => emp.id === staffId ? { ...emp, attendanceStatus: status } : emp));
   const handleAssignGuestToTable = (guestId: string, tableId: string) => { setTables((prev) => prev.map((t) => { const withoutGuest = t.assignedGuestIds.filter((id) => id !== guestId); return t.id === tableId ? { ...t, assignedGuestIds: [...withoutGuest, guestId] } : { ...t, assignedGuestIds: withoutGuest }; })); setGuests((prev) => prev.map((g) => g.id === guestId ? { ...g, tableId } : g)); sound.chime(); };
@@ -122,7 +127,7 @@ export default function App() {
       {currentTab === 'services' && portalUser && <ServicesView services={servicesCatalogue} onAddService={handleAddService} />}
       {currentTab === 'payments' && portalUser && <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} />}
       {currentTab === 'expenses' && portalUser && <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense} />}
-      {currentTab === 'inventory' && portalUser && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} />}
+      {currentTab === 'inventory' && portalUser && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} />}
       {currentTab === 'staff' && portalUser && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
       {currentTab === 'reports' && portalUser && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
     </motion.div></AnimatePresence></main>
