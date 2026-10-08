@@ -342,14 +342,9 @@ export default function App() {
             {currentTab === 'dashboard' && (
               <DashboardView
                 bookings={bookings}
-                expenses={expenses}
-                payments={payments}
-                inventory={inventory}
                 halls={halls}
                 language={language}
                 onOpenNewBooking={() => setIsNewBookingModalOpen(true)}
-                onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)}
-                onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)}
                 onNavigateTab={(tab) => setCurrentTab(tab)}
               />
             )}
