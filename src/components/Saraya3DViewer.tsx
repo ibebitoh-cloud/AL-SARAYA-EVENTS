@@ -51,41 +51,41 @@ type ModelCard = {
 const MODEL_CARDS: ModelCard[] = [
   {
     id: 'hall-1',
-    nameAr: 'التجهيز المفتوح — طاولات الضيوف',
-    nameEn: 'Open-Air Reception — Guest Tables',
-    descriptionAr: 'طاولة استقبال دائرية بتجهيز مفتوح تناسب توزيع طاولات الضيوف في حفلات الزفاف الخارجية.',
-    descriptionEn: 'A round banquet table setup suited to open-air wedding reception layouts.',
-    model: 'https://cdn.3dassets.dev/assets/35201/v1/model.glb',
-    capacity: '8–10',
-    area: 'Open Air',
+    nameAr: 'قوس الزفاف الخارجي',
+    nameEn: 'Outdoor Wedding Arch',
+    descriptionAr: 'قوس زفاف مفتوح مزين بالزهور والقماش، مناسب لوقوف العروسين في الحديقة الخارجية.',
+    descriptionEn: 'A freestanding outdoor wedding arch decorated with flowers and draping, designed for the couple in a garden setting.',
+    model: 'https://cdn.3dassets.dev/assets/39395/v1/model.glb',
+    capacity: 'Couple',
+    area: 'Garden',
   },
   {
     id: 'hall-2',
-    nameAr: 'طاولة العروسين',
-    nameEn: 'Bride & Groom Table',
-    descriptionAr: 'منطقة جلوس العروس والعريس في مقدمة الحفل، ضمن تصميم استقبال مفتوح بدون أي عناصر دينية.',
-    descriptionEn: 'A dedicated bride-and-groom seating concept for the front of an open-air reception, with no religious ceremony elements.',
-    model: 'https://cdn.3dassets.dev/assets/35201/v1/model.glb',
-    capacity: 'Couple',
+    nameAr: 'كراسي الزفاف الخارجية',
+    nameEn: 'Outdoor Wedding Chairs',
+    descriptionAr: 'كرسي زفاف أبيض أنيق للتوزيع حول منطقة الحفل المفتوحة واستقبال الضيوف.',
+    descriptionEn: 'Elegant white wedding seating for an open-air reception and guest arrangement.',
+    model: 'https://cdn.3dassets.dev/assets/39387/v1/model.glb',
+    capacity: 'Guest',
     area: 'Open Air',
   },
   {
     id: 'hall-3',
-    nameAr: 'ساحة الرقص الرئيسية',
-    nameEn: 'Main Wedding Dance Floor',
-    descriptionAr: 'أرضية رقص بيضاء بلمسات ذهبية مخصصة للزفة والرقص والاحتفال وسط الحفل.',
-    descriptionEn: 'A white dance floor with gold trim for the entrance, first dance and celebration.',
-    model: 'https://cdn.3dassets.dev/assets/39405/v1/model.glb',
-    capacity: 'Open',
-    area: 'Dance Floor',
+    nameAr: 'طاولة استقبال العروسين',
+    nameEn: 'Wedding Gift & Reception Table',
+    descriptionAr: 'طاولة استقبال أنيقة بغطاء أبيض وتفاصيل زهرية وذهبية، مناسبة لمنطقة الاستقبال والضيافة.',
+    descriptionEn: 'An elegant white-clothed reception table with floral and gold details for the wedding welcome area.',
+    model: 'https://cdn.3dassets.dev/assets/39402/v1/model.glb',
+    capacity: 'Reception',
+    area: 'Garden',
   },
   {
     id: 'hall-4',
-    nameAr: 'جلسة الزفاف الخارجية',
-    nameEn: 'Open-Air Wedding Setting',
-    descriptionAr: 'أجواء حديقة خارجية مع قوس زفاف وزهور ومكان واضح لوقوف العروسين أمام الضيوف.',
-    descriptionEn: 'An outdoor garden wedding setting with a floral arch and a dedicated couple-facing area for guests.',
-    model: 'https://cdn.3dassets.dev/assets/39380/v1/model.glb',
+    nameAr: 'فانوس الحديقة',
+    nameEn: 'Garden Wedding Lantern',
+    descriptionAr: 'فانوس خارجي مزين بالورد لإضاءة ممرات الحديقة وزوايا حفلات الزفاف المسائية.',
+    descriptionEn: 'A decorative outdoor lantern with floral details for garden paths and evening wedding areas.',
+    model: 'https://cdn.3dassets.dev/assets/39407/v1/model.glb',
     capacity: 'Outdoor',
     area: 'Garden',
   },
@@ -163,15 +163,15 @@ export function Saraya3DViewer({
           <div>
             <div className="flex items-center gap-2 text-xs font-bold tracking-wide text-amber-300">
               <Sparkles className="w-4 h-4" />
-              <span>{isAr ? '4 مشاهد زفاف خارجية ثلاثية الأبعاد' : '4 Real 3D Open-Air Wedding Scenes'}</span>
+              <span>{isAr ? '4 موديلات زفاف خارجية ثلاثية الأبعاد' : '4 New Real 3D Open-Air Wedding Models'}</span>
             </div>
             <h3 className="mt-2 text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-white">
-              {isAr ? 'استكشف تصميم الزفاف الخارجي بالكامل' : 'Explore the Open-Air Wedding Setup in Real 3D'}
+              {isAr ? 'استكشف موديلات الزفاف الخارجية الجديدة' : 'Explore the New Open-Air Wedding Models in Real 3D'}
             </h3>
             <p className="mt-2 max-w-3xl text-xs sm:text-sm leading-relaxed text-slate-400">
               {isAr
-                ? 'تم استبدال المشاهد السابقة بتصميمات زفاف خارجية تركز على طاولات الضيوف، طاولة العروسين، ساحة الرقص وأجواء الحديقة — بدون كنائس أو أي عناصر دينية.'
-                : 'The 3D experience now focuses on open-air wedding layouts: guest tables, bride-and-groom seating, the dance floor and the garden setting — with no churches or religious ceremony elements.'}
+                ? 'تم تغيير الموديلات بالكامل إلى عناصر زفاف خارجية مختلفة: قوس الزفاف، كراسي الضيوف، طاولة الاستقبال وفوانيس الحديقة — بدون كنائس أو أي عناصر دينية.'
+                : 'The 3D experience now uses four different open-air wedding models: a wedding arch, guest chairs, a reception table and garden lanterns — with no churches or religious ceremony elements.'}
             </p>
           </div>
 
