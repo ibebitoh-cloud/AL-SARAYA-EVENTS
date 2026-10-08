@@ -63,10 +63,7 @@ export function SarayaCustomerHomepage({
               ? 'السرايا ليست مجرد قاعة. نصمم ونجهز وننفذ الأفراح والخطوبات والمؤتمرات والحفلات داخل قاعاتنا أو في موقعك أنت.'
               : 'Saraya is more than a venue. We design, supply and execute weddings, engagements, conferences and parties at our venues or at your own location.'}
           </p>
-          <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-            <button type="button" onClick={onOpenEventDesigner} className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-7 py-4 text-sm font-bold text-slate-950 shadow-lg shadow-amber-400/20 transition hover:bg-amber-300">
-              <Ruler className="h-4 w-4" />{isAr ? 'صمم مناسبتك الآن' : 'Design Your Event'}
-            </button>
+          <div className="mt-9 flex justify-center">
             <button type="button" onClick={() => openBooking()} className="flex items-center justify-center gap-2 rounded-xl border border-amber-400/40 bg-slate-900/80 px-7 py-4 text-sm font-semibold text-white transition hover:border-amber-300 hover:bg-slate-800">
               <Calendar className="h-4 w-4 text-amber-300" />{isAr ? 'ابدأ الحجز' : 'Start a Booking'}
             </button>
@@ -103,9 +100,9 @@ export function SarayaCustomerHomepage({
               <div className="mb-3 text-xs font-bold uppercase tracking-widest text-amber-400">{isAr ? 'تجربة مصممة لك' : 'BUILT AROUND YOU'}</div>
               <h3 className="text-2xl font-serif font-bold">{isAr ? eventContent[event].ar : eventContent[event].en}</h3>
               <p className="mt-3 text-sm leading-7 text-slate-400">{isAr ? eventContent[event].subAr : eventContent[event].subEn}</p>
-              <button type="button" onClick={onOpenEventDesigner} className="mt-6 flex w-fit items-center gap-2 text-sm font-bold text-amber-300 hover:text-amber-200">
-                <Ruler className="h-4 w-4" />{isAr ? 'شاهد مخطط مناسبتك' : 'Build the layout'}<Arrow className="h-4 w-4" />
-              </button>
+              <div className="mt-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                {isAr ? 'التخطيط التفصيلي يتم مع فريقنا أثناء المقابلة.' : 'Detailed event layout planning is done with our team during the interview.'}
+              </div>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -138,23 +135,23 @@ export function SarayaCustomerHomepage({
             const photo = displayPhotos.find(p => p.hallId === hall.id) || displayPhotos[0];
             return <article key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
               <div className="relative h-64"><img src={photo?.src} alt={isAr ? hall.nameAr : hall.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-5 pt-16"><h3 className="text-xl font-serif font-bold">{isAr ? hall.nameAr : hall.name}</h3></div></div>
-              <div className="flex items-center justify-between gap-3 p-4"><div className="flex items-center gap-2 text-xs text-slate-400"><Users className="h-4 w-4 text-amber-300" />{hall.capacity || '—'} {isAr ? 'ضيف' : 'guests'}</div><div className="flex gap-2"><button type="button" onClick={() => onOpenEventDesigner?.()} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-amber-400"><Ruler className="mr-1 inline h-3.5 w-3.5" />{isAr ? 'صمم' : 'Design'}</button><button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'احجز' : 'Book'}</button></div></div>
+              <div className="flex items-center justify-between gap-3 p-4"><div className="flex items-center gap-2 text-xs text-slate-400"><Users className="h-4 w-4 text-amber-300" />{hall.capacity || '—'} {isAr ? 'ضيف' : 'guests'}</div><div className="flex gap-2"><button type="button" className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-500">{isAr ? 'التصميم مع فريقنا' : 'Designed with our team'}</button><button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'احجز' : 'Book'}</button></div></div>
             </article>;
           })}
         </div>
       </section>
 
-      {/* DESIGNER FEATURE */}
+      {/* DESIGNER FEATURE — INTERVIEW ONLY */}
       <section className="mt-20 overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-slate-900 to-slate-950">
         <div className="grid items-center lg:grid-cols-2">
           <div className="p-7 sm:p-10 lg:p-14">
-            <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '04 · مصمم المناسبات' : '04 · EVENT DESIGNER'}</div>
-            <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'شاهد مناسبتك قبل أن ننفذها' : 'See your event before we build it'}</h2>
-            <p className="mt-4 text-sm leading-7 text-slate-400">{isAr ? 'ضع الطاولات والكراسي والمنصة والشاشة والزهور داخل المساحة، ثم انتقل إلى منظور 3D أو ادخل للمكان بنفسك.' : 'Place tables, chairs, stages, screens and flowers inside the space, then switch to 3D or walk inside the event.'}</p>
+            <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '04 · التخطيط والتصميم' : '04 · EVENT PLANNING & DESIGN'}</div>
+            <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'نخطط مناسبتك معك قبل التنفيذ' : 'We plan your event with you before execution'}</h2>
+            <p className="mt-4 text-sm leading-7 text-slate-400">{isAr ? 'نستخدم أدوات التخطيط والتصميم لعرض توزيع الطاولات والكراسي والمنصة والشاشة والزهور ومراجعة التفاصيل معك قبل التنفيذ.' : 'Our team uses planning and design tools to review tables, chairs, stages, screens, flowers and the full event setup with you before execution.'}</p>
             <div className="mt-6 flex flex-wrap gap-2 text-xs text-slate-300">
-              {[isAr ? '2D مخطط' : '2D Plan', isAr ? '3D حقيقي' : 'Real 3D', isAr ? 'منظور داخلي' : 'Inside POV', isAr ? 'موقع العميل' : 'Client Location'].map(x => <span key={x} className="rounded-lg border border-slate-700 px-3 py-2">{x}</span>)}
+              {[isAr ? 'تخطيط 2D' : '2D Planning', isAr ? 'تصور 3D' : '3D Visualization', isAr ? 'مراجعة داخلية' : 'Inside Review', isAr ? 'موقع العميل' : 'Client Location'].map(x => <span key={x} className="rounded-lg border border-slate-700 px-3 py-2">{x}</span>)}
             </div>
-            <button type="button" onClick={onOpenEventDesigner} className="mt-7 flex items-center gap-2 rounded-xl bg-amber-400 px-6 py-3.5 text-sm font-bold text-slate-950 hover:bg-amber-300"><Ruler className="h-4 w-4" />{isAr ? 'افتح مصمم المناسبات' : 'Open Event Designer'}<Arrow className="h-4 w-4" /></button>
+            <div className="mt-7 inline-flex items-center rounded-xl border border-amber-400/30 bg-amber-400/5 px-5 py-3 text-sm font-semibold text-amber-300">{isAr ? 'التصميم متاح من خلال فريق السرايا أثناء المقابلة' : 'Design planning is available through the Saraya team during the interview'}</div>
           </div>
           <div className="relative min-h-[340px] bg-slate-950">
             <img src={displayPhotos[1 % displayPhotos.length]?.src} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55" referrerPolicy="no-referrer" />
@@ -179,7 +176,7 @@ export function SarayaCustomerHomepage({
           <div className="mt-4 text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '06 · لنبدأ' : '06 · LET’S START'}</div>
           <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'قل لنا ماذا تتخيل.' : 'Tell us what you are imagining.'}</h2>
           <p className="mt-3 text-sm leading-7 text-slate-400">{isAr ? 'قاعة السرايا، موقعك الخاص، أو مساحة جديدة تماماً — نساعدك في تحويل الفكرة إلى مخطط وتنفيذ.' : 'Saraya venue, your own location, or a completely new space — we turn the idea into a plan and an execution.'}</p>
-          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row"><button type="button" onClick={onOpenEventDesigner} className="rounded-xl bg-amber-400 px-7 py-3.5 text-sm font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'ابدأ التصميم' : 'Start Designing'}</button><button type="button" onClick={() => openBooking()} className="rounded-xl border border-slate-700 px-7 py-3.5 text-sm font-semibold text-white hover:border-amber-400">{isAr ? 'تواصل للحجز' : 'Contact for Booking'}</button></div>
+          <div className="mt-7 flex justify-center"><button type="button" onClick={() => openBooking()} className="rounded-xl border border-slate-700 px-7 py-3.5 text-sm font-semibold text-white hover:border-amber-400">{isAr ? 'تواصل للحجز' : 'Contact for Booking'}</button></div>
         </div>
       </section>
 
