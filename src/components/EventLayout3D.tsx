@@ -280,13 +280,15 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         next.x = Math.max(-width / 2 + 0.2, Math.min(width / 2 - 0.2, next.x));
         next.z = Math.max(-depth / 2 + 0.2, Math.min(depth / 2 - 0.2, next.z));
         dragging.group.position.copy(next);
-        const x = ((next.x / width) * 100) + 50;
-        const y = ((next.z / depth) * 100) + 50;
-        onMove(dragging.id, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
       };
 
       const onPointerUp = () => {
         if (!dragging) return;
+        const id = dragging.id;
+        const position = dragging.group.position.clone();
+        const x = ((position.x / width) * 100) + 50;
+        const y = ((position.z / depth) * 100) + 50;
+        onMove(id, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
         dragging = null;
         orbit.enabled = true;
         renderer.domElement.style.cursor = 'grab';
@@ -356,7 +358,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
       };
       raf = requestAnimationFrame(animate);
 
-      engineRef.current = { resetCamera, renderer, scene };
+      engineRef.current = { resetCamera, rebuild, renderer, scene };
       setReady(true);
 
       cleanup = () => {
@@ -389,6 +391,10 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
       cleanup?.();
     };
   }, [width, depth, language]);
+
+  useEffect(() => {
+    engineRef.current?.rebuild?.();
+  }, [items]);
 
   useEffect(() => {
     engineRef.current?.resetCamera?.();
