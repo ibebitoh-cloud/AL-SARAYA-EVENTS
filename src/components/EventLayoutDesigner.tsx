@@ -148,20 +148,32 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
     drag.el.style.top = `${y}%`;
   };
 
-  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+  const finishDrag = (clientX: number, clientY: number, pointerId: number) => {
     const drag = dragRef.current;
     const canvas = canvasRef.current;
-    if (!drag || !canvas || drag.pointerId !== event.pointerId) return;
-
+    if (!drag || !canvas || drag.pointerId !== pointerId) return;
     const rect = canvas.getBoundingClientRect();
-    const x = Math.max(3, Math.min(97, ((event.clientX - drag.offsetX - rect.left) / rect.width) * 100));
-    const y = Math.max(3, Math.min(97, ((event.clientY - drag.offsetY - rect.top) / rect.height) * 100));
-
+    const x = Math.max(3, Math.min(97, ((clientX - drag.offsetX - rect.left) / rect.width) * 100));
+    const y = Math.max(3, Math.min(97, ((clientY - drag.offsetY - rect.top) / rect.height) * 100));
     setItems((prev) => prev.map((item) => item.id === drag.id ? { ...item, x, y } : item));
     setSaved(false);
     try { drag.el.releasePointerCapture(drag.pointerId); } catch {}
     dragRef.current = null;
   };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    finishDrag(event.clientX, event.clientY, event.pointerId);
+  };
+
+  useEffect(() => {
+    const onWindowPointerUp = (event: PointerEvent) => finishDrag(event.clientX, event.clientY, event.pointerId);
+    window.addEventListener('pointerup', onWindowPointerUp);
+    window.addEventListener('pointercancel', onWindowPointerUp);
+    return () => {
+      window.removeEventListener('pointerup', onWindowPointerUp);
+      window.removeEventListener('pointercancel', onWindowPointerUp);
+    };
+  }, []);
 
   const duplicateSelected = () => {
     if (!selected) return;
