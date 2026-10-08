@@ -70,3 +70,129 @@
   font-variant-numeric: tabular-nums;
 }
 
+
+/* =========================================================
+   SARAYA GLOBAL THEME SYSTEM
+   Every core surface, cell, panel, control and input follows
+   the selected theme. The theme is controlled by [data-theme].
+   ========================================================= */
+:root {
+  color-scheme: dark;
+  --saraya-page: #020617;
+  --saraya-surface: #0f172a;
+  --saraya-surface-2: #111827;
+  --saraya-surface-3: #1e293b;
+  --saraya-border: #334155;
+  --saraya-text: #f8fafc;
+  --saraya-muted: #94a3b8;
+  --saraya-input: #0f172a;
+  --saraya-hover: #1e293b;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --saraya-page: #f8fafc;
+  --saraya-surface: #ffffff;
+  --saraya-surface-2: #f1f5f9;
+  --saraya-surface-3: #e2e8f0;
+  --saraya-border: #cbd5e1;
+  --saraya-text: #0f172a;
+  --saraya-muted: #64748b;
+  --saraya-input: #ffffff;
+  --saraya-hover: #e2e8f0;
+}
+
+/* Base surfaces */
+html[data-theme="light"] body,
+html[data-theme="light"] #root {
+  background: var(--saraya-page);
+  color: var(--saraya-text);
+}
+
+/* Tailwind slate surfaces -> theme tokens */
+html[data-theme="light"] .bg-slate-950,
+html[data-theme="light"] .bg-slate-950\/95,
+html[data-theme="light"] .bg-slate-950\/98,
+html[data-theme="light"] .bg-slate-950\/90 { background-color: var(--saraya-page) !important; }
+
+html[data-theme="light"] .bg-slate-900,
+html[data-theme="light"] .bg-slate-900\/80,
+html[data-theme="light"] .bg-slate-900\/60,
+html[data-theme="light"] .bg-slate-900\/95 { background-color: var(--saraya-surface) !important; }
+
+html[data-theme="light"] .bg-slate-800,
+html[data-theme="light"] .bg-slate-800\/80 { background-color: var(--saraya-surface-2) !important; }
+
+html[data-theme="light"] .bg-slate-700 { background-color: var(--saraya-surface-3) !important; }
+
+/* Core text */
+html[data-theme="light"] .text-white { color: var(--saraya-text) !important; }
+html[data-theme="light"] .text-slate-100,
+html[data-theme="light"] .text-slate-200 { color: #1e293b !important; }
+html[data-theme="light"] .text-slate-300 { color: #334155 !important; }
+html[data-theme="light"] .text-slate-400,
+html[data-theme="light"] .text-slate-500 { color: var(--saraya-muted) !important; }
+html[data-theme="light"] .text-slate-600 { color: #475569 !important; }
+
+/* Borders, cells and dividers */
+html[data-theme="light"] .border-slate-800,
+html[data-theme="light"] .border-slate-800\/80,
+html[data-theme="light"] .border-slate-900,
+html[data-theme="light"] .border-slate-700 { border-color: var(--saraya-border) !important; }
+
+html[data-theme="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+html[data-theme="light"] .divide-slate-700 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--saraya-border) !important;
+}
+
+/* All native form controls */
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  background-color: var(--saraya-input) !important;
+  color: var(--saraya-text) !important;
+  border-color: var(--saraya-border) !important;
+}
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder { color: #94a3b8 !important; }
+html[data-theme="light"] option { background: #ffffff; color: #0f172a; }
+
+/* Core cards/panels and table-like cells */
+html[data-theme="light"] .bg-black,
+html[data-theme="light"] .bg-black\/20,
+html[data-theme="light"] .bg-black\/30,
+html[data-theme="light"] .bg-black\/40,
+html[data-theme="light"] .bg-black\/50,
+html[data-theme="light"] .bg-black\/60 { background-color: var(--saraya-surface) !important; }
+
+html[data-theme="light"] .hover\:bg-slate-800:hover,
+html[data-theme="light"] .hover\:bg-slate-900:hover,
+html[data-theme="light"] .hover\:bg-slate-700:hover { background-color: var(--saraya-hover) !important; }
+
+/* Keep status/accent colors intentional while neutral UI follows theme */
+html[data-theme="light"] .bg-amber-950\/60 { background-color: #fffbeb !important; }
+html[data-theme="light"] .bg-amber-500\/10 { background-color: #fffbeb !important; }
+html[data-theme="light"] .bg-indigo-950\/40 { background-color: #eef2ff !important; }
+
+/* Theme-safe scrollbar */
+html[data-theme="light"] ::-webkit-scrollbar-track { background: #e2e8f0; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #94a3b8; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Shared theme button */
+.saraya-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-width: 2.5rem;
+  height: 2.25rem;
+  padding: 0 .65rem;
+  border: 1px solid var(--saraya-border);
+  border-radius: .6rem;
+  background: var(--saraya-surface);
+  color: var(--saraya-text);
+  font-size: .72rem;
+  font-weight: 800;
+}
+.saraya-theme-toggle:hover { background: var(--saraya-hover); border-color: #d4af37; }
