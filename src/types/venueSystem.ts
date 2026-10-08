@@ -25,6 +25,7 @@ export type VenueTab =
   | 'contracts'
   | 'clients'
   | 'services'
+  | 'finance'
   | 'payments'
   | 'expenses'
   | 'inventory'
