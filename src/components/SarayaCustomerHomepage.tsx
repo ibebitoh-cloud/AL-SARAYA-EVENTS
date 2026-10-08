@@ -36,7 +36,10 @@ export function SarayaCustomerHomepage({
 }: SarayaCustomerHomepageProps) {
   const isAr = language === 'ar';
   const Arrow = isAr ? ArrowLeft : ArrowRight;
-  const displayPhotos = photos?.length ? photos : ALSARAYA_PHOTOS;
+  const sourcePhotos = photos?.length ? photos : ALSARAYA_PHOTOS;
+  const isOutdoorVenue = (value: string) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(value);
+  const displayPhotos = sourcePhotos.filter(photo => photo.category !== 'garden' && !isOutdoorVenue([photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' ')));
+  const availableHalls = halls.filter(hall => !isOutdoorVenue(`${hall.name} ${hall.nameAr}`));
   const [event, setEvent] = useState<EventKey>('wedding');
   const [gallery, setGallery] = useState<VenuePhoto | null>(null);
 
@@ -70,7 +73,7 @@ export function SarayaCustomerHomepage({
           </div>
           <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 border-t border-white/10 pt-6 sm:grid-cols-4">
             {[
-              [isAr ? 'قاعات ومواقع متاحة' : 'Venues Arranged', halls.length || '—'],
+              [isAr ? 'قاعات ومواقع متاحة' : 'Venues Arranged', availableHalls.length || '—'],
               [isAr ? 'أفراح وخطوبات' : 'Weddings & Engagements', '✓'],
               [isAr ? 'مؤتمرات وقمم' : 'Conferences & Summits', '✓'],
               [isAr ? 'تنفيذ في موقعك' : 'Your Location', '✓'],
@@ -131,7 +134,7 @@ export function SarayaCustomerHomepage({
           <p className="max-w-md text-xs leading-6 text-slate-400">{isAr ? 'ننسّق حجز القاعات المتاحة مع ملاكها، ويمكننا أيضاً تجهيز مناسبتك في موقعك الخاص.' : 'We coordinate bookings with venue owners and can also arrange your event at your own location.'}</p>
         </header>
         <div className="grid gap-5 md:grid-cols-2">
-          {halls.map((hall) => {
+          {availableHalls.map((hall) => {
             const photo = displayPhotos.find(p => p.hallId === hall.id) || displayPhotos[0];
             return <article key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
               <div className="relative h-64"><img src={photo?.src} alt={isAr ? hall.nameAr : hall.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-5 pt-16"><h3 className="text-xl font-serif font-bold">{isAr ? hall.nameAr : hall.name}</h3></div></div>
