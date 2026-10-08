@@ -167,9 +167,9 @@ export function NewBookingModal({
           {/* Close button */}
           <button
             onClick={() => {
-              sound.tick();
               onClose();
-            }}
+              sound.tick();
+              }}
             className="absolute top-5 left-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
