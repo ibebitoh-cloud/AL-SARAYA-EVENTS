@@ -208,7 +208,8 @@ export interface InventoryItem {
   quantity: number;
   unit: string; // قطعة / كرتونة / لتر / طقم
   minThreshold: number; // الحد الأدنى للتنبيه
-  costPerUnit: number;
+  costPerUnit: number; // تكلفة شراء الوحدة
+  salePrice?: number; // سعر بيع/احتساب الوحدة
   damagedQuantity: number; // التالف
   lastRestockedDate: string;
 }
