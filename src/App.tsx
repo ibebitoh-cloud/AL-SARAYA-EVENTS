@@ -519,22 +519,22 @@ export default function App() {
 
       {/* Bilingual Responsive Footer */}
       <footer className="w-full border-t border-amber-500/15 bg-slate-950 py-10 px-4 text-xs text-slate-400 mt-16">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-start">
-          <div className="space-y-1">
-            <div className="flex items-center justify-center md:justify-start gap-2">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-8 text-center">
+          <div className="w-full">
+            <div className="flex items-center justify-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
               <span className="text-amber-300 font-serif font-black tracking-wider text-sm">SARAYA EVENT</span>
               <span className="text-slate-600">·</span>
               <span className="text-slate-300 font-semibold">{language === 'ar' ? 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر' : 'Luxury Weddings & Halls Management Egypt'}</span>
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] text-slate-500">
               {language === 'ar'
                 ? 'القاهرة الجديدة (الطريق الدائري) · الكورنيش (الإسكندرية) · هاتف: 27950000 2 20+ · واتساب: 4567 123 100 20+'
                 : 'Ring Road, New Cairo · Corniche, Alexandria · Hotline: +20 2 2795 0000 · WhatsApp: +20 100 123 4567'}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-4 text-slate-400 font-mono text-[11px]">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-slate-400 font-mono text-[11px]">
             <span>{language === 'ar' ? '4 قاعات فندقية مستقلة' : '4 Independent Royal Halls'}</span>
             <span>·</span>
             <span>{language === 'ar' ? 'عزل صوتي 65dB' : '65dB Acoustic Isolation'}</span>
@@ -554,6 +554,17 @@ export default function App() {
             </button>
             <span>·</span>
             <span>© 2026 SARAYA EVENT</span>
+          </div>
+
+          <div className="w-full border-t border-white/10 pt-7">
+            <div className="text-[9px] font-semibold uppercase tracking-[0.35em] text-slate-500">POWERED BY</div>
+            <div
+              className="mt-1 select-none font-serif text-2xl font-semibold italic tracking-wide text-white"
+              title="Bebito"
+            >
+              Bebito
+            </div>
+            <div className="mt-2 text-[10px] font-medium tracking-wide text-slate-400">Mohamed Alaa · +20 114 647 5759</div>
           </div>
         </div>
       </footer>
