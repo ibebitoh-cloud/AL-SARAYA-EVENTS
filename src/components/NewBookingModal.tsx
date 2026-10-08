@@ -40,7 +40,7 @@ export function NewBookingModal({
   const [clientPhone, setClientPhone] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [eventType, setEventType] = useState<EventType>('wedding');
-  const [date, setDate] = useState('2026-11-15');
+  const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('18:00');
   const [endTime, setEndTime] = useState('23:30');
   const initialHall = halls.find(h => h.id === preselectedHallId) || halls[0];
@@ -49,7 +49,7 @@ export function NewBookingModal({
   const [basePrice, setBasePrice] = useState(initialHall?.basePrice || 45000);
   const [deposit, setDeposit] = useState(15000);
   const [securityDeposit, setSecurityDeposit] = useState(5000);
-  const [status, setStatus] = useState<'confirmed' | 'tentative'>(customerMode ? 'tentative' : 'confirmed');
+  const [status: customerMode ? 'tentative' : status, setStatus] = useState<'confirmed' | 'tentative'>(customerMode ? 'tentative' : 'confirmed');
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
@@ -141,10 +141,10 @@ export function NewBookingModal({
       basePrice: Number(basePrice) || 20000,
       services: calculatedServices,
       totalPrice,
-      deposit: Number(deposit) || 0,
-      paidAmount: Number(deposit) || 0,
+      deposit: customerMode ? 0 : (Number(deposit) || 0),
+      paidAmount: customerMode ? 0 : (Number(deposit) || 0),
       remainingAmount,
-      securityDeposit: Number(securityDeposit) || 3000,
+      securityDeposit: customerMode ? 0 : (Number(securityDeposit) || 3000),
       securityDepositStatus: 'held',
       status,
       notes: notes.trim(),
@@ -180,7 +180,7 @@ export function NewBookingModal({
           {/* Header */}
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-xl font-bold text-white">تسجيل حجز مناسبة وقاعة جديد</h3>
+            <h3 className="text-xl font-bold text-white">{customerMode ? 'طلب حجز مناسبة' : 'تسجيل حجز مناسبة وقاعة جديد'}</h3>
           </div>
           <p className="text-xs text-slate-400 mb-6">
             {customerMode ? 'اختر القاعة والخدمات المناسبة وأرسل طلب الحجز — سيؤكد فريق السرايا التفاصيل معك.' : 'تسجيل بيانات العميل، اختيار القاعة، تحديد باقة الخدمات والإضافات، وإثبات العربون والتأمين.'}
@@ -404,8 +404,8 @@ export function NewBookingModal({
               </div>
             </div>
 
-            {/* 4. Financial Tally, Deposit & Security Deposit */}
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-3">
+            {/* Internal financial controls are hidden from public booking requests. */}
+            {!customerMode && <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-3">
               <h4 className="text-xs font-bold text-indigo-400">4. الحسابات، العربون، والتأمين</h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
@@ -465,7 +465,7 @@ export function NewBookingModal({
                 <span className="text-emerald-400">المدفوع (عربون): <strong>{deposit.toLocaleString()} ج.م</strong></span>
                 <span className="text-rose-400">المتبقي للتحصيل: <strong>{remainingAmount.toLocaleString()} ج.م</strong></span>
               </div>
-            </div>
+            </div>}
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">
@@ -493,7 +493,7 @@ export function NewBookingModal({
                 type="submit"
                 className="px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
               >
-                حفظ وتسجيل الحجز رسمياً
+                {customerMode ? 'إرسال طلب الحجز' : 'حفظ وتسجيل الحجز رسمياً'}
               </button>
             </div>
           </form>
