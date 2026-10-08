@@ -194,20 +194,6 @@ export function SarayaCustomerHomepage({
         </div>
       </section>
 
-      {/* POWERED BY BEBITO */}
-      <footer className="mt-20 flex flex-col items-center justify-center border-t border-white/10 pt-10 pb-2 text-center">
-        <div className="text-[9px] font-semibold uppercase tracking-[0.35em] text-slate-500">POWERED BY</div>
-        <motion.div
-          whileHover={{ rotate: 360, scale: 1.06 }}
-          transition={{ duration: 0.7, ease: 'easeInOut' }}
-          className="mt-1 cursor-default select-none font-serif text-2xl font-semibold italic tracking-wide text-white transition-colors hover:text-amber-300"
-          title="Bebito"
-        >
-          Bebito
-        </motion.div>
-        <div className="mt-2 text-[10px] font-medium tracking-wide text-slate-400">Mohamed Alaa · +20 114 647 5759</div>
-      </footer>
-
       {gallery && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-4" onClick={() => setGallery(null)}>
         <div className="relative max-h-[90vh] max-w-5xl overflow-hidden rounded-2xl border border-amber-500/30 bg-slate-900" onClick={e => e.stopPropagation()}>
           <button type="button" onClick={() => setGallery(null)} className="absolute end-3 top-3 z-10 rounded-full bg-slate-950/80 p-2 text-white"><X className="h-5 w-5" /></button>
