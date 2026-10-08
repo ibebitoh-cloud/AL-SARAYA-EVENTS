@@ -328,16 +328,18 @@ export default function App() {
             {/* Dedicated customer-facing screens */}
             {currentTab.startsWith('public_') && (
               <CustomerSectionView
-                screen={{
-                  public_events: 'events',
-                  public_venues: 'venues',
-                  public_services: 'services',
-                  public_planner: 'planner',
-                  public_gallery: 'gallery',
-                  public_3d_tour: '3d-tour',
-                }[currentTab as keyof typeof {
-                  public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour'
-                }]!
+                screen={
+                  ({
+                    public_events: 'events',
+                    public_venues: 'venues',
+                    public_services: 'services',
+                    public_planner: 'planner',
+                    public_gallery: 'gallery',
+                    public_3d_tour: '3d-tour',
+                  } as const)[
+                    currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour'
+                  ]
+                }
                 halls={halls}
                 language={language}
                 onOpenBooking={(hallId) => {
