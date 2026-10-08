@@ -33,7 +33,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { Hall, Language, Booking, EventType } from '../types/venueSystem';
-import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
+import { ALSARAYA_PHOTOS, VenuePhoto, BIRTHDAY_DECORATION_PHOTOS } from '../data/venueImages';
 import { Saraya3DViewer } from './Saraya3DViewer';
 import { RelatedPhotosLibraryModal } from './RelatedPhotosLibraryModal';
 import { sound } from '../utils/soundEffects';
@@ -245,6 +245,7 @@ export function SarayaCustomerHomepage({
     if (galleryCategory === 'dining') return p.category === 'dining';
     if (galleryCategory === 'garden') return p.category === 'garden';
     if (galleryCategory === 'corporate') return p.category === 'corporate';
+    if (galleryCategory === 'birthday') return p.category === 'birthday';
     return true;
   });
 
@@ -426,7 +427,7 @@ export function SarayaCustomerHomepage({
                     : selectedEventType === 'engagement'
                     ? ALSARAYA_PHOTOS[1].src
                     : selectedEventType === 'birthday'
-                    ? ALSARAYA_PHOTOS[3].src
+                    ? (displayPhotos.find((p) => p.category === 'birthday')?.src || BIRTHDAY_DECORATION_PHOTOS[0].src)
                     : ALSARAYA_PHOTOS[4].src
                 }
                 alt="Event showcase"
@@ -1166,6 +1167,7 @@ export function SarayaCustomerHomepage({
               { id: 'dining', labelAr: 'المائدة والضيافة', labelEn: 'Dining' },
               { id: 'garden', labelAr: 'الحديقة المفتوحة', labelEn: 'Garden' },
               { id: 'corporate', labelAr: 'المؤتمرات', labelEn: 'Corporate' },
+              { id: 'birthday', labelAr: 'أعياد الميلاد', labelEn: 'Birthdays' },
             ].map((cat) => (
               <button
                 key={cat.id}
