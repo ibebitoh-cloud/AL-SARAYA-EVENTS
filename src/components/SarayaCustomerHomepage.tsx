@@ -1242,7 +1242,7 @@ export function SarayaCustomerHomepage({
 
       {/* Lightbox Modal */}
       <AnimatePresence>
-        {activeLightboxPhoto && (
+        {activeLibraryPhoto && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1256,8 +1256,8 @@ export function SarayaCustomerHomepage({
             >
               <div className="relative h-[65vh] overflow-hidden bg-black">
                 <img
-                  src={activeLightboxPhoto.src}
-                  alt={isAr ? activeLightboxPhoto.titleAr : activeLightboxPhoto.titleEn}
+                  src={activeLibraryPhoto.src}
+                  alt={isAr ? activeLibraryPhoto.titleAr : activeLibraryPhoto.titleEn}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-contain"
                 />
@@ -1265,13 +1265,13 @@ export function SarayaCustomerHomepage({
               <div className="p-6 bg-slate-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-amber-500/20">
                 <div>
                   <span className="text-xs text-amber-400 font-mono">
-                    {isAr ? activeLightboxPhoto.hallNameAr : activeLightboxPhoto.hallNameEn}
+                    {isAr ? activeLibraryPhoto.hallNameAr : activeLibraryPhoto.hallNameEn}
                   </span>
                   <h3 className="text-lg font-serif font-bold text-white">
-                    {isAr ? activeLightboxPhoto.titleAr : activeLightboxPhoto.titleEn}
+                    {isAr ? activeLibraryPhoto.titleAr : activeLibraryPhoto.titleEn}
                   </h3>
                   <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-                    {isAr ? activeLightboxPhoto.captionAr : activeLightboxPhoto.captionEn}
+                    {isAr ? activeLibraryPhoto.captionAr : activeLibraryPhoto.captionEn}
                   </p>
                 </div>
                 <button
