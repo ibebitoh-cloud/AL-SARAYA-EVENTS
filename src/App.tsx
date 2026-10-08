@@ -18,7 +18,7 @@ import {
 import { INITIAL_EVENTS } from './data/mockEvents';
 import {
   Booking, BookingStatus, PaymentReceipt, Expense, InventoryItem, Employee,
-  ServiceDefinition, VenueTab, Language,
+  ServiceDefinition, VenueTab, Language, Hall,
 } from './types/venueSystem';
 import { TableAssignment, Guest } from './types/event';
 import { VenueHeaderNav } from './components/VenueHeaderNav';
@@ -64,13 +64,24 @@ export default function App() {
   useEffect(() => { document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = language; }, [language]);
   const toggleLanguage = () => setLanguage((prev) => (prev === 'ar' ? 'en' : 'ar'));
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
-  const [halls] = useState(INITIAL_HALLS);
+  const [halls, setHalls] = useState<Hall[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_HALLS;
+    try { return JSON.parse(window.localStorage.getItem('saraya-halls') || '') || INITIAL_HALLS; } catch { return INITIAL_HALLS; }
+  });
+  useEffect(() => { window.localStorage.setItem('saraya-halls', JSON.stringify(halls)); }, [halls]);
+  const handleUpdateHall = (updated: Hall) => setHalls((prev) => prev.map((h) => h.id === updated.id ? updated : h));
   const [servicesCatalogue, setServicesCatalogue] = useState<ServiceDefinition[]>(INITIAL_SERVICES);
   const [payments, setPayments] = useState<PaymentReceipt[]>(INITIAL_PAYMENTS);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [staff, setStaff] = useState<Employee[]>(INITIAL_STAFF);
   const [clients, setClients] = useState(INITIAL_CLIENTS);
+  const [companyProfile, setCompanyProfile] = useState(() => {
+    const defaults = { nameEn: 'SARAYA EVENT', nameAr: 'السرايا للمناسبات', taglineEn: 'Luxury Weddings & Halls Management Egypt', taglineAr: 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر', businessEn: 'Wedding halls, events & event management', businessAr: 'قاعات أفراح ومناسبات وإدارة فعاليات', locationsEn: 'Ring Road, New Cairo · Corniche, Alexandria', locationsAr: 'القاهرة الجديدة · الإسكندرية', phone: '+20 2 2795 0000', whatsapp: '+20 100 123 4567', logo: 'black' as 'black' | 'white' };
+    if (typeof window === 'undefined') return defaults;
+    try { return { ...defaults, ...(JSON.parse(window.localStorage.getItem('saraya-company-profile') || '') || {}) }; } catch { return defaults; }
+  });
+  useEffect(() => { window.localStorage.setItem('saraya-company-profile', JSON.stringify(companyProfile)); }, [companyProfile]);
   const [tables, setTables] = useState<TableAssignment[]>(INITIAL_EVENTS[0].tables);
   const [guests, setGuests] = useState<Guest[]>(INITIAL_EVENTS[0].guests);
   const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
@@ -99,7 +110,7 @@ export default function App() {
     {portalWelcome && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-md px-4" onClick={() => setPortalWelcome(null)}><motion.div initial={{opacity:0,scale:.96,y:10}} animate={{opacity:1,scale:1,y:0}} className="w-full max-w-md rounded-3xl border border-amber-400/20 bg-slate-900 p-8 text-center shadow-2xl"><div className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-400">WELCOME</div><h1 className="mt-3 text-3xl font-black text-white">{language === 'ar' ? `أهلاً بك، ${portalWelcome.nameAr}` : `Welcome, ${portalWelcome.name}`}</h1><p className="mt-2 text-xs text-slate-500">{language === 'ar' ? 'تم الدخول إلى البوابة التجريبية' : 'You are now inside the trial portal'}</p><button onClick={() => setPortalWelcome(null)} className="mt-6 px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold">{language === 'ar' ? 'دخول النظام' : 'Enter System'}</button></motion.div></div>}\n    <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden"><AnimatePresence mode="wait"><motion.div key={`${currentTab}-${language}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
       {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? 'home' : 'dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}\n      {!portalLoginOpen && currentTab === 'home' && <SarayaCustomerHomepage halls={halls} language={language} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenBookingModal={() => setIsNewBookingModalOpen(true)} onCreateBooking={handleCreateBooking} onOpenEventDesigner={() => setCurrentTab('event_designer')} />}
       {currentTab.startsWith('public_') && <CustomerSectionView screen={({ public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour' } as const)[currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour']} halls={halls} language={language} onOpenBooking={(hallId) => { if (hallId) setPreselectedHallId(hallId); setIsNewBookingModalOpen(true); }} onGoHome={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
-      {currentTab === 'company' && portalUser && <CompanyProfileView language={language} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} />}
+      {currentTab === 'company' && portalUser && <CompanyProfileView language={language} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} companyProfile={companyProfile} onUpdateCompanyProfile={setCompanyProfile} onUpdateHall={handleUpdateHall} />}
       {currentTab === 'dashboard' && portalUser && <DashboardView bookings={bookings} halls={halls} language={language} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onNavigateTab={(tab) => setCurrentTab(tab)} />}
       {currentTab === 'bookings' && portalUser && <BookingsView bookings={bookings} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={handleUpdateBookingStatus} />}
       {currentTab === 'agenda' && portalUser && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} />}
