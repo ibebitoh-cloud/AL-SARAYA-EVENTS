@@ -267,6 +267,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         onSelect(item.id);
         orbit.enabled = false;
         renderer.domElement.style.cursor = 'grabbing';
+        try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
         e.preventDefault();
       };
 
@@ -282,7 +283,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         dragging.group.position.copy(next);
       };
 
-      const onPointerUp = () => {
+      const onPointerUp = (e?: PointerEvent) => {
         if (!dragging) return;
         const id = dragging.id;
         const position = dragging.group.position.clone();
@@ -290,6 +291,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         const y = ((position.z / depth) * 100) + 50;
         onMove(id, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
         dragging = null;
+        if (e) { try { renderer.domElement.releasePointerCapture(e.pointerId); } catch {} }
         orbit.enabled = true;
         renderer.domElement.style.cursor = 'grab';
       };
