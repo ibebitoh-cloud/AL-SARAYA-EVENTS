@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Armchair,
   ChevronDown,
@@ -80,6 +80,8 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
   const [clientView, setClientView] = useState(false);
   const [saved, setSaved] = useState(false);
   const [projectName, setProjectName] = useState('');
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number } | null>(null);
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const eventName = EVENT_NAMES[eventKind][isAr ? 1 : 0];
@@ -89,7 +91,6 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
   const addItem = (type: string) => {
     const source = ITEM_LIBRARY.find((item) => item.type === type);
     if (!source) return;
-    const count = items.filter((item) => item.type === type).length;
     const item: LayoutItem = {
       id: `${type}-${Date.now()}`,
       type,
@@ -114,6 +115,42 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
   const nudge = (dx: number, dy: number) => {
     if (!selected) return;
     updateSelected({ x: Math.max(5, Math.min(95, selected.x + dx)), y: Math.max(5, Math.min(95, selected.y + dy)) });
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, item: LayoutItem) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setSelectedId(item.id);
+    dragRef.current = { id: item.id, el: event.currentTarget, pointerId: event.pointerId };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    const canvas = canvasRef.current;
+    if (!drag || !canvas || drag.pointerId !== event.pointerId) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(3, Math.min(97, ((event.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(3, Math.min(97, ((event.clientY - rect.top) / rect.height) * 100));
+
+    drag.el.style.left = `${x}%`;
+    drag.el.style.top = `${y}%`;
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    const canvas = canvasRef.current;
+    if (!drag || !canvas || drag.pointerId !== event.pointerId) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(3, Math.min(97, ((event.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(3, Math.min(97, ((event.clientY - rect.top) / rect.height) * 100));
+
+    setItems((prev) => prev.map((item) => item.id === drag.id ? { ...item, x, y } : item));
+    setSaved(false);
+    dragRef.current = null;
   };
 
   const duplicateSelected = () => {
@@ -266,11 +303,11 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
               <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'}</div>
             </div>
             <div className={`relative w-full aspect-[4/3] min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 ${layoutMode === '3d' ? 'perspective-[1000px]' : ''}`}>
-              <div className={`absolute inset-[7%] border border-slate-600/70 rounded-lg ${layoutMode === '3d' ? 'rotate-x-[52deg] scale-[0.86] origin-center' : ''}`} style={layoutMode === '3d' ? { transform: 'perspective(900px) rotateX(52deg) scale(.86)' } : undefined}>
+              <div ref={canvasRef} className={`absolute inset-[7%] border border-slate-600/70 rounded-lg ${layoutMode === '3d' ? 'rotate-x-[52deg] scale-[0.86] origin-center' : ''}`} style={layoutMode === '3d' ? { transform: 'perspective(900px) rotateX(52deg) scale(.86)', willChange: 'transform' } : undefined}>
                 <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)', backgroundSize: '8% 10%' }} />
                 <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'واجهة المكان' : 'FRONT / STAGE SIDE'}</div>
                 {items.map((item) => (
-                  <button key={item.id} type="button" onClick={() => setSelectedId(item.id)} className={`${itemVisual(item)} cursor-pointer ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%,-50%) rotate(${item.rotation}deg)` }}>
+                  <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%,-50%) rotate(${item.rotation}deg)`, willChange: 'left, top' }}>
                     {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? item.seats : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                   </button>
                 ))}
