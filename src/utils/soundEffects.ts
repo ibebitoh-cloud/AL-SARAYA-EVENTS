@@ -12,11 +12,22 @@ class SoundFX {
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
-        this.ctx = new AudioCtx();
+        try {
+          this.ctx = new AudioCtx();
+        } catch {
+          // Some browsers/extensions can reject AudioContext construction.
+          // UI actions must never depend on audio being available.
+          this.ctx = null;
+          this.enabled = false;
+        }
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      try {
+        void this.ctx.resume().catch(() => undefined);
+      } catch {
+        // Ignore audio resume failures; never block UI interactions.
+      }
     }
     return this.ctx;
   }
