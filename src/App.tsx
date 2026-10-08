@@ -26,6 +26,7 @@ import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
 import { CustomerSectionView } from './components/CustomerSectionView';
 import { CompanyShowcaseView } from './components/CompanyShowcaseView';
+import { CompanyProfileView } from './components/CompanyProfileView';
 import { DashboardView } from './components/DashboardView';
 import { BookingsView } from './components/BookingsView';
 import { CalendarAgendaView } from './components/CalendarAgendaView';
@@ -93,7 +94,7 @@ export default function App() {
     <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden"><AnimatePresence mode="wait"><motion.div key={`${currentTab}-${language}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
       {currentTab === 'home' && <SarayaCustomerHomepage halls={halls} language={language} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenBookingModal={() => setIsNewBookingModalOpen(true)} onCreateBooking={handleCreateBooking} onOpenEventDesigner={() => setCurrentTab('event_designer')} />}
       {currentTab.startsWith('public_') && <CustomerSectionView screen={({ public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour' } as const)[currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour']} halls={halls} language={language} onOpenBooking={(hallId) => { if (hallId) setPreselectedHallId(hallId); setIsNewBookingModalOpen(true); }} onGoHome={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
-      {currentTab === 'company' && <CompanyShowcaseView halls={halls} language={language} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onNavigateToFloorPlan={() => setCurrentTab('floorplan')} />}
+      {currentTab === 'company' && <CompanyProfileView language={language} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} />}
       {currentTab === 'dashboard' && <DashboardView bookings={bookings} halls={halls} language={language} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onNavigateTab={(tab) => setCurrentTab(tab)} />}
       {currentTab === 'bookings' && <BookingsView bookings={bookings} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={handleUpdateBookingStatus} />}
       {currentTab === 'agenda' && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} />}
