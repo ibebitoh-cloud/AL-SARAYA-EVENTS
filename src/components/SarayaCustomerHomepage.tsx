@@ -22,10 +22,10 @@ interface SarayaCustomerHomepageProps {
 type EventKey = 'wedding' | 'engagement' | 'birthday' | 'corporate';
 
 const eventContent: Record<EventKey, {
-  ar: string; en: string; subAr: string; subEn: string; icon: typeof Heart; photoIndex: number;
+  ar: string; en: string; subAr: string; subEn: string; icon: typeof Heart; photoIndex: number; photoSrc?: string;
 }> = {
   wedding: { ar: 'زفاف وأفراح', en: 'Weddings', subAr: 'تنسيق متكامل يبدأ من توفير المكان وينتهي بأدق التفاصيل.', subEn: 'Complete event coordination, from venue booking to the final detail.', icon: Heart, photoIndex: 2 },
-  engagement: { ar: 'خطوبة وعقد قران', en: 'Engagements', subAr: 'أجواء أنيقة وحميمة مصممة حسب رؤيتكم.', subEn: 'Elegant, intimate celebrations built around your vision.', icon: Sparkles, photoIndex: 1 },
+  engagement: { ar: 'خطوبة وعقد قران', en: 'Engagements', subAr: 'أجواء أنيقة وحميمة مصممة حسب رؤيتكم.', subEn: 'Elegant, intimate celebrations built around your vision.', icon: Sparkles, photoIndex: 1, photoSrc: 'https://cdn.shopify.com/s/files/1/0685/8666/8353/files/Soz-_-Nisan-Organizasyonu-Rehberi-_-Konseptler_-Tepsiler_-Fiyatlar-Alisse-nuerA-Blog-03.jpg?v=1763557153' },
   birthday: { ar: 'أعياد ميلاد وحفلات', en: 'Birthdays & Parties', subAr: 'ديكور وتجهيزات مرنة تناسب كل فكرة ومكان.', subEn: 'Flexible decoration and production for every idea and location.', icon: Cake, photoIndex: 0 },
   corporate: { ar: 'مؤتمرات وقمم', en: 'Conferences & Summits', subAr: 'منصة، شاشات، مقاعد وتجهيز احترافي للمؤتمرات.', subEn: 'Stages, screens, seating and professional conference production.', icon: Presentation, photoIndex: 3 },
 };
@@ -95,7 +95,7 @@ export function SarayaCustomerHomepage({
         </div>
         <AnimatePresence mode="wait">
           <motion.div key={event} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 lg:grid-cols-2">
-            <img src={displayPhotos[eventContent[event].photoIndex % displayPhotos.length]?.src} alt="" className="h-72 w-full object-cover lg:h-full" referrerPolicy="no-referrer" />
+            <img src={eventContent[event].photoSrc || (event === 'birthday' ? displayPhotos.find(photo => photo.category === 'birthday')?.src : event === 'corporate' ? displayPhotos.find(photo => photo.category === 'corporate')?.src : event === 'wedding' ? displayPhotos.find(photo => photo.category === 'wedding')?.src : undefined) || displayPhotos[eventContent[event].photoIndex % displayPhotos.length]?.src} alt={isAr ? `${eventContent[event].ar} - تجهيزات وديكور المناسبة` : `${eventContent[event].en} event setup and decor`} className="h-72 w-full object-cover lg:h-full" referrerPolicy="no-referrer" />
             <div className="flex flex-col justify-center p-7 sm:p-10">
               <div className="mb-3 text-xs font-bold uppercase tracking-widest text-amber-400">{isAr ? 'تجربة مصممة لك' : 'BUILT AROUND YOU'}</div>
               <h3 className="text-2xl font-serif font-bold">{isAr ? eventContent[event].ar : eventContent[event].en}</h3>
