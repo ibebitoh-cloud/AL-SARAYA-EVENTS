@@ -49,7 +49,7 @@ export function NewBookingModal({
   const [basePrice, setBasePrice] = useState(initialHall?.basePrice || 45000);
   const [deposit, setDeposit] = useState(15000);
   const [securityDeposit, setSecurityDeposit] = useState(5000);
-  const [status: customerMode ? 'tentative' : status, setStatus] = useState<'confirmed' | 'tentative'>(customerMode ? 'tentative' : 'confirmed');
+  const [status, setStatus] = useState<'confirmed' | 'tentative'>(customerMode ? 'tentative' : 'confirmed');
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
