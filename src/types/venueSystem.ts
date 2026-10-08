@@ -13,6 +13,7 @@ export type VenueTab =
   | 'bookings'
   | 'agenda'
   | 'floorplan'
+  | 'event_designer'
   | 'live_stage'
   | 'catering'
   | 'contracts'
