@@ -51,43 +51,43 @@ type ModelCard = {
 const MODEL_CARDS: ModelCard[] = [
   {
     id: 'hall-1',
-    nameAr: 'قاعة الاحتفالات الكبرى',
-    nameEn: 'Grand Celebration Hall',
-    descriptionAr: 'قاعة مناسبات كاملة بمسرح وطاولات وتجهيزات حفل حقيقية.',
-    descriptionEn: 'A complete event-hall scene with stage, tables and real venue dressing.',
-    model: 'https://cdn.3dassets.dev/assets/35232/v1/model.glb',
-    capacity: '650+',
-    area: '1,250 m²',
+    nameAr: 'التجهيز المفتوح — طاولات الضيوف',
+    nameEn: 'Open-Air Reception — Guest Tables',
+    descriptionAr: 'طاولة استقبال دائرية بتجهيز مفتوح تناسب توزيع طاولات الضيوف في حفلات الزفاف الخارجية.',
+    descriptionEn: 'A round banquet table setup suited to open-air wedding reception layouts.',
+    model: 'https://cdn.3dassets.dev/assets/35201/v1/model.glb',
+    capacity: '8–10',
+    area: 'Open Air',
   },
   {
     id: 'hall-2',
-    nameAr: 'قاعة الزفاف والاحتفال',
-    nameEn: 'Wedding & Ceremony Venue',
-    descriptionAr: 'مشهد زفاف متكامل مع الكنيسة والحديقة ومنطقة الاستقبال.',
-    descriptionEn: 'A complete wedding scene with ceremony, garden and reception elements.',
-    model: 'https://cdn.3dassets.dev/assets/39413/v1/model.glb',
-    capacity: '400+',
-    area: '780 m²',
+    nameAr: 'طاولة العروسين',
+    nameEn: 'Bride & Groom Table',
+    descriptionAr: 'منطقة جلوس العروس والعريس في مقدمة الحفل، ضمن تصميم استقبال مفتوح بدون أي عناصر دينية.',
+    descriptionEn: 'A dedicated bride-and-groom seating concept for the front of an open-air reception, with no religious ceremony elements.',
+    model: 'https://cdn.3dassets.dev/assets/35201/v1/model.glb',
+    capacity: 'Couple',
+    area: 'Open Air',
   },
   {
     id: 'hall-3',
-    nameAr: 'المسرح والحفل المفتوح',
-    nameEn: 'Live Event & Festival Stage',
-    descriptionAr: 'مسرح فعاليات حقيقي مع LED وTruss وصوت وإضاءة.',
-    descriptionEn: 'A real live-event stage with LED, truss, PA and lighting equipment.',
-    model: 'https://cdn.3dassets.dev/assets/33938/v1/model.glb',
-    capacity: '550+',
-    area: '1,100 m²',
+    nameAr: 'ساحة الرقص الرئيسية',
+    nameEn: 'Main Wedding Dance Floor',
+    descriptionAr: 'أرضية رقص بيضاء بلمسات ذهبية مخصصة للزفة والرقص والاحتفال وسط الحفل.',
+    descriptionEn: 'A white dance floor with gold trim for the entrance, first dance and celebration.',
+    model: 'https://cdn.3dassets.dev/assets/39405/v1/model.glb',
+    capacity: 'Open',
+    area: 'Dance Floor',
   },
   {
     id: 'hall-4',
-    nameAr: 'المسرح وقاعة العروض',
-    nameEn: 'Theatre & Performance Venue',
-    descriptionAr: 'مسرح احترافي مع مدرجات ومنطقة خلفية وتجهيزات عرض.',
-    descriptionEn: 'A professional theatre scene with seating, stage and backstage systems.',
-    model: 'https://cdn.3dassets.dev/assets/35925/v1/model.glb',
-    capacity: '350+',
-    area: '600 m²',
+    nameAr: 'جلسة الزفاف الخارجية',
+    nameEn: 'Open-Air Wedding Setting',
+    descriptionAr: 'أجواء حديقة خارجية مع قوس زفاف وزهور ومكان واضح لوقوف العروسين أمام الضيوف.',
+    descriptionEn: 'An outdoor garden wedding setting with a floral arch and a dedicated couple-facing area for guests.',
+    model: 'https://cdn.3dassets.dev/assets/39380/v1/model.glb',
+    capacity: 'Outdoor',
+    area: 'Garden',
   },
 ];
 
@@ -163,15 +163,15 @@ export function Saraya3DViewer({
           <div>
             <div className="flex items-center gap-2 text-xs font-bold tracking-wide text-amber-300">
               <Sparkles className="w-4 h-4" />
-              <span>{isAr ? '4 مشاهد ثلاثية الأبعاد حقيقية' : '4 Real 3D Venue Scenes'}</span>
+              <span>{isAr ? '4 مشاهد زفاف خارجية ثلاثية الأبعاد' : '4 Real 3D Open-Air Wedding Scenes'}</span>
             </div>
             <h3 className="mt-2 text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-white">
-              {isAr ? 'استكشف القاعات والمشاهد بالكامل' : 'Explore Every Venue in Real 3D'}
+              {isAr ? 'استكشف تصميم الزفاف الخارجي بالكامل' : 'Explore the Open-Air Wedding Setup in Real 3D'}
             </h3>
             <p className="mt-2 max-w-3xl text-xs sm:text-sm leading-relaxed text-slate-400">
               {isAr
-                ? 'تم استبدال الرسم الوهمي السابق بنماذج GLB حقيقية قابلة للدوران والتكبير. على الكمبيوتر ستظهر المشاهد الأربعة معاً، وعلى الهاتف تتحول إلى بطاقات واضحة بدون قص النموذج.'
-                : 'The previous fake CSS scene has been replaced with real GLB models. All four scenes are visible together on desktop and become clear full-width cards on mobile.'}
+                ? 'تم استبدال المشاهد السابقة بتصميمات زفاف خارجية تركز على طاولات الضيوف، طاولة العروسين، ساحة الرقص وأجواء الحديقة — بدون كنائس أو أي عناصر دينية.'
+                : 'The 3D experience now focuses on open-air wedding layouts: guest tables, bride-and-groom seating, the dance floor and the garden setting — with no churches or religious ceremony elements.'}
             </p>
           </div>
 
@@ -341,8 +341,8 @@ export function Saraya3DViewer({
 
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 pb-5 text-[10px] text-slate-500">
         {isAr
-          ? 'النماذج المستخدمة من 3DAssets.dev ومخصصة للعرض ثلاثي الأبعاد. يمكن استبدال أي نموذج لاحقاً بنموذج Saraya الحقيقي دون تغيير واجهة المستخدم.'
-          : 'The current models are presentation-ready venue assets from 3DAssets.dev. Each GLB can later be replaced by an actual Saraya model without changing the viewer UI.'}
+          ? 'النماذج الحالية من 3DAssets.dev ومخصصة للعرض والتخطيط البصري. يمكن لاحقاً استبدالها بتصميم Saraya الحقيقي مع الحفاظ على نفس الواجهة.'
+          : 'The current models are presentation assets from 3DAssets.dev. They can later be replaced by actual Saraya open-air wedding models without changing the viewer UI.'}
       </div>
     </section>
   );
