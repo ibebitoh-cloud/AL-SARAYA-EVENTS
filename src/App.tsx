@@ -36,6 +36,7 @@ import { DashboardView } from './components/DashboardView';
 import { BookingsView } from './components/BookingsView';
 import { CalendarAgendaView } from './components/CalendarAgendaView';
 import { FloorPlanStudio } from './components/FloorPlanStudio';
+import { EventLayoutDesigner } from './components/EventLayoutDesigner';
 import { CateringMenuView } from './components/CateringMenuView';
 import { ContractsView } from './components/ContractsView';
 import { ClientsView } from './components/ClientsView';
@@ -358,7 +359,12 @@ export default function App() {
               />
             )}
 
-            {/* 5. 3D Floor Plan & Seating Studio */}
+            {/* 5. Event Layout Designer */}
+            {currentTab === 'event_designer' && (
+              <EventLayoutDesigner language={language} />
+            )}
+
+            {/* Legacy seating studio kept available for existing data */}
             {currentTab === 'floorplan' && (
               <div className="space-y-4">
                 <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
