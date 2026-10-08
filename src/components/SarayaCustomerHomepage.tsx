@@ -715,34 +715,6 @@ export function SarayaCustomerHomepage({
           })}
         </div>
       </section>
-                      e.preventDefault();
-                      sound.tick();
-                      const el = document.getElementById('3d-tour');
-                      el?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="flex-1 py-2.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-xs font-semibold text-slate-200 hover:text-white border border-slate-700 text-center transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{isAr ? 'معاينة ثلاثية الأبعاد' : 'View 3D Model'}</span>
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.chime();
-                      onSelectHallForBooking(venue.id);
-                      onOpenBookingModal();
-                    }}
-                    className="flex-1 py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-xs font-bold text-slate-950 text-center transition-all shadow-md"
-                  >
-                    {isAr ? 'احجز هذه القاعة' : 'Book This Venue'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* =========================================================================
           SECTION 4: COMPREHENSIVE SERVICES
