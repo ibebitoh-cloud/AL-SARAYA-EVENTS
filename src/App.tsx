@@ -311,6 +311,7 @@ export default function App() {
                 }}
                 onOpenBookingModal={() => setIsNewBookingModalOpen(true)}
                 onCreateBooking={handleCreateBooking}
+                onOpenEventDesigner={() => setCurrentTab('event_designer')}
               />
             )}
 
