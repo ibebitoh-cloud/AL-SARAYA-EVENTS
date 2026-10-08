@@ -81,7 +81,7 @@ export function SarayaBrandHeader({
             {navLinks.slice(0, 6).map((link) => (
               <a
                 key={link.id}
-                href={`#${link.id}`}
+                href={`?section=${link.id}`}
                 onClick={(e) => {
                   e.preventDefault();
                   sound.tick();
