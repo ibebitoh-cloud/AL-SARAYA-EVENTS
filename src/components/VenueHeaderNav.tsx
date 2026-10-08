@@ -1,4 +1,4 @@
-import { Plus, LayoutDashboard, Calendar, Building } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar, Building, Ruler } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
 import { DICTIONARY } from '../utils/i18n';
@@ -27,6 +27,7 @@ export function VenueHeaderNav({
     { id: 'bookings', label: isAr ? 'الحجوزات' : 'Bookings', icon: Calendar },
     { id: 'agenda', label: isAr ? 'التقويم' : 'Calendar', icon: Calendar },
     { id: 'company', label: isAr ? 'القاعات' : 'Halls', icon: Building },
+    { id: 'event_designer', label: isAr ? 'مصمم المناسبات' : 'Designer', icon: Ruler },
   ];
 
   return (
@@ -82,7 +83,7 @@ export function VenueHeaderNav({
       </div>
 
       <div className="lg:hidden border-t border-slate-900 px-2 py-1">
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-5 gap-1">
           {navItems.map((item) => (
             <button
               key={item.id}
