@@ -143,29 +143,32 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
-    const position = getDragPosition(event.clientX, event.clientY);
-    if (!position) return;
-    dragRef.current.x = position.x;
-    dragRef.current.y = position.y;
-
+  const scheduleDragFrame = () => {
     if (dragFrameRef.current !== null) return;
     dragFrameRef.current = requestAnimationFrame(() => {
       const drag = dragRef.current;
       if (drag) {
-        drag.el.style.left = `${drag.x}%`;
-        drag.el.style.top = `${drag.y}%`;
+        setItems((prev) => prev.map((item) => item.id === drag.id ? { ...item, x: drag.x, y: drag.y } : item));
+        setSaved(false);
       }
       dragFrameRef.current = null;
     });
   };
 
+  const updateDragFromPointer = (clientX: number, clientY: number, pointerId: number) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== pointerId) return;
+    const position = getDragPosition(clientX, clientY);
+    if (!position) return;
+    drag.x = position.x;
+    drag.y = position.y;
+    scheduleDragFrame();
+  };
+
   const finishDrag = (clientX: number, clientY: number, pointerId: number) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
-    // Use the last rendered drag coordinates. Recalculating from pointerup can
-    // introduce a one-frame jump when the browser dispatches pointerup after pointermove.
+    updateDragFromPointer(clientX, clientY, pointerId);
     const x = drag.x;
     const y = drag.y;
 
@@ -190,21 +193,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     };
     window.addEventListener('keydown', onKeyDown);
     const onWindowPointerMove = (event: PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag || drag.pointerId !== event.pointerId) return;
-      const position = getDragPosition(event.clientX, event.clientY);
-      if (!position) return;
-      drag.x = position.x;
-      drag.y = position.y;
-      if (dragFrameRef.current !== null) return;
-      dragFrameRef.current = requestAnimationFrame(() => {
-        const active = dragRef.current;
-        if (active) {
-          active.el.style.left = `${active.x}%`;
-          active.el.style.top = `${active.y}%`;
-        }
-        dragFrameRef.current = null;
-      });
+      updateDragFromPointer(event.clientX, event.clientY, event.pointerId);
     };
     const onWindowPointerUp = (event: PointerEvent) => finishDrag(event.clientX, event.clientY, event.pointerId);
     window.addEventListener('pointermove', onWindowPointerMove);
@@ -369,7 +358,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)', backgroundSize: '8% 10%' }} />
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
                   {items.map((item) => (
-                    <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%,-50%) rotate(${item.rotation}deg)`, willChange: 'left, top', transition: 'none' }}>
+                    <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%,-50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none' }}>
                       {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{Array.from({ length: item.seats || 10 }, (_, seat) => <span key={seat} className="absolute w-2 h-2 rounded-full bg-slate-200/80" style={{ left: (50 + Math.cos((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%', top: (50 + Math.sin((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                     </button>
                   ))}
