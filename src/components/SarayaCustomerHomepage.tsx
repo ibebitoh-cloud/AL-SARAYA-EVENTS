@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowRight, ArrowLeft, Calendar, Camera, CheckCircle2, Eye, Heart,
   MapPin, MessageCircle, Sparkles, Users, Building2, Cake, Presentation, Ruler,
-  Ruler, X
+  X
 } from 'lucide-react';
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
