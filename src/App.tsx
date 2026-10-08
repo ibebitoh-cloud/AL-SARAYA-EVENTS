@@ -87,7 +87,7 @@ export default function App() {
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [halls, setHalls] = useState<Hall[]>(() => {
     if (typeof window === 'undefined') return INITIAL_HALLS;
-    try { return JSON.parse(window.localStorage.getItem('saraya-halls') || '') || INITIAL_HALLS; } catch { return INITIAL_HALLS; }
+    try { const saved = JSON.parse(window.localStorage.getItem('saraya-halls') || 'null'); const list = Array.isArray(saved) && saved.length ? saved : INITIAL_HALLS; return list.map((hall: Hall) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${hall.name} ${hall.nameEn || ''}`) ? { ...hall, name: 'قاعة المؤتمرات الدبلوماسية', nameEn: 'The Diplomat Conference & Summit Hall' } : hall); } catch { return INITIAL_HALLS; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-halls', JSON.stringify(halls)); }, [halls]);
   const [photos, setPhotos] = useState<VenuePhoto[]>(() => {
