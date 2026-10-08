@@ -20,14 +20,14 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { Language } from '../types/venueSystem';
+import { Hall3DProfile, HallLayoutItem, Language } from '../types/venueSystem';
 import { EventLayout3D } from './EventLayout3D';
 
 type LayoutMode = '2d' | '3d' | 'pov';
 type EventKind = 'engagement' | 'wedding' | 'conference' | 'summit' | 'birthday' | 'other';
 type LocationKind = 'saraya' | 'client' | 'custom';
 
-type LayoutItem = {
+type LayoutItem = HallLayoutItem;
   id: string;
   type: string;
   labelEn: string;
@@ -68,16 +68,18 @@ const INITIAL_ITEMS: LayoutItem[] = [
   { id: 'dance-1', type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', x: 50, y: 58, rotation: 0 },
 ];
 
-export function EventLayoutDesigner({ language }: { language: Language }) {
+interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; }
+
+export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose }: DesignerProps) {
   const isAr = language === 'ar';
   const [eventKind, setEventKind] = useState<EventKind>('engagement');
   const [locationKind, setLocationKind] = useState<LocationKind>('client');
   const [guests, setGuests] = useState(250);
-  const [width, setWidth] = useState(20);
-  const [depth, setDepth] = useState(30);
+  const [width, setWidth] = useState(initialDesign?.width ?? 20);
+  const [depth, setDepth] = useState(initialDesign?.depth ?? 30);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('3d');
   const [cameraYaw, setCameraYaw] = useState(0);
-  const [items, setItems] = useState<LayoutItem[]>(INITIAL_ITEMS);
+  const [items, setItems] = useState<LayoutItem[]>(initialDesign?.items?.length ? initialDesign.items : INITIAL_ITEMS);
   const [selectedId, setSelectedId] = useState<string | null>('stage-1');
   const [clientView, setClientView] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -304,6 +306,7 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
   };
 
   const saveDesign = () => {
+    onSaveDesign?.({ width, depth, items });
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
   };
