@@ -1,0 +1,6 @@
+{
+  "name": "AuraEvent - Motion-Driven Event Planner",
+  "description": "An ultra-responsive, motion-first event planning system featuring fluid scroll-reactive runsheets, 3D interactive seating studio, live stage cue simulator, and budget orchestrator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
