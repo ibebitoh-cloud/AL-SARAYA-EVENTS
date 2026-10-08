@@ -567,6 +567,7 @@ export default function App() {
         existingBookings={bookings}
         onCreateBooking={handleCreateBooking}
         preselectedHallId={preselectedHallId}
+        customerMode={currentTab === 'home' || currentTab.startsWith('public_')}
       />
 
       <EventProfitCalculatorModal
