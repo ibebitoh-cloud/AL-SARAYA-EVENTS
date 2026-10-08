@@ -28,9 +28,6 @@ import {
   Language,
 } from './types/venueSystem';
 import { TableAssignment, Guest } from './types/event';
-import { PointerAura } from './components/PointerAura';
-import { ScrollHUD } from './components/ScrollHUD';
-import { ParallaxBackground } from './components/ParallaxBackground';
 import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
@@ -242,15 +239,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white relative box-border font-sans">
-      {/* Parallax Background */}
-      <ParallaxBackground />
-
-      {/* Pointer Tracking Aura */}
-      <PointerAura />
-
-      {/* Scroll HUD & Velocity Tachometer */}
-      <ScrollHUD activePhaseTitle={t.tabs[currentTab] || t.appSub} />
-
       {/* Primary Customer-Facing Luxury Header */}
       <SarayaBrandHeader
         language={language}
