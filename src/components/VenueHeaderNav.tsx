@@ -1,10 +1,4 @@
-import {
-  Plus,
-  LayoutDashboard,
-  Calendar,
-  Building,
-  Sparkles,
-} from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar, Building } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
 import { DICTIONARY } from '../utils/i18n';
@@ -29,11 +23,10 @@ export function VenueHeaderNav({
   const t = DICTIONARY[language];
 
   const navItems: { id: VenueTab; label: string; icon: typeof LayoutDashboard }[] = [
-    { id: 'home', label: isAr ? 'الموقع' : 'Website', icon: Sparkles },
-    { id: 'company', label: isAr ? 'القاعات' : 'Halls', icon: Building },
     { id: 'dashboard', label: isAr ? 'الرئيسية' : 'Dashboard', icon: LayoutDashboard },
     { id: 'bookings', label: isAr ? 'الحجوزات' : 'Bookings', icon: Calendar },
-    { id: 'agenda', label: isAr ? 'الأجندة' : 'Calendar', icon: Calendar },
+    { id: 'agenda', label: isAr ? 'التقويم' : 'Calendar', icon: Calendar },
+    { id: 'company', label: isAr ? 'القاعات' : 'Halls', icon: Building },
   ];
 
   return (
@@ -89,7 +82,7 @@ export function VenueHeaderNav({
       </div>
 
       <div className="lg:hidden border-t border-slate-900 px-2 py-1">
-        <div className="grid grid-cols-5 gap-1">
+        <div className="grid grid-cols-4 gap-1">
           {navItems.map((item) => (
             <button
               key={item.id}
