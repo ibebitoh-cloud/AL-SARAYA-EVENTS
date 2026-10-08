@@ -342,7 +342,7 @@ export const INITIAL_BOOKINGS: Booking[] = [
     startTime: '19:00',
     endTime: '23:30',
     hallId: 'hall-4',
-    hallName: 'الحديقة الخارجية المفتوحة',
+    hallName: 'قاعة المؤتمرات الدبلوماسية',
     guestCount: 300,
     basePrice: 32000,
     services: [],
