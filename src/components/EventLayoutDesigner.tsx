@@ -74,6 +74,8 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const [clientView, setClientView] = useState(false);
   const [saved, setSaved] = useState(false);
   const [projectName, setProjectName] = useState('');
+  const [autoBuilderOpen, setAutoBuilderOpen] = useState(false);
+  const [autoSelection, setAutoSelection] = useState<Record<string, number>>({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, flowers: 0, buffet: 0, registration: 0 });
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; offsetX: number; offsetY: number; x: number; y: number } | null>(null);
   const dragFrameRef = useRef<number | null>(null);
@@ -177,6 +179,15 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!selected || ['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement)?.tagName)) return;
+      const step = event.shiftKey ? 2.5 : 0.5;
+      if (event.key === 'ArrowUp') { event.preventDefault(); nudge(0, -step); }
+      if (event.key === 'ArrowDown') { event.preventDefault(); nudge(0, step); }
+      if (event.key === 'ArrowLeft') { event.preventDefault(); nudge(-step, 0); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); nudge(step, 0); }
+    };
+    window.addEventListener('keydown', onKeyDown);
     const onWindowPointerMove = (event: PointerEvent) => {
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
@@ -199,6 +210,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     window.addEventListener('pointerup', onWindowPointerUp);
     window.addEventListener('pointercancel', onWindowPointerUp);
     return () => {
+      window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('pointermove', onWindowPointerMove);
       window.removeEventListener('pointerup', onWindowPointerUp);
       window.removeEventListener('pointercancel', onWindowPointerUp);
@@ -225,74 +237,21 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     setSaved(false);
   };
 
-  const autoLayout = () => {
-    // Build in real metres first, then convert to the designer's 0–100% coordinates.
-    // This prevents the old layout from placing objects on top of each other or outside
-    // a small client space just because the percentage grid was the same size.
+  const buildSelectedLayout = () => {
     const next: LayoutItem[] = [];
-    const margin = Math.max(1.0, Math.min(width, depth) * 0.05);
-    const usableW = Math.max(2, width - margin * 2);
-    const usableD = Math.max(2, depth - margin * 2);
-    const toPercent = (mx: number, mz: number) => ({
-      x: Math.max(3, Math.min(97, ((mx / width) + 0.5) * 100)),
-      y: Math.max(3, Math.min(97, ((mz / depth) + 0.5) * 100)),
-    });
-    const add = (base: Omit<LayoutItem, 'x' | 'y'>, mx: number, mz: number) => {
-      const p = toPercent(mx, mz);
-      next.push({ ...base, ...p });
+    const margin = Math.max(1, Math.min(width, depth) * 0.05);
+    const toPercent = (x: number, y: number) => ({ x: Math.max(4, Math.min(96, ((x / width) + 0.5) * 100)), y: Math.max(4, Math.min(96, ((y / depth) + 0.5) * 100)) });
+    const add = (type: string, index: number, x: number, y: number) => {
+      const source = ITEM_LIBRARY.find((entry) => entry.type === type); if (!source) return;
+      const p = toPercent(x, y);
+      next.push({ id: 'auto-' + type + '-' + index, type, labelEn: source.labelEn, labelAr: source.labelAr, x: p.x, y: p.y, rotation: 0, seats: type === 'table' ? 10 : undefined });
     };
-
-    const stageW = Math.min(8, usableW * 0.58);
-    const stageD = Math.min(3.2, usableD * 0.16);
-    const stageZ = -depth / 2 + margin + stageD / 2;
-    add({ id: 'stage-auto', type: 'stage', labelEn: 'Stage', labelAr: 'منصة', rotation: 0 }, 0, stageZ);
-    add({ id: 'screen-auto', type: 'screen', labelEn: 'LED Screen', labelAr: 'شاشة LED', rotation: 0 }, 0, stageZ + stageD * 0.12);
-
-    if (eventKind === 'conference' || eventKind === 'summit') {
-      const chairW = 0.7;
-      const chairD = 0.75;
-      const gapX = 0.45;
-      const gapZ = 0.7;
-      const cols = Math.max(1, Math.min(12, Math.floor((usableW + gapX) / (chairW + gapX))));
-      const maxRows = Math.max(1, Math.floor((usableD - stageD - 2.0) / (chairD + gapZ)));
-      const count = Math.min(guests, cols * maxRows, 180);
-      const startX = -((cols - 1) * (chairW + gapX)) / 2;
-      const startZ = stageZ + stageD / 2 + 1.6 + chairD / 2;
-      add({ id: 'podium-auto', type: 'podium', labelEn: 'Podium', labelAr: 'منصة خطاب', rotation: 0 }, 0, stageZ + stageD / 2 + 0.8);
-      for (let i = 0; i < count; i++) {
-        const row = Math.floor(i / cols);
-        const col = i % cols;
-        add({ id: `chair-auto-${i}`, type: 'chairs', labelEn: 'Chair', labelAr: 'كرسي', rotation: 0 }, startX + col * (chairW + gapX), startZ + row * (chairD + gapZ));
-      }
-    } else {
-      const tableD = 3.5;
-      const tableW = 3.5;
-      const aisle = Math.max(1.0, Math.min(1.8, Math.min(width, depth) * 0.07));
-      const cols = Math.max(1, Math.min(6, Math.floor((usableW + aisle) / (tableW + aisle))));
-      const rows = Math.max(1, Math.min(8, Math.ceil(tableCount / cols)));
-      const neededW = cols * tableW + (cols - 1) * aisle;
-      const neededD = rows * tableD + (rows - 1) * aisle;
-      const scale = Math.min(1, usableW / neededW, Math.max(1, (usableD - stageD - 2) / neededD));
-      const spacingW = tableW * scale;
-      const spacingD = tableD * scale;
-      const gap = aisle * scale;
-      const startX = -(cols * spacingW + (cols - 1) * gap) / 2 + spacingW / 2;
-      const startZ = stageZ + stageD / 2 + 2 + spacingD / 2;
-      const count = Math.min(tableCount, cols * rows);
-      for (let i = 0; i < count; i++) {
-        const row = Math.floor(i / cols);
-        const col = i % cols;
-        add({ id: `table-auto-${i}`, type: 'table', labelEn: 'Round Table', labelAr: 'طاولة دائرية', rotation: 0, seats: 10 }, startX + col * (spacingW + gap), startZ + row * (spacingD + gap));
-      }
-      const danceW = Math.min(5.2, usableW * 0.34);
-      const danceD = Math.min(3.8, usableD * 0.15);
-      const danceZ = depth / 2 - margin - danceD / 2;
-      add({ id: 'dance-auto', type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', rotation: 0 }, 0, danceZ);
-    }
-
-    setItems(next);
-    setSelectedId(next[0]?.id ?? null);
-    setSaved(false);
+    const tableQty = autoSelection.table || 0;
+    const cols = Math.max(1, Math.min(6, Math.floor((width - margin * 2) / 3.8)));
+    for (let i = 0; i < tableQty; i++) { const row = Math.floor(i / cols); const col = i % cols; const x = cols === 1 ? 0 : -((cols - 1) * 3.8) / 2 + col * 3.8; add('table', i + 1, x, -depth / 2 + margin + 4 + row * 3.8); }
+    const simple = ['stage','screen','podium','dance','flowers','buffet','registration'];
+    simple.forEach((type) => { const qty = autoSelection[type] || 0; for (let i = 0; i < qty; i++) { const x = (i - (qty - 1) / 2) * (type === 'stage' || type === 'screen' ? 8 : 2.5); const y = type === 'dance' ? depth / 2 - margin - 2.5 : -depth / 2 + margin + (type === 'screen' ? 1 : type === 'stage' ? 2 : 5); add(type, i + 1, x, y); } });
+    setItems(next); setSelectedId(next[0]?.id ?? null); setSaved(false); setAutoBuilderOpen(false);
   };
 
   const saveDesign = () => {
@@ -385,7 +344,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             </div>
             <label className="block text-[11px] text-slate-400 mt-2">{isAr ? 'العمق م' : 'Depth m'}<input type="number" min={3} max={200} value={depth} onChange={(e) => setDepth(Math.max(3, Math.min(200, Number(e.target.value) || 3)))} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white" /></label>
 
-            <button type="button" onClick={autoLayout} className="mt-3 w-full rounded-lg bg-slate-800 border border-slate-700 py-2.5 text-xs font-bold text-white">{isAr ? 'تخطيط سريع تلقائي' : 'Quick Auto Layout'}</button>
+            <button type="button" onClick={() => setAutoBuilderOpen(true)} className="mt-3 w-full rounded-lg bg-slate-800 border border-slate-700 py-2.5 text-xs font-bold text-white">{isAr ? 'إنشاء تخطيط تلقائي' : 'Build Auto Layout'}</button>
 
             <div className="mt-5 border-t border-slate-800 pt-3">
               <div className="text-xs font-bold text-white mb-2">{isAr ? 'إضافة عناصر' : 'Add Items'}</div>
@@ -410,7 +369,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
                   {items.map((item) => (
                     <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%,-50%) rotate(${item.rotation}deg)`, willChange: 'left, top' }}>
-                      {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? item.seats : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
+                      {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{Array.from({ length: item.seats || 10 }, (_, seat) => <span key={seat} className="absolute w-2 h-2 rounded-full bg-slate-200/80" style={{ left: (50 + Math.cos((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%', top: (50 + Math.sin((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                     </button>
                   ))}
                 </div>
@@ -460,6 +419,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </aside>
         </div>
       )}
+      {autoBuilderOpen && <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4" onClick={() => setAutoBuilderOpen(false)}><div className="w-full max-w-2xl max-h-[90vh] overflow-auto rounded-3xl border border-slate-700 bg-slate-900 p-5" onClick={(e) => e.stopPropagation()}><div className="flex items-center justify-between"><div><div className="text-[10px] font-black uppercase tracking-widest text-amber-400">AUTO LAYOUT BUILDER</div><h2 className="mt-1 text-xl font-black text-white">{isAr ? "اختر ما تحتاجه أولاً" : "Choose what you need first"}</h2><p className="mt-1 text-xs text-slate-500">{isAr ? "يمكنك اختيار أكثر من عنصر وتحديد الكمية لكل عنصر." : "Select multiple elements and set the quantity for each."}</p></div><button type="button" onClick={() => setAutoBuilderOpen(false)} className="p-2 rounded-xl bg-slate-800"><X className="w-4 h-4" /></button></div><div className="mt-5 grid sm:grid-cols-2 gap-2">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; const value = autoSelection[item.type] || 0; return <label key={item.type} className={"flex items-center gap-3 rounded-xl border p-3 cursor-pointer " + (value > 0 ? "border-amber-400/50 bg-amber-400/10" : "border-slate-800 bg-slate-950/60")}><input type="checkbox" checked={value > 0} onChange={(e) => setAutoSelection((prev) => ({ ...prev, [item.type]: e.target.checked ? (item.type === "table" ? Math.max(1, Math.ceil(guests / 10)) : 1) : 0 }))} className="accent-amber-400" /><Icon className="w-4 h-4 text-amber-400" /><span className="flex-1 text-xs font-bold text-white">{isAr ? item.labelAr : item.labelEn}{item.type === "table" && <span className="block text-[9px] font-normal text-slate-500">{isAr ? "كل طاولة معها كراسي" : "chairs included with every table"}</span>}</span>{value > 0 && <input type="number" min={1} max={500} value={value} onChange={(e) => setAutoSelection((prev) => ({ ...prev, [item.type]: Math.max(1, Math.min(500, Number(e.target.value) || 1)) }))} className="w-16 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-white" />}</label>; })}</div><div className="mt-5 flex justify-between"><button type="button" onClick={() => setAutoSelection({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, flowers: 0, buffet: 0, registration: 0 })} className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-white">{isAr ? "إعادة ضبط" : "Reset"}</button><button type="button" onClick={buildSelectedLayout} className="px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-black">{isAr ? "إنشاء المخطط" : "Create Layout"}</button></div></div></div>}
     </section>
   );
 }
