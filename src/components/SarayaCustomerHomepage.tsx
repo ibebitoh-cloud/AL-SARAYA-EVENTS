@@ -153,10 +153,24 @@ export function SarayaCustomerHomepage({
             </div>
             <div className="mt-7 inline-flex items-center rounded-xl border border-amber-400/30 bg-amber-400/5 px-5 py-3 text-sm font-semibold text-amber-300">{isAr ? 'التصميم متاح من خلال فريق السرايا أثناء المقابلة' : 'Design planning is available through the Saraya team during the interview'}</div>
           </div>
-          <div className="relative min-h-[340px] bg-slate-950">
-            <img src={displayPhotos[1 % displayPhotos.length]?.src} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55" referrerPolicy="no-referrer" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-transparent to-transparent" />
-            <div className="absolute bottom-6 start-6 rounded-xl border border-amber-400/30 bg-slate-950/85 px-4 py-3 backdrop-blur"><div className="text-xs font-bold text-amber-300">{isAr ? 'تخطيط بصري' : 'VISUAL PLANNING'}</div><div className="mt-1 text-[11px] text-slate-300">{isAr ? 'قبل التنفيذ · داخل الموقع' : 'Before execution · inside the space'}</div></div>
+          <div className="relative min-h-[340px] bg-slate-950 p-5 sm:p-7">
+            <div className="grid h-full grid-cols-2 gap-3">
+              {[displayPhotos[1 % displayPhotos.length], displayPhotos[2 % displayPhotos.length]].map((photo, index) => (
+                <div key={photo?.id ?? index} className="relative min-h-[280px] overflow-hidden rounded-2xl border border-amber-400/20 bg-slate-900">
+                  <img
+                    src={photo?.src}
+                    alt={isAr ? 'تصور ثلاثي الأبعاد للمناسبة' : '3D event visualization'}
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent p-3 pt-10">
+                    <span className="rounded-lg border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur">
+                      {isAr ? (index === 0 ? 'التصور الأول' : 'التصور الثاني') : (index === 0 ? 'PREVIEW 01' : 'PREVIEW 02')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
