@@ -33,7 +33,8 @@ export const INITIAL_HALLS: Hall[] = [
   },
   {
     id: 'hall-4',
-    name: 'الحديقة الخارجية المفتوحة',
+    name: 'قاعة المؤتمرات الدبلوماسية',
+    nameEn: 'The Diplomat Conference & Summit Hall',
     capacity: 450,
     basePrice: 32000,
     color: '#10b981',
