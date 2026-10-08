@@ -38,8 +38,34 @@ export function SarayaCustomerHomepage({
   const Arrow = isAr ? ArrowLeft : ArrowRight;
   const sourcePhotos = photos?.length ? photos : ALSARAYA_PHOTOS;
   const isOutdoorVenue = (value: string) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(value);
-  const displayPhotos = sourcePhotos.filter(photo => (photo.category as string) !== 'garden' && !isOutdoorVenue([photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' ')));
+  const normalizePhotoSource = (src: string) => (src || '').trim().replace(/[?#].*$/, '').toLowerCase();
+  const seenPhotoSources = new Set<string>();
+  const displayPhotos = sourcePhotos.filter(photo => {
+    if ((photo.category as string) === 'garden' || isOutdoorVenue([photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' '))) return false;
+    const source = normalizePhotoSource(photo.src);
+    if (!source || seenPhotoSources.has(source)) return false;
+    seenPhotoSources.add(source);
+    return true;
+  });
   const availableHalls = halls.filter(hall => !isOutdoorVenue(`${hall.name} ${hall.nameEn || ''}`));
+  // Reserve a different source image for each event category. This avoids the old
+  // index-based fallback assigning the same image to multiple event cards.
+  const eventPhotoCategories: Record<EventKey, string[]> = {
+    wedding: ['wedding', 'ballroom', 'kosha', 'dining'],
+    engagement: ['engagement'],
+    birthday: ['birthday', 'party'],
+    corporate: ['corporate'],
+  };
+  const usedEventPhotoSources = new Set<string>();
+  const eventPhotos = Object.fromEntries((Object.keys(eventContent) as EventKey[]).map(key => {
+    const candidates = [
+      ...displayPhotos.filter(photo => eventPhotoCategories[key].includes(photo.category)),
+      ...displayPhotos.filter(photo => !eventPhotoCategories[key].includes(photo.category)),
+    ];
+    const photo = candidates.find(candidate => !usedEventPhotoSources.has(normalizePhotoSource(candidate.src)));
+    if (photo) usedEventPhotoSources.add(normalizePhotoSource(photo.src));
+    return [key, photo];
+  })) as Record<EventKey, VenuePhoto | undefined>;
   const [event, setEvent] = useState<EventKey>('wedding');
   const [gallery, setGallery] = useState<VenuePhoto | null>(null);
 
@@ -98,7 +124,7 @@ export function SarayaCustomerHomepage({
         </div>
         <AnimatePresence mode="wait">
           <motion.div key={event} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 lg:grid-cols-2">
-            <img src={(event === 'birthday' ? displayPhotos.find(photo => photo.category === 'birthday' || photo.category === 'party')?.src : event === 'corporate' ? displayPhotos.find(photo => photo.category === 'corporate')?.src : event === 'engagement' ? displayPhotos.find(photo => photo.category === 'engagement')?.src : event === 'wedding' ? displayPhotos.find(photo => photo.category === 'wedding')?.src : undefined) || displayPhotos[eventContent[event].photoIndex % displayPhotos.length]?.src} alt={isAr ? `${eventContent[event].ar} - تجهيزات وديكور المناسبة` : `${eventContent[event].en} event setup and decor`} className="h-72 w-full object-cover lg:h-full" referrerPolicy="no-referrer" />
+            <img src={eventPhotos[event]?.src} alt={isAr ? `${eventContent[event].ar} - تجهيزات وديكور المناسبة` : `${eventContent[event].en} event setup and decor`} className="h-72 w-full object-cover lg:h-full" referrerPolicy="no-referrer" />
             <div className="flex flex-col justify-center p-7 sm:p-10">
               <div className="mb-3 text-xs font-bold uppercase tracking-widest text-amber-400">{isAr ? 'تجربة مصممة لك' : 'BUILT AROUND YOU'}</div>
               <h3 className="text-2xl font-serif font-bold">{isAr ? eventContent[event].ar : eventContent[event].en}</h3>
