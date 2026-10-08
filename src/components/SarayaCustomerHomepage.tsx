@@ -109,7 +109,7 @@ export function SarayaCustomerHomepage({
       </section>
 
       {/* WHAT WE DO */}
-      <section className="mt-20 space-y-7">
+      <section id="services" className="mt-20 space-y-7 scroll-mt-24">
         <header>
           <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '02 · خدماتنا' : '02 · WHAT WE DO'}</div>
           <h2 className="mt-2 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'من الفكرة إلى التنفيذ' : 'From concept to execution'}</h2>
@@ -117,8 +117,8 @@ export function SarayaCustomerHomepage({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             [Ruler, isAr ? 'التخطيط والتصميم' : 'Planning & Design', isAr ? 'نحوّل فكرتك إلى مخطط واضح قبل التنفيذ.' : 'Turn your idea into a clear layout before execution.'],
-            [Building2, isAr ? 'القاعة والموقع' : 'Venue & Location', isAr ? 'في قاعات السرايا أو في موقعك الخاص.' : 'At Saraya or at your own location.'],
-            [Sparkles, isAr ? 'الديكور والتجهيز' : 'Decoration & Setup', isAr ? 'منصة، طاولات، كراسي، إضاءة، شاشات وزهور.' : 'Stages, tables, chairs, lighting, screens and flowers.'],
+            [Building2, isAr ? 'توفير القاعات وحجزها' : 'Venue Sourcing & Booking', isAr ? 'ننسّق حجز القاعة المناسبة مع مالكها أو نرتب مناسبتك في موقعك الخاص.' : 'We coordinate venue bookings with owners or arrange your event at your own location.'],
+            [Sparkles, isAr ? 'تأجير المعدات' : 'Equipment Rental', isAr ? 'تأجير الطاولات والكراسي والإضاءة والشاشات وتجهيزات المناسبة.' : 'Rent tables, chairs, lighting, screens and other event equipment.'],
             [Users, isAr ? 'التنفيذ والإشراف' : 'Production & Coordination', isAr ? 'فريق يتولى التجهيز والتنسيق في يوم المناسبة.' : 'A team coordinating setup and production on event day.'],
           ].map(([Icon, title, text]) => { const I = Icon as typeof Ruler; return <div key={String(title)} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6"><I className="h-6 w-6 text-amber-300" /><h3 className="mt-5 text-base font-bold">{title as string}</h3><p className="mt-2 text-xs leading-6 text-slate-400">{text as string}</p></div>; })}
         </div>
