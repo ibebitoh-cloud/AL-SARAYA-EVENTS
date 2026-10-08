@@ -83,7 +83,8 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
   const [saved, setSaved] = useState(false);
   const [projectName, setProjectName] = useState('');
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; offsetX: number; offsetY: number } | null>(null);
+  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; offsetX: number; offsetY: number; x: number; y: number } | null>(null);
+  const dragFrameRef = useRef<number | null>(null);
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const eventName = EVENT_NAMES[eventKind][isAr ? 1 : 0];
@@ -119,6 +120,17 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
     updateSelected({ x: Math.max(5, Math.min(95, selected.x + dx)), y: Math.max(5, Math.min(95, selected.y + dy)) });
   };
 
+  const getDragPosition = (clientX: number, clientY: number) => {
+    const drag = dragRef.current;
+    const canvas = canvasRef.current;
+    if (!drag || !canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: Math.max(2, Math.min(98, ((clientX - drag.offsetX - rect.left) / rect.width) * 100)),
+      y: Math.max(2, Math.min(98, ((clientY - drag.offsetY - rect.top) / rect.height) * 100)),
+    };
+  };
+
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, item: LayoutItem) => {
     if (event.button !== 0) return;
     event.preventDefault();
@@ -131,49 +143,80 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
       pointerId: event.pointerId,
       offsetX: event.clientX - (itemRect.left + itemRect.width / 2),
       offsetY: event.clientY - (itemRect.top + itemRect.height / 2),
+      x: item.x,
+      y: item.y,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const drag = dragRef.current;
-    const canvas = canvasRef.current;
-    if (!drag || !canvas || drag.pointerId !== event.pointerId) return;
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
+    const position = getDragPosition(event.clientX, event.clientY);
+    if (!position) return;
+    dragRef.current.x = position.x;
+    dragRef.current.y = position.y;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.max(3, Math.min(97, ((event.clientX - drag.offsetX - rect.left) / rect.width) * 100));
-    const y = Math.max(3, Math.min(97, ((event.clientY - drag.offsetY - rect.top) / rect.height) * 100));
-
-    drag.el.style.left = `${x}%`;
-    drag.el.style.top = `${y}%`;
+    if (dragFrameRef.current !== null) return;
+    dragFrameRef.current = requestAnimationFrame(() => {
+      const drag = dragRef.current;
+      if (drag) {
+        drag.el.style.left = `${drag.x}%`;
+        drag.el.style.top = `${drag.y}%`;
+      }
+      dragFrameRef.current = null;
+    });
   };
 
   const finishDrag = (clientX: number, clientY: number, pointerId: number) => {
     const drag = dragRef.current;
-    const canvas = canvasRef.current;
-    if (!drag || !canvas || drag.pointerId !== pointerId) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.max(3, Math.min(97, ((clientX - drag.offsetX - rect.left) / rect.width) * 100));
-    const y = Math.max(3, Math.min(97, ((clientY - drag.offsetY - rect.top) / rect.height) * 100));
+    if (!drag || drag.pointerId !== pointerId) return;
+    const position = getDragPosition(clientX, clientY);
+    const x = position?.x ?? drag.x;
+    const y = position?.y ?? drag.y;
+
+    if (dragFrameRef.current !== null) {
+      cancelAnimationFrame(dragFrameRef.current);
+      dragFrameRef.current = null;
+    }
     setItems((prev) => prev.map((item) => item.id === drag.id ? { ...item, x, y } : item));
     setSaved(false);
     try { drag.el.releasePointerCapture(drag.pointerId); } catch {}
     dragRef.current = null;
   };
 
-  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
-    finishDrag(event.clientX, event.clientY, event.pointerId);
-  };
-
   useEffect(() => {
+    const onWindowPointerMove = (event: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const position = getDragPosition(event.clientX, event.clientY);
+      if (!position) return;
+      drag.x = position.x;
+      drag.y = position.y;
+      if (dragFrameRef.current !== null) return;
+      dragFrameRef.current = requestAnimationFrame(() => {
+        const active = dragRef.current;
+        if (active) {
+          active.el.style.left = `${active.x}%`;
+          active.el.style.top = `${active.y}%`;
+        }
+        dragFrameRef.current = null;
+      });
+    };
     const onWindowPointerUp = (event: PointerEvent) => finishDrag(event.clientX, event.clientY, event.pointerId);
+    window.addEventListener('pointermove', onWindowPointerMove);
     window.addEventListener('pointerup', onWindowPointerUp);
     window.addEventListener('pointercancel', onWindowPointerUp);
     return () => {
+      window.removeEventListener('pointermove', onWindowPointerMove);
       window.removeEventListener('pointerup', onWindowPointerUp);
       window.removeEventListener('pointercancel', onWindowPointerUp);
+      if (dragFrameRef.current !== null) cancelAnimationFrame(dragFrameRef.current);
     };
   }, []);
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    finishDrag(event.clientX, event.clientY, event.pointerId);
+  };
 
   const duplicateSelected = () => {
     if (!selected) return;
