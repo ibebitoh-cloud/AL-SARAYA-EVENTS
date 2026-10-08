@@ -2,7 +2,6 @@
 import ballroomImg from '../assets/images/alsaraya_grand_ballroom_1791458716707.jpg';
 import koshaImg from '../assets/images/alsaraya_royal_kosha_1791458732633.jpg';
 import diningImg from '../assets/images/alsaraya_banquet_dining_1791458748323.jpg';
-import gardenImg from '../assets/images/alsaraya_garden_terrace_1791458767479.jpg';
 import corporateImg from '../assets/images/saraya_corporate_summit_1791459214689.jpg';
 import weddingEntranceImg from '../assets/images/saraya_couture_wedding_1791459224733.jpg';
 
@@ -57,7 +56,7 @@ export interface VenuePhoto {
   hallNameEn: string;
   captionAr: string;
   captionEn: string;
-  category: 'ballroom' | 'kosha' | 'dining' | 'garden' | 'corporate' | 'wedding' | 'birthday';
+  category: 'ballroom' | 'kosha' | 'dining' | 'corporate' | 'wedding' | 'engagement' | 'birthday' | 'party';
   parallaxSpeed: number; // e.g. 0.15, -0.2, 0.25 for multi-speed motion
   hallId?: string;
   tags?: string[];
@@ -135,18 +134,17 @@ export const ALSARAYA_PHOTOS: VenuePhoto[] = [
     parallaxSpeed: 40,
   },
   {
-    id: 'photo-4',
-    src: gardenImg,
-    titleAr: 'حديقة الواحة المفتوحة وسماء النجوم',
-    titleEn: 'The Starlight Oasis Garden & Illuminated Fountain',
-    hallNameAr: 'تراس حديقة السرايا المفتوح',
-    hallNameEn: 'The Saraya Starlight Garden & Terrace',
-    hallId: 'hall-3',
-    tags: ['حديقة', 'هواء طلق', 'نافورة راقصة', 'إضاءات شجرية', 'نجوم'],
-    captionAr: 'أجواء رومانسية في الهواء الطلق مع إضاءات شجرية معلقة ونافورة راقصة وسماء متلألئة تحت النجوم.',
-    captionEn: 'Romantic open-air terrace with fairy-lit ancient olive trees, dancing central fountain, and starlight canopy.',
-    category: 'garden',
-    parallaxSpeed: 65,
+    id: 'engagement-1',
+    src: 'https://cdn.shopify.com/s/files/1/0685/8666/8353/files/Soz-_-Nisan-Organizasyonu-Rehberi-_-Konseptler_-Tepsiler_-Fiyatlar-Alisse-nuerA-Blog-03.jpg?v=1763557153',
+    titleAr: 'تنسيق خطوبة وعقد قران أنيق',
+    titleEn: 'Elegant Engagement Celebration Setup',
+    hallNameAr: 'تجهيزات الخطوبة وعقد القران',
+    hallNameEn: 'Engagement Event Setup',
+    captionAr: 'تصميم أنيق للخطوبة وعقد القران مع تفاصيل ديكورية مرتبة.',
+    captionEn: 'An elegant engagement and marriage-contract setup with coordinated decorative details.',
+    category: 'engagement',
+    parallaxSpeed: 20,
+    tags: ['خطوبة', 'عقد قران', 'ديكور', 'زهور'],
   },
   ...BIRTHDAY_DECORATION_PHOTOS,
 ];
