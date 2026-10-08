@@ -147,13 +147,9 @@ html[data-theme="light"] .bg-slate-800\/50,
 html[data-theme="light"] .bg-slate-700\/40 {
   background-color: #ffffff !important;
 }
-html[data-theme="light"] .bg-gradient-to-br,
-html[data-theme="light"] .bg-gradient-to-b,
-html[data-theme="light"] .bg-gradient-to-r {
-  --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important;
-  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-}
+html[data-theme="light"] .from-slate-950 { --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+html[data-theme="light"] .via-slate-950\/75 { --tw-gradient-via: #ffffffbf var(--tw-gradient-via-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important; }
+html[data-theme="light"] .to-slate-950\/20 { --tw-gradient-to: #ffffff33 var(--tw-gradient-to-position) !important; }
 
 /* Core text */
 html[data-theme="light"] .text-white { color: var(--saraya-text) !important; }
