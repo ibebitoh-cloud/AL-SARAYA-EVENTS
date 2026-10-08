@@ -24,7 +24,7 @@ type EventKey = 'wedding' | 'engagement' | 'birthday' | 'corporate';
 const eventContent: Record<EventKey, {
   ar: string; en: string; subAr: string; subEn: string; icon: typeof Heart; photoIndex: number;
 }> = {
-  wedding: { ar: 'زفاف وأفراح', en: 'Weddings', subAr: 'تصميم متكامل من القاعة إلى آخر تفصيلة.', subEn: 'Complete production from venue to the final detail.', icon: Heart, photoIndex: 2 },
+  wedding: { ar: 'زفاف وأفراح', en: 'Weddings', subAr: 'تنسيق متكامل يبدأ من توفير المكان وينتهي بأدق التفاصيل.', subEn: 'Complete event coordination, from venue booking to the final detail.', icon: Heart, photoIndex: 2 },
   engagement: { ar: 'خطوبة وعقد قران', en: 'Engagements', subAr: 'أجواء أنيقة وحميمة مصممة حسب رؤيتكم.', subEn: 'Elegant, intimate celebrations built around your vision.', icon: Sparkles, photoIndex: 1 },
   birthday: { ar: 'أعياد ميلاد وحفلات', en: 'Birthdays & Parties', subAr: 'ديكور وتجهيزات مرنة تناسب كل فكرة ومكان.', subEn: 'Flexible decoration and production for every idea and location.', icon: Cake, photoIndex: 0 },
   corporate: { ar: 'مؤتمرات وقمم', en: 'Conferences & Summits', subAr: 'منصة، شاشات، مقاعد وتجهيز احترافي للمؤتمرات.', subEn: 'Stages, screens, seating and professional conference production.', icon: Presentation, photoIndex: 3 },
@@ -60,8 +60,8 @@ export function SarayaCustomerHomepage({
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
             {isAr
-              ? 'السرايا ليست مجرد قاعة. نصمم ونجهز وننفذ الأفراح والخطوبات والمؤتمرات والحفلات داخل قاعاتنا أو في موقعك أنت.'
-              : 'Saraya is more than a venue. We design, supply and execute weddings, engagements, conferences and parties at our venues or at your own location.'}
+              ? 'السرايا تنسّق مناسبتك من البداية للنهاية؛ نوفر القاعات المناسبة، ونؤجر المعدات، وننسّق الخدمات والموردين، داخل القاعات المتاحة أو في موقعك الخاص.'
+              : 'Saraya coordinates your event from start to finish: arranging suitable venues, renting equipment, and coordinating services and suppliers at available venues or your own location.'}
           </p>
           <div className="mt-9 flex justify-center">
             <button type="button" onClick={() => openBooking()} className="flex items-center justify-center gap-2 rounded-xl border border-amber-400/40 bg-slate-900/80 px-7 py-4 text-sm font-semibold text-white transition hover:border-amber-300 hover:bg-slate-800">
@@ -70,7 +70,7 @@ export function SarayaCustomerHomepage({
           </div>
           <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 border-t border-white/10 pt-6 sm:grid-cols-4">
             {[
-              [isAr ? 'قاعات ومواقع' : 'Venues & Locations', halls.length || '—'],
+              [isAr ? 'قاعات ومواقع متاحة' : 'Venues Arranged', halls.length || '—'],
               [isAr ? 'أفراح وخطوبات' : 'Weddings & Engagements', '✓'],
               [isAr ? 'مؤتمرات وقمم' : 'Conferences & Summits', '✓'],
               [isAr ? 'تنفيذ في موقعك' : 'Your Location', '✓'],
@@ -101,7 +101,7 @@ export function SarayaCustomerHomepage({
               <h3 className="text-2xl font-serif font-bold">{isAr ? eventContent[event].ar : eventContent[event].en}</h3>
               <p className="mt-3 text-sm leading-7 text-slate-400">{isAr ? eventContent[event].subAr : eventContent[event].subEn}</p>
               <div className="mt-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
-                {isAr ? 'التخطيط التفصيلي يتم مع فريقنا أثناء المقابلة.' : 'Detailed event layout planning is done with our team during the interview.'}
+                {isAr ? 'نراجع تفاصيل المخطط معك خلال جلسة استشارة قبل التنفيذ.' : 'We review the event layout with you during a planning consultation before execution.'}
               </div>
             </div>
           </motion.div>
@@ -127,31 +127,31 @@ export function SarayaCustomerHomepage({
       {/* VENUES */}
       <section id="venues" className="mt-20 space-y-7 scroll-mt-24">
         <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div><div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '03 · القاعات والمواقع' : '03 · VENUES & LOCATIONS'}</div><h2 className="mt-2 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'اختر المساحة المناسبة' : 'Find the right space'}</h2></div>
-          <p className="max-w-md text-xs leading-6 text-slate-400">{isAr ? 'يمكننا أيضاً تصميم وتنفيذ المناسبة في موقع العميل.' : 'We can also design and execute the event at the client’s own location.'}</p>
+          <div><div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '03 · القاعات والمواقع' : '03 · VENUES & LOCATIONS'}</div><h2 className="mt-2 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'اختر المساحة المناسبة لمناسبتك' : 'Find the right venue for your event'}</h2></div>
+          <p className="max-w-md text-xs leading-6 text-slate-400">{isAr ? 'ننسّق حجز القاعات المتاحة مع ملاكها، ويمكننا أيضاً تجهيز مناسبتك في موقعك الخاص.' : 'We coordinate bookings with venue owners and can also arrange your event at your own location.'}</p>
         </header>
         <div className="grid gap-5 md:grid-cols-2">
           {halls.map((hall) => {
             const photo = displayPhotos.find(p => p.hallId === hall.id) || displayPhotos[0];
             return <article key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
               <div className="relative h-64"><img src={photo?.src} alt={isAr ? hall.nameAr : hall.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-5 pt-16"><h3 className="text-xl font-serif font-bold">{isAr ? hall.nameAr : hall.name}</h3></div></div>
-              <div className="flex items-center justify-between gap-3 p-4"><div className="flex items-center gap-2 text-xs text-slate-400"><Users className="h-4 w-4 text-amber-300" />{hall.capacity || '—'} {isAr ? 'ضيف' : 'guests'}</div><div className="flex gap-2"><button type="button" className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-500">{isAr ? 'التصميم مع فريقنا' : 'Designed with our team'}</button><button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'احجز' : 'Book'}</button></div></div>
+              <div className="flex items-center justify-between gap-3 p-4"><div className="flex items-center gap-2 text-xs text-slate-400"><Users className="h-4 w-4 text-amber-300" />{hall.capacity || '—'} {isAr ? 'ضيف' : 'guests'}</div><div className="flex gap-2"><button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-amber-400">{isAr ? 'ناقش تصميم مناسبتك' : 'Discuss Your Event Plan'}</button><button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'احجز' : 'Book'}</button></div></div>
             </article>;
           })}
         </div>
       </section>
 
       {/* DESIGNER FEATURE — INTERVIEW ONLY */}
-      <section className="mt-20 overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-slate-900 to-slate-950">
+      <section id="planner" className="mt-20 overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-slate-900 to-slate-950 scroll-mt-24">
         <div className="grid items-center lg:grid-cols-2">
           <div className="p-7 sm:p-10 lg:p-14">
             <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '04 · التخطيط والتصميم' : '04 · EVENT PLANNING & DESIGN'}</div>
-            <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'نخطط مناسبتك معك قبل التنفيذ' : 'We plan your event with you before execution'}</h2>
+            <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'نخطط لمناسبتك معك قبل التنفيذ' : 'We plan your event with you before execution'}</h2>
             <p className="mt-4 text-sm leading-7 text-slate-400">{isAr ? 'نستخدم أدوات التخطيط والتصميم لعرض توزيع الطاولات والكراسي والمنصة والشاشة والزهور ومراجعة التفاصيل معك قبل التنفيذ.' : 'Our team uses planning and design tools to review tables, chairs, stages, screens, flowers and the full event setup with you before execution.'}</p>
             <div className="mt-6 flex flex-wrap gap-2 text-xs text-slate-300">
               {[isAr ? 'تخطيط 2D' : '2D Planning', isAr ? 'تصور 3D' : '3D Visualization', isAr ? 'مراجعة داخلية' : 'Inside Review', isAr ? 'موقع العميل' : 'Client Location'].map(x => <span key={x} className="rounded-lg border border-slate-700 px-3 py-2">{x}</span>)}
             </div>
-            <div className="mt-7 inline-flex items-center rounded-xl border border-amber-400/30 bg-amber-400/5 px-5 py-3 text-sm font-semibold text-amber-300">{isAr ? 'التصميم متاح من خلال فريق السرايا أثناء المقابلة' : 'Design planning is available through the Saraya team during the interview'}</div>
+            <div className="mt-7 inline-flex items-center rounded-xl border border-amber-400/30 bg-amber-400/5 px-5 py-3 text-sm font-semibold text-amber-300">{isAr ? 'التخطيط التفصيلي متاح خلال جلسة استشارة مع فريق السرايا' : 'Detailed event planning is available during a consultation with the Saraya team'}</div>
           </div>
           <div className="relative min-h-[340px] bg-slate-950 p-5 sm:p-7">
             <div className="grid h-full grid-cols-2 gap-3">
@@ -183,13 +183,24 @@ export function SarayaCustomerHomepage({
         </div>
       </section>
 
+
+      {/* ABOUT SARAYA */}
+      <section id="about" className="mt-20 scroll-mt-24 rounded-3xl border border-amber-500/20 bg-slate-900/70 p-7 sm:p-12">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? 'عن السرايا' : 'ABOUT SARAYA'}</div>
+          <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'كل خدمات مناسبتك من خلال فريق واحد' : 'Your event, coordinated through one team'}</h2>
+          <p className="mt-4 text-sm leading-7 text-slate-300">{isAr ? 'تنسّق السرايا بين حجز القاعات، وتأجير المعدات، والخدمات، والموردين، وتجهيزات يوم المناسبة. نساعدك على ترتيب التفاصيل من خلال نقطة تواصل واحدة، سواء أقيمت المناسبة في قاعة متاحة أو في موقعك الخاص.' : 'Saraya coordinates venue bookings, equipment rental, event services, suppliers and event-day setup. We help bring the details together through one point of contact, whether your event is held at an arranged venue or at your own location.'}</p>
+          <button type="button" onClick={() => openBooking()} className="mt-6 rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'ناقش مناسبتك معنا' : 'Discuss Your Event'}</button>
+        </div>
+      </section>
+
       {/* FINAL CTA */}
       <section id="contact" className="mt-20 rounded-3xl border border-amber-500/25 bg-slate-900 p-7 text-center sm:p-12">
         <div className="mx-auto max-w-2xl">
           <MessageCircle className="mx-auto h-8 w-8 text-amber-300" />
           <div className="mt-4 text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '06 · لنبدأ' : '06 · LET’S START'}</div>
           <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'قل لنا ماذا تتخيل.' : 'Tell us what you are imagining.'}</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-400">{isAr ? 'قاعة السرايا، موقعك الخاص، أو مساحة جديدة تماماً — نساعدك في تحويل الفكرة إلى مخطط وتنفيذ.' : 'Saraya venue, your own location, or a completely new space — we turn the idea into a plan and an execution.'}</p>
+          <p className="mt-3 text-sm leading-7 text-slate-400">{isAr ? 'سواء في قاعة متاحة أو موقعك الخاص، نساعدك في تنسيق المكان والمعدات والخدمات وتحويل فكرتك إلى مناسبة متكاملة.' : 'Whether at an arranged venue or your own location, we coordinate the venue, equipment and services to bring your event together.'}</p>
           <div className="mt-7 flex justify-center"><button type="button" onClick={() => openBooking()} className="rounded-xl border border-slate-700 px-7 py-3.5 text-sm font-semibold text-white hover:border-amber-400">{isAr ? 'تواصل للحجز' : 'Contact for Booking'}</button></div>
         </div>
       </section>
