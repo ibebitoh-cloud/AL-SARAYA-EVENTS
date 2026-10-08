@@ -164,9 +164,10 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const finishDrag = (clientX: number, clientY: number, pointerId: number) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
-    const position = getDragPosition(clientX, clientY);
-    const x = position?.x ?? drag.x;
-    const y = position?.y ?? drag.y;
+    // Use the last rendered drag coordinates. Recalculating from pointerup can
+    // introduce a one-frame jump when the browser dispatches pointerup after pointermove.
+    const x = drag.x;
+    const y = drag.y;
 
     if (dragFrameRef.current !== null) {
       cancelAnimationFrame(dragFrameRef.current);
@@ -368,7 +369,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)', backgroundSize: '8% 10%' }} />
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
                   {items.map((item) => (
-                    <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%,-50%) rotate(${item.rotation}deg)`, willChange: 'left, top' }}>
+                    <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%,-50%) rotate(${item.rotation}deg)`, willChange: 'left, top', transition: 'none' }}>
                       {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{Array.from({ length: item.seats || 10 }, (_, seat) => <span key={seat} className="absolute w-2 h-2 rounded-full bg-slate-200/80" style={{ left: (50 + Math.cos((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%', top: (50 + Math.sin((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                     </button>
                   ))}
