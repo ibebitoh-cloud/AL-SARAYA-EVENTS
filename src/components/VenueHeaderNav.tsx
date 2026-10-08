@@ -26,7 +26,7 @@ export function VenueHeaderNav({
     { id: 'dashboard', label: isAr ? 'الرئيسية' : 'Dashboard', icon: LayoutDashboard },
     { id: 'bookings', label: isAr ? 'الحجوزات' : 'Bookings', icon: Calendar },
     { id: 'agenda', label: isAr ? 'التقويم' : 'Calendar', icon: Calendar },
-    { id: 'company', label: isAr ? 'القاعات' : 'Halls', icon: Building },
+    { id: 'company', label: isAr ? 'ملف الشركة' : 'Company', icon: Building },
     { id: 'event_designer', label: isAr ? 'مصمم المناسبات' : 'Designer', icon: Ruler },
   ];
 
