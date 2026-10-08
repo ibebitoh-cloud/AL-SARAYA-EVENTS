@@ -8,6 +8,12 @@ export type Language = 'ar' | 'en';
 
 export type VenueTab =
   | 'home'
+  | 'public_events'
+  | 'public_venues'
+  | 'public_services'
+  | 'public_planner'
+  | 'public_gallery'
+  | 'public_3d_tour'
   | 'company'
   | 'dashboard'
   | 'bookings'
