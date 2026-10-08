@@ -241,7 +241,9 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
       const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-      let dragging: { id: string; group: any; offset: any } | null = null;
+      let dragging: { id: string; group: any; offset: any; pointerId: number } | null = null;
+      let dragRaf = 0;
+      let pendingPointer: PointerEvent | null = null;
 
       const pointer = (e: PointerEvent) => {
         const rect = renderer.domElement.getBoundingClientRect();
@@ -263,7 +265,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         if (!item) return;
         const point = new THREE.Vector3();
         if (!raycaster.ray.intersectPlane(floorPlane, point)) return;
-        dragging = { id: item.id, group, offset: group.position.clone().sub(point) };
+        dragging = { id: item.id, group, offset: group.position.clone().sub(point), pointerId: e.pointerId };
         onSelect(item.id);
         orbit.enabled = false;
         renderer.domElement.style.cursor = 'grabbing';
@@ -271,8 +273,11 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         e.preventDefault();
       };
 
-      const onPointerMove = (e: PointerEvent) => {
-        if (!dragging) return;
+      const applyPendingDrag = () => {
+        dragRaf = 0;
+        if (!dragging || !pendingPointer) return;
+        const e = pendingPointer;
+        pendingPointer = null;
         pointer(e);
         raycaster.setFromCamera(mouse, camera);
         const point = new THREE.Vector3();
@@ -283,14 +288,24 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         dragging.group.position.copy(next);
       };
 
+      const onPointerMove = (e: PointerEvent) => {
+        if (!dragging || e.pointerId !== dragging.pointerId) return;
+        pendingPointer = e;
+        if (!dragRaf) dragRaf = requestAnimationFrame(applyPendingDrag);
+        e.preventDefault();
+      };
+
       const onPointerUp = (e?: PointerEvent) => {
         if (!dragging) return;
         const id = dragging.id;
+        if (pendingPointer) applyPendingDrag();
         const position = dragging.group.position.clone();
         const x = ((position.x / width) * 100) + 50;
         const y = ((position.z / depth) * 100) + 50;
         onMove(id, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
         dragging = null;
+        pendingPointer = null;
+        if (dragRaf) { cancelAnimationFrame(dragRaf); dragRaf = 0; }
         if (e) { try { renderer.domElement.releasePointerCapture(e.pointerId); } catch {} }
         orbit.enabled = true;
         renderer.domElement.style.cursor = 'grab';
