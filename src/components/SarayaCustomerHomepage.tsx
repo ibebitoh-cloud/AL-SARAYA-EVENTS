@@ -161,10 +161,31 @@ export function SarayaCustomerHomepage({
         </header>
         <div className="grid gap-5 md:grid-cols-2">
           {availableHalls.map((hall) => {
-            const photo = displayPhotos.find(p => p.hallId === hall.id) || displayPhotos[0];
+            // The public venue card reads directly from the same Hall profile edited in Company Profile.
+            const profilePhoto = hall.photoUrl || hall.photo;
+            const linkedLibraryPhoto = displayPhotos.find(p => p.hallId === hall.id)
+              || displayPhotos.find(p => (p.hallNameAr && p.hallNameAr === hall.name) || (p.hallNameEn && p.hallNameEn === hall.nameEn));
+            const photoSrc = profilePhoto || linkedLibraryPhoto?.src;
+            const venueName = isAr ? hall.name : (hall.nameEn || hall.name);
+            const description = isAr ? hall.description : (hall.descriptionEn || hall.description);
             return <article key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-              <div className="relative h-64"><img src={photo?.src} alt={isAr ? hall.nameAr : hall.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-5 pt-16"><h3 className="text-xl font-serif font-bold">{isAr ? hall.nameAr : hall.name}</h3></div></div>
-              <div className="flex items-center justify-between gap-3 p-4"><div className="flex items-center gap-2 text-xs text-slate-400"><Users className="h-4 w-4 text-amber-300" />{hall.capacity || '—'} {isAr ? 'ضيف' : 'guests'}</div><div className="flex gap-2"><button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-amber-400">{isAr ? 'ناقش تصميم مناسبتك' : 'Discuss Your Event Plan'}</button><button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'احجز' : 'Book'}</button></div></div>
+              <div className="relative h-64 bg-slate-950">
+                {photoSrc ? <img src={photoSrc} alt={venueName} className="h-full w-full object-cover" loading="lazy" referrerPolicy="no-referrer" /> : <div className="flex h-full items-center justify-center text-sm text-slate-500">{isAr ? 'صورة القاعة ستُضاف قريباً' : 'Venue photo coming soon'}</div>}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-5 pt-16"><h3 className="text-xl font-serif font-bold">{venueName}</h3></div>
+              </div>
+              <div className="space-y-3 p-4">
+                {description && <p className="text-sm leading-6 text-slate-400">{description}</p>}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
+                    <span className="flex items-center gap-2"><Users className="h-4 w-4 text-amber-300" />{hall.capacity || '—'} {isAr ? 'ضيف' : 'guests'}</span>
+                    {hall.areaSqMeters ? <span className="flex items-center gap-1"><Ruler className="h-4 w-4 text-amber-300" />{hall.areaSqMeters} {isAr ? 'م²' : 'm²'}</span> : null}
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-amber-400">{isAr ? 'ناقش تصميم مناسبتك' : 'Discuss Your Event Plan'}</button>
+                    <button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'احجز' : 'Book'}</button>
+                  </div>
+                </div>
+              </div>
             </article>;
           })}
         </div>
