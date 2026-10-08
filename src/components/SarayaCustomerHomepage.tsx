@@ -48,8 +48,8 @@ export function SarayaCustomerHomepage({
     return true;
   });
   const availableHalls = halls.filter(hall => !isOutdoorVenue(`${hall.name} ${hall.nameEn || ''}`));
-  // Reserve a different source image for each event category. This avoids the old
-  // index-based fallback assigning the same image to multiple event cards.
+  // Reserve a different source image for each event category; never recycle a source.
+  // This prevents the old index-based fallback from repeating event-card photos.
   const eventPhotoCategories: Record<EventKey, string[]> = {
     wedding: ['wedding', 'ballroom', 'kosha', 'dining'],
     engagement: ['engagement'],
