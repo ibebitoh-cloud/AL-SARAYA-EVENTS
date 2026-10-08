@@ -179,28 +179,70 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
   };
 
   const autoLayout = () => {
+    // Build in real metres first, then convert to the designer's 0–100% coordinates.
+    // This prevents the old layout from placing objects on top of each other or outside
+    // a small client space just because the percentage grid was the same size.
     const next: LayoutItem[] = [];
-    next.push({ id: 'stage-auto', type: 'stage', labelEn: 'Stage', labelAr: 'منصة', x: 50, y: 13, rotation: 0 });
-    next.push({ id: 'screen-auto', type: 'screen', labelEn: 'LED Screen', labelAr: 'شاشة LED', x: 50, y: 7, rotation: 0 });
+    const margin = Math.max(1.0, Math.min(width, depth) * 0.05);
+    const usableW = Math.max(2, width - margin * 2);
+    const usableD = Math.max(2, depth - margin * 2);
+    const toPercent = (mx: number, mz: number) => ({
+      x: Math.max(3, Math.min(97, ((mx / width) + 0.5) * 100)),
+      y: Math.max(3, Math.min(97, ((mz / depth) + 0.5) * 100)),
+    });
+    const add = (base: Omit<LayoutItem, 'x' | 'y'>, mx: number, mz: number) => {
+      const p = toPercent(mx, mz);
+      next.push({ ...base, ...p });
+    };
+
+    const stageW = Math.min(8, usableW * 0.58);
+    const stageD = Math.min(3.2, usableD * 0.16);
+    const stageZ = -depth / 2 + margin + stageD / 2;
+    add({ id: 'stage-auto', type: 'stage', labelEn: 'Stage', labelAr: 'منصة', rotation: 0 }, 0, stageZ);
+    add({ id: 'screen-auto', type: 'screen', labelEn: 'LED Screen', labelAr: 'شاشة LED', rotation: 0 }, 0, stageZ + stageD * 0.12);
+
     if (eventKind === 'conference' || eventKind === 'summit') {
-      next.push({ id: 'podium-auto', type: 'podium', labelEn: 'Podium', labelAr: 'منصة خطاب', x: 50, y: 25, rotation: 0 });
-      const cols = 8;
-      const rows = Math.ceil(guests / cols);
-      for (let i = 0; i < Math.min(guests, 120); i++) {
-        const row = Math.floor(i / cols);
-        const col = i % cols;
-        next.push({ id: `chair-auto-${i}`, type: 'chairs', labelEn: 'Chair', labelAr: 'كرسي', x: 22 + col * 8, y: 35 + Math.min(row, 7) * 7, rotation: 0 });
-      }
-    } else {
-      const count = Math.min(tableCount, 24);
-      const cols = count <= 4 ? count : 4;
+      const chairW = 0.7;
+      const chairD = 0.75;
+      const gapX = 0.45;
+      const gapZ = 0.7;
+      const cols = Math.max(1, Math.min(12, Math.floor((usableW + gapX) / (chairW + gapX))));
+      const maxRows = Math.max(1, Math.floor((usableD - stageD - 2.0) / (chairD + gapZ)));
+      const count = Math.min(guests, cols * maxRows, 180);
+      const startX = -((cols - 1) * (chairW + gapX)) / 2;
+      const startZ = stageZ + stageD / 2 + 1.6 + chairD / 2;
+      add({ id: 'podium-auto', type: 'podium', labelEn: 'Podium', labelAr: 'منصة خطاب', rotation: 0 }, 0, stageZ + stageD / 2 + 0.8);
       for (let i = 0; i < count; i++) {
         const row = Math.floor(i / cols);
         const col = i % cols;
-        next.push({ id: `table-auto-${i}`, type: 'table', labelEn: 'Round Table', labelAr: 'طاولة دائرية', x: 22 + col * 19, y: 35 + row * 18, rotation: 0, seats: 10 });
+        add({ id: `chair-auto-${i}`, type: 'chairs', labelEn: 'Chair', labelAr: 'كرسي', rotation: 0 }, startX + col * (chairW + gapX), startZ + row * (chairD + gapZ));
       }
-      next.push({ id: 'dance-auto', type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', x: 50, y: 82, rotation: 0 });
+    } else {
+      const tableD = 3.5;
+      const tableW = 3.5;
+      const aisle = Math.max(1.0, Math.min(1.8, Math.min(width, depth) * 0.07));
+      const cols = Math.max(1, Math.min(6, Math.floor((usableW + aisle) / (tableW + aisle))));
+      const rows = Math.max(1, Math.min(8, Math.ceil(tableCount / cols)));
+      const neededW = cols * tableW + (cols - 1) * aisle;
+      const neededD = rows * tableD + (rows - 1) * aisle;
+      const scale = Math.min(1, usableW / neededW, Math.max(1, (usableD - stageD - 2) / neededD));
+      const spacingW = tableW * scale;
+      const spacingD = tableD * scale;
+      const gap = aisle * scale;
+      const startX = -(cols * spacingW + (cols - 1) * gap) / 2 + spacingW / 2;
+      const startZ = stageZ + stageD / 2 + 2 + spacingD / 2;
+      const count = Math.min(tableCount, cols * rows);
+      for (let i = 0; i < count; i++) {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        add({ id: `table-auto-${i}`, type: 'table', labelEn: 'Round Table', labelAr: 'طاولة دائرية', rotation: 0, seats: 10 }, startX + col * (spacingW + gap), startZ + row * (spacingD + gap));
+      }
+      const danceW = Math.min(5.2, usableW * 0.34);
+      const danceD = Math.min(3.8, usableD * 0.15);
+      const danceZ = depth / 2 - margin - danceD / 2;
+      add({ id: 'dance-auto', type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', rotation: 0 }, 0, danceZ);
     }
+
     setItems(next);
     setSelectedId(next[0]?.id ?? null);
     setSaved(false);
