@@ -27,7 +27,7 @@ import {
   VenueTab,
   Language,
 } from './types/venueSystem';
-import { TableAssignment, Guest, RunsheetItem } from './types/event';
+import { TableAssignment, Guest } from './types/event';
 import { PointerAura } from './components/PointerAura';
 import { ScrollHUD } from './components/ScrollHUD';
 import { ParallaxBackground } from './components/ParallaxBackground';
@@ -39,7 +39,6 @@ import { DashboardView } from './components/DashboardView';
 import { BookingsView } from './components/BookingsView';
 import { CalendarAgendaView } from './components/CalendarAgendaView';
 import { FloorPlanStudio } from './components/FloorPlanStudio';
-import { LiveRehearsalBoard } from './components/LiveRehearsalBoard';
 import { CateringMenuView } from './components/CateringMenuView';
 import { ContractsView } from './components/ContractsView';
 import { ClientsView } from './components/ClientsView';
@@ -83,7 +82,6 @@ export default function App() {
   // Seating & Stage Live Control State
   const [tables, setTables] = useState<TableAssignment[]>(INITIAL_EVENTS[0].tables);
   const [guests, setGuests] = useState<Guest[]>(INITIAL_EVENTS[0].guests);
-  const [runsheet, setRunsheet] = useState<RunsheetItem[]>(INITIAL_EVENTS[0].runsheet);
 
   // Modals state
   const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
@@ -238,14 +236,6 @@ export default function App() {
   const handleAddTable = (newTable: TableAssignment) => {
     setTables((prev) => [...prev, newTable]);
     sound.pop();
-  };
-
-  const handleCueExecuted = (itemId: string) => {
-    setRunsheet((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, status: 'completed' } : item
-      )
-    );
   };
 
   const t = DICTIONARY[language];
@@ -404,26 +394,6 @@ export default function App() {
                   onAssignGuestToTable={handleAssignGuestToTable}
                   onRemoveGuestFromTable={handleRemoveGuestFromTable}
                   onAddTable={handleAddTable}
-                />
-              </div>
-            )}
-
-            {/* 6. Live Rehearsal & Stage Cue Board */}
-            {currentTab === 'live_stage' && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-white">
-                      {language === 'ar' ? 'غرفة التحكم والمناسبات المباشرة (Run-of-Show)' : 'Live Event Rehearsal & Stage Control Room'}
-                    </h2>
-                    <p className="text-xs text-slate-400">
-                      {language === 'ar' ? 'محاكاة إضاءة المسرح الحية، مؤقت العد التنازلي، إشارات الصوت، والتحكم في فقرات الحفل' : 'Stage lighting washes, live cue runner, countdown ticker, and broadcast monitors'}
-                    </p>
-                  </div>
-                </div>
-                <LiveRehearsalBoard
-                  runsheet={runsheet}
-                  onCueExecuted={handleCueExecuted}
                 />
               </div>
             )}
