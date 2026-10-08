@@ -639,7 +639,7 @@ export function SarayaCustomerHomepage({
                     <span className="text-slate-500">·</span>
                     <span>{venue.areaSqMeters || 850} m²</span>
                     <span className="text-slate-500">·</span>
-                    <span>{venue.basePrice?.toLocaleString()} EGP</span>
+                    
                   </div>
                 </div>
 
@@ -962,9 +962,9 @@ export function SarayaCustomerHomepage({
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'classic', labelAr: 'كلاسيك فندقي', labelEn: 'Classic Banquet', price: 140 },
-                  { id: 'diamond', labelAr: 'ماسي مميز', labelEn: 'Diamond Deluxe', price: 190 },
-                  { id: 'royal', labelAr: 'ملكي إمبراطوري', labelEn: 'Imperial Royal', price: 260 },
+                  { id: 'classic', labelAr: 'كلاسيك فندقي', labelEn: 'Classic Banquet' },
+                  { id: 'diamond', labelAr: 'ماسي مميز', labelEn: 'Diamond Deluxe' },
+                  { id: 'royal', labelAr: 'ملكي إمبراطوري', labelEn: 'Imperial Royal' },
                 ].map((m) => (
                   <button
                     key={m.id}
@@ -980,7 +980,7 @@ export function SarayaCustomerHomepage({
                     }`}
                   >
                     <div className="text-xs">{isAr ? m.labelAr : m.labelEn}</div>
-                    <div className="text-[10px] text-amber-300/80 mt-0.5 font-mono">{m.price} EGP / فرد</div>
+                    
                   </button>
                 ))}
               </div>
@@ -993,11 +993,11 @@ export function SarayaCustomerHomepage({
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {[
-                  { checked: upgradeKosha, toggle: setUpgradeKosha, labelAr: 'كوشة خاصة مجهزة بالزهور المستوردة (+12,000)', labelEn: 'Couture Floral Kosha (+12,000)' },
-                  { checked: upgradeDrone, toggle: setUpgradeDrone, labelAr: 'تصوير 4K جوي بالدرون ومونتاج فوري (+9,500)', labelEn: '4K Drone Cinema & Edit (+9,500)' },
-                  { checked: upgradeRoboticLights, toggle: setUpgradeRoboticLights, labelAr: 'إضاءة مسرح روبوتية وعروض ليزر (+7,000)', labelEn: 'Robotic Beams & Laser Rig (+7,000)' },
-                  { checked: upgradeLowFog, toggle: setUpgradeLowFog, labelAr: 'سحاب دخان هازر بارد للرقصة الأولى (+4,500)', labelEn: 'Heavy Low-Fog Cloud (+4,500)' },
-                  { checked: upgradeWelcomeBar, toggle: setUpgradeWelcomeBar, labelAr: 'نافورة موكتيل ترحيبية ومشروبات فريش (+5,500)', labelEn: 'Welcome Mocktail Fountain (+5,500)' },
+                  { checked: upgradeKosha, toggle: setUpgradeKosha, labelAr: 'كوشة خاصة مجهزة بالزهور المستوردة', labelEn: 'Couture Floral Kosha' },
+                  { checked: upgradeDrone, toggle: setUpgradeDrone, labelAr: 'تصوير 4K جوي بالدرون ومونتاج فوري', labelEn: '4K Drone Cinema & Edit' },
+                  { checked: upgradeRoboticLights, toggle: setUpgradeRoboticLights, labelAr: 'إضاءة مسرح روبوتية وعروض ليزر', labelEn: 'Robotic Beams & Laser Rig' },
+                  { checked: upgradeLowFog, toggle: setUpgradeLowFog, labelAr: 'سحاب دخان هازر بارد للرقصة الأولى', labelEn: 'Heavy Low-Fog Cloud' },
+                  { checked: upgradeWelcomeBar, toggle: setUpgradeWelcomeBar, labelAr: 'نافورة موكتيل ترحيبية ومشروبات فريش', labelEn: 'Welcome Mocktail Fountain' },
                 ].map((addon, idx) => (
                   <button
                     key={idx}
@@ -1024,46 +1024,27 @@ export function SarayaCustomerHomepage({
 
           {/* Right Column: Live Summary & Direct Inquiry Form */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Live Estimation Card */}
+            {/* Planning Summary */}
             <div className="p-6 rounded-2xl bg-slate-950 border border-amber-500/30 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
                 <span className="text-xs font-semibold text-amber-300 uppercase tracking-wider">
-                  {isAr ? 'ملخص باقة المناسبة التقديرية' : 'Estimated Investment Summary'}
+                  {isAr ? 'ملخص تخطيط المناسبة' : 'Event Planning Summary'}
                 </span>
-                <span className="text-[11px] text-slate-400 font-mono">SARAYA-QUOTE</span>
+                <span className="text-[11px] text-slate-400 font-mono">SARAYA-PLAN</span>
               </div>
-
-              {/* Breakdown */}
-              <div className="space-y-2 text-xs text-slate-300">
-                <div className="flex justify-between">
-                  <span>{isAr ? 'إيجار القاعة وتجهيزات المرافق:' : 'Venue Space Rental:'}</span>
-                  <span className="font-mono font-bold text-white">{hallBasePrice.toLocaleString()} EGP</span>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-xl bg-slate-900/80 border border-slate-800 p-3">
+                  <div className="text-slate-500 mb-1">{isAr ? 'نوع المناسبة' : 'Event Type'}</div>
+                  <div className="text-white font-semibold">{plannerEventType}</div>
                 </div>
-                <div className="flex justify-between">
-                  <span>{isAr ? `البوفيه والضيافة (${plannerGuestCount} فرد):` : `Banquet Catering (${plannerGuestCount} guests):`}</span>
-                  <span className="font-mono font-bold text-white">{cateringTotal.toLocaleString()} EGP</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{isAr ? 'الخدمات والإضافات والإنتاج:' : 'Selected Upgrades & Production:'}</span>
-                  <span className="font-mono font-bold text-white">{upgradesTotal.toLocaleString()} EGP</span>
+                <div className="rounded-xl bg-slate-900/80 border border-slate-800 p-3">
+                  <div className="text-slate-500 mb-1">{isAr ? 'عدد الضيوف' : 'Guests'}</div>
+                  <div className="text-white font-semibold">{plannerGuestCount}</div>
                 </div>
               </div>
-
-              {/* Total & Deposit */}
-              <div className="pt-3 border-t border-slate-800 flex items-baseline justify-between">
-                <div>
-                  <div className="text-[11px] text-slate-400">{isAr ? 'الإجمالي التقديري الشامل:' : 'Estimated Total:'}</div>
-                  <div className="text-2xl font-serif font-black text-amber-300 tabular-nums">
-                    {estimatedInvestmentTotal.toLocaleString()} EGP
-                  </div>
-                </div>
-                <div className="text-end">
-                  <div className="text-[10px] text-slate-400">{isAr ? 'عربون التأكيد المقترح (30%):' : 'Suggested Deposit (30%):'}</div>
-                  <div className="text-sm font-mono font-bold text-amber-400">
-                    {suggestedDeposit.toLocaleString()} EGP
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {isAr ? 'أرسل اختياراتك لفريق السرايا وسيتواصل معك لتأكيد التفاصيل.' : 'Send your selections to the Saraya team and we will contact you to confirm the details.'}
+              </p>
             </div>
 
             {/* Send as Inquiry Form */}
@@ -1342,15 +1323,15 @@ export function SarayaCustomerHomepage({
               step: '01',
               titleAr: 'المعاينة وجلسة الاستماع',
               titleEn: 'Private Consultation & Tour',
-              descAr: 'زيارة خاصة لقصر وقاعات السرايا، احتساء قهوة ترحيبية، والاطلاع على كافة المساحات وتحديد الرؤية والميزانية.',
-              descEn: 'Walkthrough of our signature venues, welcoming hospitality, and in-depth discussion of your aesthetic vision and budget.',
+              descAr: 'زيارة خاصة لقصر وقاعات السرايا، احتساء قهوة ترحيبية، والاطلاع على كافة المساحات وتحديد الرؤية ومتطلبات المناسبة.',
+              descEn: 'Walkthrough of our signature venues, welcoming hospitality, and in-depth discussion of your aesthetic vision and event requirements.',
             },
             {
               step: '02',
-              titleAr: 'التخطيط ثلاثي الأبعاد وعرض السعر',
-              titleEn: '3D Spatial Plan & Transparent Contract',
-              descAr: 'تصميم محاكاة الطاولات وتوزيع المسرح والكوشة، مع عرض أسعار تفصيلي شفاف دون أي رسوم مخفية.',
-              descEn: 'Architectural 3D floor layout and table assignments paired with an itemized, transparent binding quote.',
+              titleAr: 'التخطيط ثلاثي الأبعاد وتأكيد التفاصيل',
+              titleEn: '3D Spatial Plan & Event Confirmation',
+              descAr: 'تصميم محاكاة الطاولات وتوزيع المسرح والكوشة، مع مراجعة تفصيلية واضحة لجميع متطلبات المناسبة.',
+              descEn: 'Architectural 3D floor layout and table assignments paired with a clear review of all event requirements.',
             },
             {
               step: '03',
