@@ -1,4 +1,4 @@
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -61,6 +61,7 @@ export function HallPhotoManagerModal({
   );
 
   const [localPhotos, setLocalPhotos] = useState<VenuePhoto[]>(photos);
+  const [photoCategoryFilter, setPhotoCategoryFilter] = useState<'all' | 'wedding' | 'engagement' | 'birthday' | 'corporate'>('all');
   const [selectedPhotoId, setSelectedPhotoId] = useState<string>(
     targetHallOrPhotoId && photos.some((p) => p.id === targetHallOrPhotoId)
       ? targetHallOrPhotoId
@@ -70,10 +71,33 @@ export function HallPhotoManagerModal({
   const [isSavedSuccess, setIsSavedSuccess] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setLocalHalls(halls);
+    setLocalPhotos(photos);
+    setActiveTab(initialTab);
+    setSelectedHallId(targetHallOrPhotoId && halls.some((h) => h.id === targetHallOrPhotoId) ? targetHallOrPhotoId : halls[0]?.id || 'hall-1');
+    setSelectedPhotoId(targetHallOrPhotoId && photos.some((p) => p.id === targetHallOrPhotoId) ? targetHallOrPhotoId : photos[0]?.id || '');
+    setPhotoCategoryFilter('all');
+  }, [isOpen, halls, photos, initialTab, targetHallOrPhotoId]);
+
   if (!isOpen) return null;
 
   const selectedHall = localHalls.find((h) => h.id === selectedHallId) || localHalls[0];
   const selectedPhoto = localPhotos.find((p) => p.id === selectedPhotoId) || localPhotos[0];
+  const sourceKey = (src: string) => (src || '').trim().replace(/[?#].*$/, '').toLowerCase();
+  const sourceCounts = localPhotos.reduce<Record<string, number>>((counts, photo) => {
+    const key = sourceKey(photo.src);
+    if (key) counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
+  const hasDuplicateSources = Object.values(sourceCounts).some((count) => count > 1);
+  const filteredPhotos = localPhotos.filter((photo) => {
+    if (photoCategoryFilter === 'all') return true;
+    if (photoCategoryFilter === 'wedding') return ['wedding', 'ballroom', 'kosha', 'dining'].includes(photo.category);
+    if (photoCategoryFilter === 'birthday') return ['birthday', 'party'].includes(photo.category);
+    return photo.category === photoCategoryFilter;
+  });
 
   // Update a single hall field
   const handleUpdateHall = (field: keyof Hall, value: any) => {
@@ -147,7 +171,7 @@ export function HallPhotoManagerModal({
     const newId = `photo-${Date.now()}`;
     const newPhoto: VenuePhoto = {
       id: newId,
-      src: photos[0]?.src || '',
+      src: '',
       titleAr: isAr ? 'صورة جديدة للمعرض' : 'New Gallery Photo',
       titleEn: 'New Gallery Photo',
       hallNameAr: selectedHall?.name || 'القاعة الملكية الكبرى',
@@ -533,8 +557,20 @@ export function HallPhotoManagerModal({
                     </button>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-1.5 pb-2 sm:grid-cols-3">
+                    {([
+                      ['all', isAr ? 'كل الصور' : 'All photos'],
+                      ['wedding', isAr ? 'أفراح وزفاف' : 'Weddings'],
+                      ['engagement', isAr ? 'خطوبة وعقد قران' : 'Engagements'],
+                      ['birthday', isAr ? 'أعياد ميلاد وحفلات' : 'Birthdays & Parties'],
+                      ['corporate', isAr ? 'مؤتمرات وقمم' : 'Conferences'],
+                    ] as const).map(([value, label]) => (
+                      <button key={value} type="button" onClick={() => setPhotoCategoryFilter(value)} className={`rounded-lg border px-2 py-2 text-[10px] font-semibold transition ${photoCategoryFilter === value ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-white'}`}>{label}</button>
+                    ))}
+                  </div>
+                  {hasDuplicateSources && <p className="mb-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-2 text-[11px] text-rose-300">{isAr ? 'هناك صور مكررة بنفس المصدر. احذف التكرار أو غيّر الرابط قبل الحفظ.' : 'Duplicate image sources found. Remove duplicates or change the image URL before saving.'}</p>}
                   <div className="space-y-2 max-h-[55vh] overflow-y-auto pe-1">
-                    {localPhotos.map((p) => {
+                    {filteredPhotos.map((p) => {
                       const isSelected = p.id === selectedPhotoId;
                       return (
                         <div
@@ -686,10 +722,12 @@ export function HallPhotoManagerModal({
                           className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
                         >
                           <option value="wedding">{isAr ? 'أفراح وزفاف' : 'Weddings'}</option>
+                          <option value="engagement">{isAr ? 'خطوبة وعقد قران' : 'Engagements'}</option>
+                          <option value="birthday">{isAr ? 'أعياد ميلاد' : 'Birthdays'}</option>
+                          <option value="party">{isAr ? 'حفلات ومناسبات' : 'Parties'}</option>
                           <option value="ballroom">{isAr ? 'القاعة الكبرى' : 'Ballroom'}</option>
                           <option value="kosha">{isAr ? 'الكوشة والديكور' : 'Kosha & Floral'}</option>
                           <option value="dining">{isAr ? 'المائدة والضيافة' : 'Banquets & Dining'}</option>
-                          <option value="garden">{isAr ? 'الحديقة المفتوحة' : 'Garden Terrace'}</option>
                           <option value="corporate">{isAr ? 'المؤتمرات' : 'Corporate'}</option>
                         </select>
                       </div>
@@ -728,7 +766,7 @@ export function HallPhotoManagerModal({
           <div className="flex items-center justify-between px-6 py-4 border-t border-amber-500/15 bg-slate-950/90">
             <div className="text-xs text-slate-400 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>{isAr ? 'يتم حفظ التعديلات فورياً في الذاكرة المحلية للتجربة Demo' : 'Modifications are saved immediately to local demo storage'}</span>
+              <span>{isAr ? 'المكتبة تحفظ صور المناسبات حسب الفئة على هذا الجهاز.' : 'The event photo library is saved by category on this device.'}</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -746,7 +784,8 @@ export function HallPhotoManagerModal({
               <button
                 type="button"
                 onClick={handleSaveAll}
-                className="px-6 py-2.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-xl transition-all shadow-lg flex items-center gap-2"
+                disabled={hasDuplicateSources}
+                className={`px-6 py-2.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-xl transition-all shadow-lg flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-40`}
               >
                 {isSavedSuccess ? (
                   <>
