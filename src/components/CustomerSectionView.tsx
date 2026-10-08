@@ -1,12 +1,13 @@
 import { Calendar, Building2, Sparkles, Ruler, Image as ImageIcon, Cuboid, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Hall, Language } from '../types/venueSystem';
-import { ALSARAYA_PHOTOS } from '../data/venueImages';
+import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 
 type Screen = 'events' | 'venues' | 'services' | 'planner' | 'gallery' | '3d-tour';
 
 interface Props {
   screen: Screen;
   halls: Hall[];
+  photos?: VenuePhoto[];
   language: Language;
   onOpenBooking: (hallId?: string) => void;
   onGoHome: () => void;
@@ -21,11 +22,17 @@ const copy = {
   '3d-tour': { en: ['3D Tour', 'Explore the space with our team.', '3D venue visualization is presented by the Saraya team as part of the planning and interview process.'], ar: ['جولة 3D', 'استكشف المساحة مع فريق السرايا.', 'يقدم فريق السرايا التصور ثلاثي الأبعاد ضمن عملية التخطيط والمقابلة.'] },
 } as const;
 
-export function CustomerSectionView({ screen, halls, language, onOpenBooking, onGoHome }: Props) {
+export function CustomerSectionView({ screen, halls, photos: libraryPhotos, language, onOpenBooking, onGoHome }: Props) {
   const isAr = language === 'ar';
   const data = copy[screen][isAr ? 'ar' : 'en'];
   const Arrow = isAr ? ArrowLeft : ArrowRight;
-  const photos = ALSARAYA_PHOTOS;
+  const sourcePhotos = libraryPhotos?.length ? libraryPhotos : ALSARAYA_PHOTOS;
+  const photos = sourcePhotos.filter((photo, index, list) => {
+    const outdoor = (photo.category as string) === 'garden' || /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test([photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' '));
+    const key = photo.src.trim().replace(/[?#].*$/, '').toLowerCase();
+    return !outdoor && !!key && list.findIndex((other) => other.src.trim().replace(/[?#].*$/, '').toLowerCase() === key) === index;
+  });
+  const availableHalls = halls.filter((hall) => !/garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${hall.name} ${hall.nameEn || ''}`));
 
   return (
     <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[70vh] pb-20">
@@ -49,18 +56,26 @@ export function CustomerSectionView({ screen, halls, language, onOpenBooking, on
 
         {screen === 'events' && (
           <div className="grid gap-4 border-t border-slate-800 p-6 sm:grid-cols-2 lg:grid-cols-4">
-            {['Weddings','Engagements','Birthdays & Parties','Conferences & Summits'].map((x, i) => (
-              <div key={x} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-                <img src={photos[i % photos.length]?.src} alt="" className="h-44 w-full object-cover" />
-                <div className="p-4 text-sm font-bold">{isAr ? ['أفراح','خطوبات وعقد قران','أعياد ميلاد وحفلات','مؤتمرات وقمم'][i] : x}</div>
-              </div>
-            ))}
+            {[
+              { label: isAr ? 'أفراح' : 'Weddings', categories: ['wedding', 'ballroom', 'kosha', 'dining'] },
+              { label: isAr ? 'خطوبات وعقد قران' : 'Engagements', categories: ['engagement'] },
+              { label: isAr ? 'أعياد ميلاد وحفلات' : 'Birthdays & Parties', categories: ['birthday', 'party'] },
+              { label: isAr ? 'مؤتمرات وقمم' : 'Conferences & Summits', categories: ['corporate'] },
+            ].map((item) => {
+              const photo = photos.find((candidate) => item.categories.includes(candidate.category)) || photos[0];
+              return (
+                <div key={item.label} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+                  <img src={photo?.src} alt={item.label} className="h-44 w-full object-cover" />
+                  <div className="p-4 text-sm font-bold">{item.label}</div>
+                </div>
+              );
+            })}
           </div>
         )}
 
         {screen === 'venues' && (
           <div className="grid gap-5 border-t border-slate-800 p-6 md:grid-cols-2">
-            {halls.map(hall => {
+            {availableHalls.map(hall => {
               const photo = photos.find(p => p.hallId === hall.id) || photos[0];
               return <article key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
                 <img src={photo?.src} alt="" className="h-60 w-full object-cover" />
