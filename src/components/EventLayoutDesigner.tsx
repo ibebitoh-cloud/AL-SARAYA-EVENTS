@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { Language } from '../types/venueSystem';
+import { EventLayout3D } from './EventLayout3D';
 
 type LayoutMode = '2d' | '3d' | 'pov';
 type EventKind = 'engagement' | 'wedding' | 'conference' | 'summit' | 'birthday' | 'other';
@@ -313,7 +314,7 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
               <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'}</div>
             </div>
             <div className="relative w-full aspect-[4/3] min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
-              {layoutMode !== 'pov' ? (
+              {layoutMode === '2d' ? (
                 <div ref={canvasRef} className="absolute inset-[7%] rounded-lg border-2 border-slate-500/80 bg-slate-900 overflow-hidden" style={{ touchAction: 'none' }}>
                   <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)', backgroundSize: '8% 10%' }} />
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
@@ -324,27 +325,19 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
                   ))}
                 </div>
               ) : (
-                <div className="absolute inset-0 overflow-hidden bg-slate-950" style={{ perspective: '850px' }}>
-                  <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, #172033 0%, #273449 48%, #10151f 49%, #0b0f16 100%)' }} />
-                  <div className="absolute inset-x-[8%] top-[10%] bottom-[7%] border-2 border-slate-500/70 rounded-[4%]" style={{ transform: `rotateY(${cameraYaw}deg)`, transformStyle: 'preserve-3d', transformOrigin: 'center center', transition: 'transform 120ms ease-out' }}>
-                    <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(148,163,184,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.18) 1px, transparent 1px)', backgroundSize: '10% 12%' }} />
-                    <div className="absolute left-1/2 top-[7%] -translate-x-1/2 w-[42%] h-10 border border-sky-300/50 bg-sky-200/10 rounded text-[9px] text-sky-100 flex items-center justify-center">LED SCREEN</div>
-                    <div className="absolute left-1/2 top-[16%] -translate-x-1/2 w-[50%] h-16 border-2 border-slate-300/50 bg-slate-400/20 rounded-lg text-white font-bold flex items-center justify-center">{isAr ? 'منصة' : 'STAGE'}</div>
-                    {items.filter(item => !['screen','stage'].includes(item.type)).map((item) => (
-                      <div key={item.id} className={itemVisual(item).replace('absolute','absolute')} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%,-50%) rotate(${item.rotation}deg)`, transformStyle: 'preserve-3d' }}>
-                        {item.type === 'table' ? item.seats : item.type === 'chairs' ? '●' : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.labelEn}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="absolute inset-x-0 bottom-3 flex justify-center gap-2">
-                    <button type="button" onClick={() => setCameraYaw(v => Math.max(-35, v - 10))} className="px-3 py-2 rounded-lg bg-slate-900/90 border border-slate-700 text-xs text-white">←</button>
-                    <span className="px-3 py-2 rounded-lg bg-slate-900/90 border border-slate-700 text-[10px] text-slate-300">{isAr ? 'تحريك المنظور' : 'Move viewpoint'} · {cameraYaw}°</span>
-                    <button type="button" onClick={() => setCameraYaw(v => Math.min(35, v + 10))} className="px-3 py-2 rounded-lg bg-slate-900/90 border border-slate-700 text-xs text-white">→</button>
-                  </div>
-                  <div className="absolute left-3 top-3 rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2 text-[10px] text-slate-300">{isAr ? 'عرض من داخل المناسبة' : 'Guest eye-level view'}</div>
-                </div>
-              )}
-            </div>
+                <EventLayout3D
+                  items={items}
+                  width={width}
+                  depth={depth}
+                  language={language}
+                  mode={layoutMode === 'pov' ? 'pov' : 'overview'}
+                  onSelect={setSelectedId}
+                  onMove={(id, x, y) => {
+                    setItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
+                    setSaved(false);
+                  }}
+                />
+              )}            </div>
           </section>
 
           <aside className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
