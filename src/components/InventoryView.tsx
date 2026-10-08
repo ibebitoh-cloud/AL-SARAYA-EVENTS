@@ -35,6 +35,7 @@ export function InventoryView({
   const [unit, setUnit] = useState('قطعة');
   const [minThreshold, setMinThreshold] = useState(20);
   const [costPerUnit, setCostPerUnit] = useState(35);
+  const [salePrice, setSalePrice] = useState(0);
 
   const categories = [
     { id: 'all', label: 'جميع المستلزمات' },
@@ -64,6 +65,7 @@ export function InventoryView({
       unit: unit.trim() || 'قطعة',
       minThreshold: Number(minThreshold) || 10,
       costPerUnit: Number(costPerUnit) || 0,
+      salePrice: Number(salePrice) || 0,
       damagedQuantity: 0,
       lastRestockedDate: new Date().toISOString().split('T')[0],
     };
@@ -168,6 +170,14 @@ export function InventoryView({
                 </div>
 
                 <div>
+                  <span className="text-[10px] text-slate-500 block font-sans">قيمة المخزون</span>
+                  <span className="font-bold text-amber-300 tabular-nums text-sm">
+                    {(item.quantity * item.costPerUnit).toLocaleString()} ج.م
+                  </span>
+                  <span className="text-[9px] text-slate-500 font-sans block">بسعر التكلفة</span>
+                </div>
+
+                <div>
                   <span className="text-[10px] text-slate-500 block font-sans">التالف / كسر</span>
                   <span className="font-bold text-rose-400 tabular-nums text-sm">
                     {item.damagedQuantity}
@@ -179,7 +189,7 @@ export function InventoryView({
               {/* Quick Stock Adjustment buttons */}
               <div className="flex items-center justify-between pt-1 text-xs">
                 <span className="text-[11px] text-slate-400 font-mono">
-                  تكلفة الوحدة: {item.costPerUnit} ج.م
+                  شراء: {item.costPerUnit} ج.م · بيع: {(item.salePrice ?? 0)} ج.م
                 </span>
 
                 <div className="flex items-center gap-1.5">
@@ -256,7 +266,7 @@ export function InventoryView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">الكمية الحالية</label>
                   <input
@@ -278,13 +288,18 @@ export function InventoryView({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">سعر التكلفة</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">سعر الشراء</label>
                   <input
                     type="number"
                     value={costPerUnit}
                     onChange={(e) => setCostPerUnit(Number(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">سعر البيع</label>
+                  <input type="number" min="0" value={salePrice} onChange={(e) => setSalePrice(Number(e.target.value) || 0)} className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono" />
                 </div>
               </div>
 
