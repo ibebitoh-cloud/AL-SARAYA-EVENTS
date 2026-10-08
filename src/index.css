@@ -147,94 +147,85 @@ html[data-theme="light"] .bg-slate-800\/50,
 html[data-theme="light"] .bg-slate-700\/40 {
   background-color: #ffffff !important;
 }
-/* Replace dark neutral gradient stops with white in light mode. */
-html[data-theme="light"] .from-slate-950,
-html[data-theme="light"] .from-slate-900,
-html[data-theme="light"] .from-slate-800,
-html[data-theme="light"] .from-gray-950,
-html[data-theme="light"] .from-gray-900,
-html[data-theme="light"] .from-gray-800,
-html[data-theme="light"] .from-zinc-950,
-html[data-theme="light"] .from-zinc-900,
-html[data-theme="light"] .from-neutral-950,
-html[data-theme="light"] .from-neutral-900,
-html[data-theme="light"] .from-stone-950,
-html[data-theme="light"] .from-stone-900,
-html[data-theme="light"] .via-slate-950,
-html[data-theme="light"] .via-slate-900,
-html[data-theme="light"] .via-slate-800,
-html[data-theme="light"] .via-gray-950,
-html[data-theme="light"] .via-gray-900,
-html[data-theme="light"] .via-gray-800,
-html[data-theme="light"] .via-zinc-950,
-html[data-theme="light"] .via-zinc-900,
-html[data-theme="light"] .via-neutral-950,
-html[data-theme="light"] .via-neutral-900,
-html[data-theme="light"] .via-stone-950,
-html[data-theme="light"] .via-stone-900,
-html[data-theme="light"] .to-slate-950,
-html[data-theme="light"] .to-slate-900,
-html[data-theme="light"] .to-slate-800,
-html[data-theme="light"] .to-gray-950,
-html[data-theme="light"] .to-gray-900,
-html[data-theme="light"] .to-gray-800,
-html[data-theme="light"] .to-zinc-950,
-html[data-theme="light"] .to-zinc-900,
-html[data-theme="light"] .to-neutral-950,
-html[data-theme="light"] .to-neutral-900,
-html[data-theme="light"] .to-stone-950,
-html[data-theme="light"] .to-stone-900 {
-  --tw-gradient-from: var(--tw-gradient-from);
-}
-html[data-theme="light"] .from-slate-950,
-html[data-theme="light"] .from-slate-900,
-html[data-theme="light"] .from-slate-800,
-html[data-theme="light"] .from-gray-950,
-html[data-theme="light"] .from-gray-900,
-html[data-theme="light"] .from-zinc-950,
-html[data-theme="light"] .from-neutral-950,
-html[data-theme="light"] .from-stone-950 {
-  --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important;
-  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-}
-html[data-theme="light"] .via-slate-950,
-html[data-theme="light"] .via-slate-900,
-html[data-theme="light"] .via-slate-800,
-html[data-theme="light"] .via-gray-950,
-html[data-theme="light"] .via-gray-900,
-html[data-theme="light"] .via-zinc-950,
-html[data-theme="light"] .via-neutral-950,
-html[data-theme="light"] .via-stone-950 {
-  --tw-gradient-via: #ffffff var(--tw-gradient-via-position) !important;
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
-}
-html[data-theme="light"] .to-slate-950,
-html[data-theme="light"] .to-slate-900,
-html[data-theme="light"] .to-slate-800,
-html[data-theme="light"] .to-gray-950,
-html[data-theme="light"] .to-gray-900,
-html[data-theme="light"] .to-zinc-950,
-html[data-theme="light"] .to-neutral-950,
-html[data-theme="light"] .to-stone-950 {
-  --tw-gradient-to: #ffffff var(--tw-gradient-to-position) !important;
-}
-/* Ensure table dividers and placeholder text remain legible on white surfaces. */
-html[data-theme="light"] .divide-slate-900 > :not([hidden]) ~ :not([hidden]),
+html[data-theme="light"] .from-slate-950 { --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+html[data-theme="light"] .via-slate-950\/75 { --tw-gradient-via: #ffffffbf var(--tw-gradient-via-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important; }
+html[data-theme="light"] .to-slate-950\/20 { --tw-gradient-to: #ffffff33 var(--tw-gradient-to-position) !important; }
+
+/* Core text */
+html[data-theme="light"] .text-white { color: var(--saraya-text) !important; }
+html[data-theme="light"] .text-slate-100,
+html[data-theme="light"] .text-slate-200 { color: #1e293b !important; }
+html[data-theme="light"] .text-slate-300 { color: #334155 !important; }
+html[data-theme="light"] .text-slate-400,
+html[data-theme="light"] .text-slate-500 { color: var(--saraya-muted) !important; }
+html[data-theme="light"] .text-slate-600 { color: #475569 !important; }
+
+/* Borders, cells and dividers */
+html[data-theme="light"] .border-slate-800,
+html[data-theme="light"] .border-slate-800\/80,
+html[data-theme="light"] .border-slate-900,
+html[data-theme="light"] .border-slate-700 { border-color: var(--saraya-border) !important; }
+
 html[data-theme="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
-html[data-theme="light"] .divide-slate-700 > :not([hidden]) ~ :not([hidden]),
-html[data-theme="light"] .divide-gray-800 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e5e7eb !important;
+html[data-theme="light"] .divide-slate-700 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--saraya-border) !important;
 }
-html[data-theme="light"] .placeholder-slate-500::placeholder,
-html[data-theme="light"] .placeholder-slate-400::placeholder,
-html[data-theme="light"] .placeholder-gray-500::placeholder {
-  color: #6b7280 !important;
+
+/* All native form controls */
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  background-color: var(--saraya-input) !important;
+  color: var(--saraya-text) !important;
+  border-color: var(--saraya-border) !important;
 }
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder { color: #94a3b8 !important; }
+html[data-theme="light"] option { background: #ffffff; color: #0f172a; }
+
+/* Core cards/panels and table-like cells */
+html[data-theme="light"] .bg-black,
+html[data-theme="light"] .bg-black\/20,
+html[data-theme="light"] .bg-black\/30,
+html[data-theme="light"] .bg-black\/40,
+html[data-theme="light"] .bg-black\/50,
+html[data-theme="light"] .bg-black\/60 { background-color: var(--saraya-surface) !important; }
+
+html[data-theme="light"] .hover\:bg-slate-800:hover,
+html[data-theme="light"] .hover\:bg-slate-900:hover,
+html[data-theme="light"] .hover\:bg-slate-700:hover { background-color: var(--saraya-hover) !important; }
+
+/* Keep status/accent colors intentional while neutral UI follows theme */
+html[data-theme="light"] .bg-amber-950\/60 { background-color: #fffbeb !important; }
+html[data-theme="light"] .bg-amber-500\/10 { background-color: #fffbeb !important; }
+html[data-theme="light"] .bg-indigo-950\/40 { background-color: #eef2ff !important; }
+
+/* Theme-safe scrollbar */
+html[data-theme="light"] ::-webkit-scrollbar-track { background: #e2e8f0; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #94a3b8; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Shared theme button */
+.saraya-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-width: 2.5rem;
+  height: 2.25rem;
+  padding: 0 .65rem;
+  border: 1px solid var(--saraya-border);
+  border-radius: .6rem;
+  background: var(--saraya-surface);
+  color: var(--saraya-text);
+  font-size: .72rem;
+  font-weight: 800;
+}
+.saraya-theme-toggle:hover { background: var(--saraya-hover); border-color: #d4af37; }
 
 
 /* LIGHT THEME FIX: comprehensive neutral backgrounds and interaction states */
-/* White surfaces for all neutral background shades and common Tailwind opacity utilities. */
+/* Neutral backgrounds become white; semantic/accent colors remain intentional. */
 html[data-theme="light"] .bg-slate-950,
 html[data-theme="light"] .bg-slate-900,
 html[data-theme="light"] .bg-slate-800,
@@ -800,7 +791,6 @@ html[data-theme="light"] .bg-stone-700\/90,
 html[data-theme="light"] .bg-stone-700\/95 {
   background-color: #ffffff !important;
 }
-/* Subtle hover tint; keep semantic/accent colors (amber, emerald, red, etc.) untouched. */
 html[data-theme="light"] .hover:bg-slate-950:hover,
 html[data-theme="light"] .hover:bg-slate-900:hover,
 html[data-theme="light"] .hover:bg-slate-800:hover,
@@ -852,7 +842,7 @@ html[data-theme="light"] .divide-slate-700 > :not([hidden]) ~ :not([hidden]),
 html[data-theme="light"] .divide-gray-800 > :not([hidden]) ~ :not([hidden]) {
   border-color: #e5e7eb !important;
 }
-/* Dark neutral gradient overlays become white in light mode. */
+/* Neutral gradient overlays follow the white theme. */
 html[data-theme="light"] .from-slate-950,
 html[data-theme="light"] .from-slate-900,
 html[data-theme="light"] .from-slate-800,
@@ -886,7 +876,6 @@ html[data-theme="light"] .to-neutral-950,
 html[data-theme="light"] .to-stone-950 {
   --tw-gradient-to: #ffffff var(--tw-gradient-to-position) !important;
 }
-/* Consistent placeholder contrast on white inputs. */
 html[data-theme="light"] input::placeholder,
 html[data-theme="light"] textarea::placeholder {
   color: #6b7280 !important;
