@@ -40,6 +40,7 @@ import { ClientsView } from './components/ClientsView';
 import { ServicesView } from './components/ServicesView';
 import { PaymentsLedgerView } from './components/PaymentsLedgerView';
 import { ExpensesView } from './components/ExpensesView';
+import { FinanceView } from './components/FinanceView';
 import { InventoryView } from './components/InventoryView';
 import { StaffView } from './components/StaffView';
 import { ReportsView } from './components/ReportsView';
@@ -70,9 +71,21 @@ export default function App() {
   });
   useEffect(() => { window.localStorage.setItem('saraya-halls', JSON.stringify(halls)); }, [halls]);
   const handleUpdateHall = (updated: Hall) => setHalls((prev) => prev.map((h) => h.id === updated.id ? updated : h));
-  const [servicesCatalogue, setServicesCatalogue] = useState<ServiceDefinition[]>(INITIAL_SERVICES);
-  const [payments, setPayments] = useState<PaymentReceipt[]>(INITIAL_PAYMENTS);
-  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
+  const [servicesCatalogue, setServicesCatalogue] = useState<ServiceDefinition[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_SERVICES;
+    try { return JSON.parse(window.localStorage.getItem('saraya-services') || '') || INITIAL_SERVICES; } catch { return INITIAL_SERVICES; }
+  });
+  const [payments, setPayments] = useState<PaymentReceipt[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_PAYMENTS;
+    try { return JSON.parse(window.localStorage.getItem('saraya-payments') || '') || INITIAL_PAYMENTS; } catch { return INITIAL_PAYMENTS; }
+  });
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_EXPENSES;
+    try { return JSON.parse(window.localStorage.getItem('saraya-expenses') || '') || INITIAL_EXPENSES; } catch { return INITIAL_EXPENSES; }
+  });
+  useEffect(() => { window.localStorage.setItem('saraya-services', JSON.stringify(servicesCatalogue)); }, [servicesCatalogue]);
+  useEffect(() => { window.localStorage.setItem('saraya-payments', JSON.stringify(payments)); }, [payments]);
+  useEffect(() => { window.localStorage.setItem('saraya-expenses', JSON.stringify(expenses)); }, [expenses]);
   const [inventory, setInventory] = useState<InventoryItem[]>(() => {
     if (typeof window === 'undefined') return INITIAL_INVENTORY;
     try { return JSON.parse(window.localStorage.getItem('saraya-inventory') || '') || INITIAL_INVENTORY; } catch { return INITIAL_INVENTORY; }
@@ -125,6 +138,7 @@ export default function App() {
       {currentTab === 'contracts' && portalUser && <ContractsView bookings={bookings} language={language} />}
       {currentTab === 'clients' && portalUser && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} />}
       {currentTab === 'services' && portalUser && <ServicesView services={servicesCatalogue} onAddService={handleAddService} />}
+      {currentTab === 'finance' && portalUser && <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} />}
       {currentTab === 'payments' && portalUser && <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} />}
       {currentTab === 'expenses' && portalUser && <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense} />}
       {currentTab === 'inventory' && portalUser && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} />}
