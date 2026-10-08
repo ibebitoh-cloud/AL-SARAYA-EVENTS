@@ -56,7 +56,17 @@ import { sound } from './utils/soundEffects';
 
 export default function App() {
   const [language, setLanguage] = useState<Language>('ar');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return (window.localStorage.getItem('saraya-theme') as 'dark' | 'light') || 'dark';
+  });
   const [currentTab, setCurrentTab] = useState<VenueTab>('home');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    window.localStorage.setItem('saraya-theme', theme);
+  }, [theme]);
 
   // Synchronize document direction with selected language
   useEffect(() => {
@@ -244,6 +254,8 @@ export default function App() {
       {/* Primary Customer-Facing Luxury Header */}
       <SarayaBrandHeader
         language={language}
+        theme={theme}
+        onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
         onToggleLanguage={toggleLanguage}
         onOpenBookingModal={() => {
           setPreselectedHallId(undefined);
