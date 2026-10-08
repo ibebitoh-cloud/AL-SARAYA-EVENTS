@@ -335,7 +335,9 @@ export default function App() {
                   public_planner: 'planner',
                   public_gallery: 'gallery',
                   public_3d_tour: '3d-tour',
-                }[currentTab as keyof typeof screenMap]}
+                }[currentTab as keyof typeof {
+                  public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour'
+                }]!
                 halls={halls}
                 language={language}
                 onOpenBooking={(hallId) => {
