@@ -11,12 +11,16 @@ import {
   ArrowRight,
   ArrowLeft,
   ChevronDown,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { Language, VenueTab } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
 
 interface SarayaBrandHeaderProps {
   language: Language;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
   onToggleLanguage: () => void;
   onOpenBookingModal: () => void;
   onNavigateSection: (sectionId: string) => void;
@@ -27,6 +31,8 @@ interface SarayaBrandHeaderProps {
 
 export function SarayaBrandHeader({
   language,
+  theme,
+  onToggleTheme,
   onToggleLanguage,
   onOpenBookingModal,
   onNavigateSection,
@@ -136,6 +142,21 @@ export function SarayaBrandHeader({
             className="p-2 text-slate-400 hover:text-amber-300 transition-colors rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800"
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+          </button>
+
+          {/* Theme Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              sound.click(720);
+              onToggleTheme();
+            }}
+            aria-label={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الداكن' : 'Dark theme')}
+            title={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الداكن' : 'Dark theme')}
+            className="saraya-theme-toggle"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <span className="hidden xl:inline">{theme === 'dark' ? (isAr ? 'فاتح' : 'Light') : (isAr ? 'داكن' : 'Dark')}</span>
           </button>
 
           {/* Language Toggle */}
