@@ -31,6 +31,7 @@ import { TableAssignment, Guest } from './types/event';
 import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
+import { CustomerSectionView } from './components/CustomerSectionView';
 import { CompanyShowcaseView } from './components/CompanyShowcaseView';
 import { DashboardView } from './components/DashboardView';
 import { BookingsView } from './components/BookingsView';
@@ -249,13 +250,22 @@ export default function App() {
           setIsNewBookingModalOpen(true);
         }}
         onNavigateSection={(sectionId) => {
-          if (currentTab !== 'home') {
+          const screenMap: Record<string, VenueTab> = {
+            events: 'public_events',
+            venues: 'public_venues',
+            services: 'public_services',
+            planner: 'public_planner',
+            gallery: 'public_gallery',
+            '3d-tour': 'public_3d_tour',
+          };
+          const nextTab = screenMap[sectionId];
+          if (nextTab) {
+            setCurrentTab(nextTab);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else if (sectionId === 'hero') {
             setCurrentTab('home');
-            setTimeout(() => {
-              const el = document.getElementById(sectionId);
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }, 120);
-          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else if (currentTab === 'home') {
             const el = document.getElementById(sectionId);
             el?.scrollIntoView({ behavior: 'smooth' });
           }
@@ -312,6 +322,30 @@ export default function App() {
                 onOpenBookingModal={() => setIsNewBookingModalOpen(true)}
                 onCreateBooking={handleCreateBooking}
                 onOpenEventDesigner={() => setCurrentTab('event_designer')}
+              />
+            )}
+
+            {/* Dedicated customer-facing screens */}
+            {currentTab.startsWith('public_') && (
+              <CustomerSectionView
+                screen={{
+                  public_events: 'events',
+                  public_venues: 'venues',
+                  public_services: 'services',
+                  public_planner: 'planner',
+                  public_gallery: 'gallery',
+                  public_3d_tour: '3d-tour',
+                }[currentTab as Exclude<VenueTab, 'home'> & string] as any}
+                halls={halls}
+                language={language}
+                onOpenBooking={(hallId) => {
+                  if (hallId) setPreselectedHallId(hallId);
+                  setIsNewBookingModalOpen(true);
+                }}
+                onGoHome={() => {
+                  setCurrentTab('home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
             )}
 
