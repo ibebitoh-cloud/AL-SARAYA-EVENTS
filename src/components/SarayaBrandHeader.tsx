@@ -77,7 +77,7 @@ export function SarayaBrandHeader({
             className="flex items-center gap-2.5 text-lg sm:text-xl font-serif font-black tracking-wider text-amber-300 hover:text-amber-200 transition-colors group"
           >
             <span className="w-2 h-2 rounded-full bg-amber-400 group-hover:scale-125 transition-transform shadow-[0_0_10px_rgba(212,175,55,0.9)]" />
-            <span className="tracking-widest uppercase">SARAYA EVENT</span>
+            <span className="tracking-widest uppercase">SARAYA EVENTS</span>
           </a>
         </div>
 
