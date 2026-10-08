@@ -205,6 +205,7 @@ export function SarayaCustomerHomepage({
         >
           Bebito
         </motion.div>
+        <div className="mt-2 text-[10px] font-medium tracking-wide text-slate-400">Mohamed Alaa · +20 114 647 5759</div>
       </footer>
 
       {gallery && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-4" onClick={() => setGallery(null)}>
