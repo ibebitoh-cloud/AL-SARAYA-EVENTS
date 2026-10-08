@@ -6,6 +6,48 @@ import gardenImg from '../assets/images/alsaraya_garden_terrace_1791458767479.jp
 import corporateImg from '../assets/images/saraya_corporate_summit_1791459214689.jpg';
 import weddingEntranceImg from '../assets/images/saraya_couture_wedding_1791459224733.jpg';
 
+export const BIRTHDAY_DECORATION_PHOTOS: VenuePhoto[] = [
+  {
+    id: 'birthday-1',
+    src: 'https://images.unsplash.com/photo-1774290687117-eb1769c33df3?auto=format&fit=crop&fm=jpg&q=85&w=1800',
+    titleAr: 'ديكور عيد ميلاد فاخر بالبالونات وطاولة الحلوى',
+    titleEn: 'Luxury Birthday Balloon & Dessert Setup',
+    hallNameAr: 'تجهيزات أعياد الميلاد',
+    hallNameEn: 'Birthday Party Setup',
+    captionAr: 'خلفية احتفالية مع قوس بالونات وطاولة كيك وحلويات وإضاءة ديكورية.',
+    captionEn: 'A polished birthday backdrop with a balloon arch, cake and dessert display, and decorative lighting.',
+    category: 'birthday',
+    parallaxSpeed: 25,
+    tags: ['عيد ميلاد', 'بالونات', 'كيك', 'حلويات', 'ديكور'],
+  },
+  {
+    id: 'birthday-2',
+    src: 'https://images.unsplash.com/photo-1741969494307-55394e3e4071?auto=format&fit=crop&fm=jpg&q=85&w=1800',
+    titleAr: 'قوس بالونات وطاولة عيد الميلاد',
+    titleEn: 'Birthday Balloon Arch & Party Table',
+    hallNameAr: 'تجهيزات أعياد الميلاد',
+    hallNameEn: 'Birthday Party Setup',
+    captionAr: 'تجهيز واضح لحفل عيد ميلاد مع قوس بالونات وطاولة رئيسية للكيك والحلوى.',
+    captionEn: 'A dedicated birthday setup with a balloon arch and a central cake and dessert table.',
+    category: 'birthday',
+    parallaxSpeed: -20,
+    tags: ['عيد ميلاد', 'قوس بالونات', 'طاولة كيك', 'احتفال'],
+  },
+  {
+    id: 'birthday-3',
+    src: 'https://images.pexels.com/photos/16032215/pexels-photo-16032215/free-photo-of-neon-sign-with-balls-on-wall.jpeg?auto=compress&dpr=1&w=1800',
+    titleAr: 'ديكور عيد ميلاد أسود وذهبي',
+    titleEn: 'Black & Gold Birthday Backdrop',
+    hallNameAr: 'تجهيزات أعياد الميلاد',
+    hallNameEn: 'Birthday Party Setup',
+    captionAr: 'خلفية عيد ميلاد أنيقة بالبالونات السوداء والبيضاء والذهبية مع إضاءة احتفالية.',
+    captionEn: 'An elegant birthday backdrop with black, white and gold balloons and a glowing celebration sign.',
+    category: 'birthday',
+    parallaxSpeed: 35,
+    tags: ['عيد ميلاد', 'أسود وذهبي', 'بالونات', 'إضاءة'],
+  },
+];
+
 export interface VenuePhoto {
   id: string;
   src: string;
@@ -15,7 +57,7 @@ export interface VenuePhoto {
   hallNameEn: string;
   captionAr: string;
   captionEn: string;
-  category: 'ballroom' | 'kosha' | 'dining' | 'garden' | 'corporate' | 'wedding';
+  category: 'ballroom' | 'kosha' | 'dining' | 'garden' | 'corporate' | 'wedding' | 'birthday';
   parallaxSpeed: number; // e.g. 0.15, -0.2, 0.25 for multi-speed motion
   hallId?: string;
   tags?: string[];
@@ -106,4 +148,5 @@ export const ALSARAYA_PHOTOS: VenuePhoto[] = [
     category: 'garden',
     parallaxSpeed: 65,
   },
+  ...BIRTHDAY_DECORATION_PHOTOS,
 ];
