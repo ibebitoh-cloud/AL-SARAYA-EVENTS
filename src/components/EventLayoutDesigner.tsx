@@ -41,7 +41,7 @@ type LayoutItem = {
 const ITEM_LIBRARY = [
   { type: 'table', labelEn: 'Round Table', labelAr: 'طاولة دائرية', icon: Users },
   { type: 'chairs', labelEn: 'Chairs', labelAr: 'كراسي', icon: Armchair },
-  { type: 'stage', labelEn: 'Stage', labelAr: 'منصة', icon: Stage },
+  { type: 'stage', labelEn: 'Stage', labelAr: 'منصة', icon: Presentation },
   { type: 'screen', labelEn: 'LED Screen', labelAr: 'شاشة LED', icon: Monitor },
   { type: 'podium', labelEn: 'Podium', labelAr: 'منصة خطاب', icon: ScreenShare },
   { type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', icon: Move3d },
