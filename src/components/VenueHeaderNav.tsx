@@ -1,4 +1,4 @@
-import { Plus, LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
 import { DICTIONARY } from '../utils/i18n';
@@ -10,6 +10,7 @@ interface VenueHeaderNavProps {
   onToggleLanguage: () => void;
   onOpenNewBooking: () => void;
   onOpenTour: () => void;
+  onOpenPhotoLibrary: () => void;
 }
 
 export function VenueHeaderNav({
@@ -18,6 +19,7 @@ export function VenueHeaderNav({
   onTabChange,
   onToggleLanguage,
   onOpenNewBooking,
+  onOpenPhotoLibrary,
 }: VenueHeaderNavProps) {
   const isAr = language === 'ar';
   const t = DICTIONARY[language];
@@ -69,6 +71,15 @@ export function VenueHeaderNav({
         </nav>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onOpenPhotoLibrary}
+            title={isAr ? 'مكتبة صور المناسبات' : 'Event Photo Library'}
+            className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-slate-900 px-2.5 py-2 text-[11px] font-bold text-amber-300 hover:bg-slate-800"
+          >
+            <Images className="h-4 w-4" />
+            <span className="hidden lg:inline">{isAr ? 'مكتبة الصور' : 'Photo Library'}</span>
+          </button>
           <button
             onClick={onToggleLanguage}
             className="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-bold text-slate-300"
