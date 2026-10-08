@@ -75,16 +75,16 @@ export function SarayaCustomerHomepage({
   };
 
   return (
-    <main dir={isAr ? 'rtl' : 'ltr'} className="w-full pb-20 text-slate-100">
+    <main dir={isAr ? 'rtl' : 'ltr'} className="w-full overflow-x-hidden pb-12 text-slate-100 sm:pb-20">
       {/* HERO */}
-      <section id="hero" className="relative min-h-[620px] overflow-hidden rounded-[2rem] border border-amber-500/20 bg-slate-950">
+      <section id="hero" className="relative min-h-[540px] overflow-hidden rounded-2xl border border-amber-500/20 bg-slate-950 sm:min-h-[620px] sm:rounded-[2rem]">
         <img src={displayPhotos[0]?.src} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" referrerPolicy="no-referrer" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-950/20" />
-        <div className="relative z-10 mx-auto flex min-h-[620px] max-w-6xl flex-col justify-center px-5 py-20 text-center sm:px-8">
+        <div className="relative z-10 mx-auto flex min-h-[540px] max-w-6xl flex-col justify-center px-4 py-12 text-center sm:min-h-[620px] sm:px-8 sm:py-20">
           <div className="mb-5 text-xs font-bold uppercase tracking-[0.22em] text-amber-300">
             {isAr ? 'السرايا للمناسبات والإنتاج المتكامل' : 'SARAYA EVENTS · VENUE & EVENT PRODUCTION'}
           </div>
-          <h1 className="mx-auto max-w-5xl text-4xl font-serif font-bold leading-tight text-white sm:text-6xl lg:text-7xl">
+          <h1 className="mx-auto max-w-5xl text-3xl font-serif font-bold leading-tight text-white sm:text-6xl lg:text-7xl">
             {isAr ? <>نخطط مناسبتك.<br /><span className="text-amber-300">ونحوّلها إلى واقع.</span></> : <>Plan the event.<br /><span className="text-amber-300">Then bring it to life.</span></>}
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
@@ -97,7 +97,7 @@ export function SarayaCustomerHomepage({
               <Calendar className="h-4 w-4 text-amber-300" />{isAr ? 'ابدأ الحجز' : 'Start a Booking'}
             </button>
           </div>
-          <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 border-t border-white/10 pt-6 sm:grid-cols-4">
+          <div className="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-y-4 border-t border-white/10 pt-5 sm:mt-12 sm:grid-cols-4 sm:gap-y-0 sm:pt-6">
             {[
               [isAr ? 'قاعات ومواقع متاحة' : 'Venues Arranged', availableHalls.length || '—'],
               [isAr ? 'أفراح وخطوبات' : 'Weddings & Engagements', '✓'],
@@ -109,7 +109,7 @@ export function SarayaCustomerHomepage({
       </section>
 
       {/* EVENT TYPES */}
-      <section id="events" className="mt-20 space-y-7 scroll-mt-24">
+      <section id="events" className="mt-12 space-y-5 scroll-mt-24 sm:mt-20 sm:space-y-7">
         <header>
           <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '01 · المناسبات' : '01 · EVENTS'}</div>
           <h2 className="mt-2 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'اختر المناسبة. والباقي علينا.' : 'Choose the occasion. We handle the rest.'}</h2>
@@ -143,7 +143,7 @@ export function SarayaCustomerHomepage({
           <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '02 · خدماتنا' : '02 · WHAT WE DO'}</div>
           <h2 className="mt-2 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'من الفكرة إلى التنفيذ' : 'From concept to execution'}</h2>
         </header>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             [Ruler, isAr ? 'التخطيط والتصميم' : 'Planning & Design', isAr ? 'نحوّل فكرتك إلى مخطط واضح قبل التنفيذ.' : 'Turn your idea into a clear layout before execution.'],
             [Building2, isAr ? 'توفير القاعات وحجزها' : 'Venue Sourcing & Booking', isAr ? 'ننسّق حجز القاعة المناسبة مع مالكها أو نرتب مناسبتك في موقعك الخاص.' : 'We coordinate venue bookings with owners or arrange your event at your own location.'],
@@ -159,7 +159,7 @@ export function SarayaCustomerHomepage({
           <div><div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '03 · القاعات والمواقع' : '03 · VENUES & LOCATIONS'}</div><h2 className="mt-2 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'اختر المساحة المناسبة لمناسبتك' : 'Find the right venue for your event'}</h2></div>
           <p className="max-w-md text-xs leading-6 text-slate-400">{isAr ? 'ننسّق حجز القاعات المتاحة مع ملاكها، ويمكننا أيضاً تجهيز مناسبتك في موقعك الخاص.' : 'We coordinate bookings with venue owners and can also arrange your event at your own location.'}</p>
         </header>
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
           {availableHalls.map((hall) => {
             // The public venue card reads directly from the same Hall profile edited in Company Profile.
             const profilePhoto = hall.photoUrl || hall.photo;
@@ -175,12 +175,12 @@ export function SarayaCustomerHomepage({
               </div>
               <div className="space-y-3 p-4">
                 {description && <p className="text-sm leading-6 text-slate-400">{description}</p>}
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
                     <span className="flex items-center gap-2"><Users className="h-4 w-4 text-amber-300" />{hall.capacity || '—'} {isAr ? 'ضيف' : 'guests'}</span>
                     {hall.areaSqMeters ? <span className="flex items-center gap-1"><Ruler className="h-4 w-4 text-amber-300" />{hall.areaSqMeters} {isAr ? 'م²' : 'm²'}</span> : null}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:flex">
                     <button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-amber-400">{isAr ? 'ناقش تصميم مناسبتك' : 'Discuss Your Event Plan'}</button>
                     <button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'احجز' : 'Book'}</button>
                   </div>
@@ -192,7 +192,7 @@ export function SarayaCustomerHomepage({
       </section>
 
       {/* DESIGNER FEATURE — INTERVIEW ONLY */}
-      <section id="planner" className="mt-20 overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-slate-900 to-slate-950 scroll-mt-24">
+      <section id="planner" className="mt-12 overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-slate-900 to-slate-950 scroll-mt-24 sm:mt-20 sm:rounded-3xl">
         <div className="grid items-center">
           <div className="p-7 sm:p-10 lg:p-14">
             <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '04 · التخطيط والتصميم' : '04 · EVENT PLANNING & DESIGN'}</div>
@@ -217,7 +217,7 @@ export function SarayaCustomerHomepage({
 
 
       {/* ABOUT SARAYA */}
-      <section id="about" className="mt-20 scroll-mt-24 rounded-3xl border border-amber-500/20 bg-slate-900/70 p-7 sm:p-12">
+      <section id="about" className="mt-12 scroll-mt-24 rounded-2xl border border-amber-500/20 bg-slate-900/70 p-5 sm:mt-20 sm:rounded-3xl sm:p-12">
         <div className="mx-auto max-w-3xl text-center">
           <div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? 'عن السرايا' : 'ABOUT SARAYA'}</div>
           <h2 className="mt-3 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'كل خدمات مناسبتك من خلال فريق واحد' : 'Your event, coordinated through one team'}</h2>
@@ -227,7 +227,7 @@ export function SarayaCustomerHomepage({
       </section>
 
       {/* FINAL CTA */}
-      <section id="contact" className="mt-20 rounded-3xl border border-amber-500/25 bg-slate-900 p-7 text-center sm:p-12">
+      <section id="contact" className="mt-12 rounded-2xl border border-amber-500/25 bg-slate-900 p-5 text-center sm:mt-20 sm:rounded-3xl sm:p-12">
         <div className="mx-auto max-w-2xl">
           <MessageCircle className="mx-auto h-8 w-8 text-amber-300" />
           <div className="mt-4 text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '06 · لنبدأ' : '06 · LET’S START'}</div>
