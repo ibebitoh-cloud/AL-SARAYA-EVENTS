@@ -82,7 +82,7 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
   const [saved, setSaved] = useState(false);
   const [projectName, setProjectName] = useState('');
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number } | null>(null);
+  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; offsetX: number; offsetY: number } | null>(null);
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const eventName = EVENT_NAMES[eventKind][isAr ? 1 : 0];
@@ -123,7 +123,14 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
     event.preventDefault();
     event.stopPropagation();
     setSelectedId(item.id);
-    dragRef.current = { id: item.id, el: event.currentTarget, pointerId: event.pointerId };
+    const itemRect = event.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      id: item.id,
+      el: event.currentTarget,
+      pointerId: event.pointerId,
+      offsetX: event.clientX - (itemRect.left + itemRect.width / 2),
+      offsetY: event.clientY - (itemRect.top + itemRect.height / 2),
+    };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -133,8 +140,8 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
     if (!drag || !canvas || drag.pointerId !== event.pointerId) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = Math.max(3, Math.min(97, ((event.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(3, Math.min(97, ((event.clientY - rect.top) / rect.height) * 100));
+    const x = Math.max(3, Math.min(97, ((event.clientX - drag.offsetX - rect.left) / rect.width) * 100));
+    const y = Math.max(3, Math.min(97, ((event.clientY - drag.offsetY - rect.top) / rect.height) * 100));
 
     drag.el.style.left = `${x}%`;
     drag.el.style.top = `${y}%`;
@@ -146,11 +153,12 @@ export function EventLayoutDesigner({ language }: { language: Language }) {
     if (!drag || !canvas || drag.pointerId !== event.pointerId) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = Math.max(3, Math.min(97, ((event.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(3, Math.min(97, ((event.clientY - rect.top) / rect.height) * 100));
+    const x = Math.max(3, Math.min(97, ((event.clientX - drag.offsetX - rect.left) / rect.width) * 100));
+    const y = Math.max(3, Math.min(97, ((event.clientY - drag.offsetY - rect.top) / rect.height) * 100));
 
     setItems((prev) => prev.map((item) => item.id === drag.id ? { ...item, x, y } : item));
     setSaved(false);
+    try { drag.el.releasePointerCapture(drag.pointerId); } catch {}
     dragRef.current = null;
   };
 
