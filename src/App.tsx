@@ -335,7 +335,7 @@ export default function App() {
                   public_planner: 'planner',
                   public_gallery: 'gallery',
                   public_3d_tour: '3d-tour',
-                } as Record<string, 'events' | 'venues' | 'services' | 'planner' | 'gallery' | '3d-tour'>)[currentTab]}
+                }[currentTab as keyof typeof screenMap]}
                 halls={halls}
                 language={language}
                 onOpenBooking={(hallId) => {
