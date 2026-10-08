@@ -17,16 +17,19 @@ interface InventoryViewProps {
   inventory: InventoryItem[];
   onUpdateItemQuantity: (itemId: string, newQty: number, damagedQty?: number) => void;
   onAddItem: (newItem: InventoryItem) => void;
+  onEditItem: (item: InventoryItem) => void;
 }
 
 export function InventoryView({
   inventory,
   onUpdateItemQuantity,
   onAddItem,
+  onEditItem,
 }: InventoryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
   // New item form
   const [name, setName] = useState('');
@@ -73,6 +76,33 @@ export function InventoryView({
     onAddItem(newItem);
     setIsModalOpen(false);
     setName('');
+  };
+
+  const openEdit = (item: InventoryItem) => {
+    setEditingItem(item);
+    setName(item.name);
+    setCategory(item.category);
+    setQuantity(item.quantity);
+    setUnit(item.unit);
+    setMinThreshold(item.minThreshold);
+    setCostPerUnit(item.costPerUnit);
+    setSalePrice(item.salePrice ?? 0);
+    setIsModalOpen(true);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    const item: InventoryItem = {
+      id: editingItem?.id ?? `inv-${Date.now()}`, name: name.trim(), category,
+      quantity: Math.max(0, Number(quantity) || 0), unit: unit.trim() || 'قطعة',
+      minThreshold: Math.max(0, Number(minThreshold) || 0), costPerUnit: Math.max(0, Number(costPerUnit) || 0),
+      salePrice: Math.max(0, Number(salePrice) || 0), damagedQuantity: editingItem?.damagedQuantity ?? 0,
+      lastRestockedDate: editingItem?.lastRestockedDate ?? new Date().toISOString().split('T')[0],
+    };
+    sound.success();
+    if (editingItem) onEditItem(item); else onAddItem(item);
+    setIsModalOpen(false); setEditingItem(null); setName('');
   };
 
   return (
@@ -194,6 +224,10 @@ export function InventoryView({
 
                 <div className="flex items-center gap-1.5">
                   <button
+                    onClick={() => openEdit(item)}
+                    className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer"
+                  >تعديل</button>
+                  <button
                     onClick={() => {
                       sound.tick();
                       onUpdateItemQuantity(item.id, Math.max(0, item.quantity - 10));
@@ -224,9 +258,9 @@ export function InventoryView({
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-right">
-            <h3 className="text-base font-bold text-white mb-4">إضافة مستلزم / صنف جديد</h3>
+            <h3 className="text-base font-bold text-white mb-4">{editingItem ? "تعديل الصنف" : "إضافة مستلزم / صنف جديد"}</h3>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">اسم الصنف</label>
                 <input
@@ -315,7 +349,7 @@ export function InventoryView({
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white"
                 >
-                  حفظ الصنف
+                  {editingItem ? "حفظ التعديلات" : "حفظ الصنف"}
                 </button>
               </div>
             </form>
