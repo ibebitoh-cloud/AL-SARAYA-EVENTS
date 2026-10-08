@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowRight, ArrowLeft, Calendar, Camera, CheckCircle2, Eye, Heart,
-  MapPin, MessageCircle, Sparkles, Users, Building2, Cake, Presentation,
+  MapPin, MessageCircle, Sparkles, Users, Building2, Cake, Presentation, Ruler,
   Ruler, X
 } from 'lucide-react';
 import { Hall, Language, Booking } from '../types/venueSystem';
