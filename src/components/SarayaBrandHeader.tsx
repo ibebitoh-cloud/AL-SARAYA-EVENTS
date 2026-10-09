@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Menu,
@@ -13,6 +13,8 @@ import {
   ChevronDown,
   Sun,
   Moon,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { Language, VenueTab } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
@@ -43,6 +45,26 @@ export function SarayaBrandHeader({
   const isAr = language === 'ar';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(sound.enabled);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    syncFullscreen();
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      // Fullscreen can be blocked by browser or device policy; keep the app usable.
+    }
+  };
 
   const toggleSound = () => {
     sound.enabled = !sound.enabled;
@@ -159,6 +181,19 @@ export function SarayaBrandHeader({
             <span className="hidden xl:inline">{theme === 'dark' ? (isAr ? 'فاتح' : 'Light') : (isAr ? 'داكن' : 'Dark')}</span>
           </button>
 
+          {/* Fullscreen Toggle */}
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Enter full screen')}
+            aria-pressed={isFullscreen}
+            title={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Enter full screen')}
+            className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-transparent p-2 text-slate-400 transition-colors hover:border-slate-800 hover:bg-slate-900 hover:text-amber-300"
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            <span className="hidden xl:inline">{isFullscreen ? (isAr ? 'خروج' : 'Exit') : (isAr ? 'ملء الشاشة' : 'Fullscreen')}</span>
+          </button>
+
           {/* Language Toggle */}
           <button
             type="button"
@@ -263,9 +298,10 @@ export function SarayaBrandHeader({
               </a>
             ))}
 
-            <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-800 pt-3">
+            <div className="mt-3 grid grid-cols-4 gap-2 border-t border-slate-800 pt-3">
               <button type="button" onClick={() => { setIsMobileMenuOpen(false); onToggleLanguage(); }} className="flex min-h-11 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{isAr ? 'English' : 'العربية'}</button>
               <button type="button" onClick={() => { setIsMobileMenuOpen(false); onToggleTheme(); }} className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{isAr ? (theme === 'dark' ? 'فاتح' : 'داكن') : (theme === 'dark' ? 'Light' : 'Dark')}</button>
+              <button type="button" onClick={() => { setIsMobileMenuOpen(false); void toggleFullscreen(); }} aria-pressed={isFullscreen} className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}{isAr ? (isFullscreen ? 'خروج' : 'ملء الشاشة') : (isFullscreen ? 'Exit' : 'Fullscreen')}</button>
               <button type="button" onClick={toggleSound} className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}{isAr ? 'الصوت' : 'Sound'}</button>
             </div>
           </motion.div>
