@@ -96,53 +96,55 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
 
   return (
     <>
-      {/* Persistent right-side navigation for desktop and mobile */}
-      {!isHidden && <aside
-        className="fixed right-0 top-16 bottom-0 z-[60] flex w-[4.25rem] flex-col border-l border-slate-800/90 bg-slate-950 shadow-2xl shadow-black/20 backdrop-blur-xl sm:top-[72px] lg:w-64"
-        dir={isAr ? 'rtl' : 'ltr'}
-        aria-label={isAr ? 'التنقل الداخلي' : 'Internal navigation'}
-      >
-        <div className="hidden border-b border-slate-800 px-3 py-3 lg:block">
-          <button type="button" onClick={toggleVisibility} className="mb-2 flex w-full items-center justify-end rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-amber-300" aria-label={isAr ? 'إخفاء القائمة الجانبية' : 'Hide sidebar'} title={isAr ? 'إخفاء القائمة الجانبية' : 'Hide sidebar'}><PanelRightClose className="h-4 w-4" /></button>
-          <button type="button" onClick={() => goTo('dashboard')} className="flex w-full items-center gap-2 text-start text-xs font-black tracking-tight text-white" aria-label={isAr ? 'لوحة التحكم' : 'Dashboard'}>
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400" />
-            <span className="truncate">{t.appName}</span>
-          </button>
-          <p className="mt-1 ps-4 text-[10px] text-slate-500">{isAr ? 'التنقل بين الشاشات' : 'Screen navigation'}</p>
+      {/* Admin navigation is integrated directly beneath the brand header */}
+      <div className="sticky top-16 sm:top-[72px] z-40 w-full border-b border-amber-500/20 bg-slate-950/95 shadow-md shadow-black/10 backdrop-blur-xl" dir={isAr ? 'rtl' : 'ltr'}>
+        {!isHidden ? (
+          <div className="mx-auto flex min-h-12 w-full max-w-[1800px] items-center gap-2 px-2 sm:px-4">
+            <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إخفاء شريط التنقل' : 'Hide navigation'} title={isAr ? 'إخفاء شريط التنقل' : 'Hide navigation'} className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-800 text-slate-400 transition hover:border-amber-400/40 hover:bg-slate-900 hover:text-amber-300 sm:inline-flex">
+              <PanelRightClose className="h-4 w-4" />
+            </button>
+            <nav className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1 [scrollbar-width:thin] lg:flex" aria-label={isAr ? 'التنقل بين شاشات الإدارة' : 'Admin navigation'}>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = currentTab === item.id;
+                return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} title={item.label} className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-semibold transition-colors ${active ? 'bg-amber-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+                  <Icon className="h-4 w-4 shrink-0" /><span>{item.label}</span>
+                </button>;
+              })}
+            </nav>
+            <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1 lg:hidden" aria-label={isAr ? 'التنقل السريع' : 'Quick navigation'}>
+              {mobilePrimary.map((item) => renderNavItem(item, true))}
+              <button type="button" onClick={() => { setMoreOpen((open) => !open); setProfileOpen(false); }} aria-expanded={moreOpen} className={`flex min-h-10 min-w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg px-2 text-[9px] font-bold transition-colors ${moreOpen || secondaryItems.some((item) => item.id === currentTab) ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`}>
+                {moreOpen ? <X className="h-4 w-4" /> : <MoreHorizontal className="h-4 w-4" />}<span>{isAr ? 'المزيد' : 'More'}</span>
+              </button>
+            </nav>
+            <div className="hidden shrink-0 items-center gap-1 border-s border-slate-800 ps-2 lg:flex">
+              <button type="button" onClick={onToggleLanguage} className="h-8 rounded-lg border border-slate-800 px-2 text-[11px] font-bold text-slate-300 transition hover:border-amber-400/40 hover:text-white">{isAr ? 'EN' : 'عربي'}</button>
+              <button type="button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen} className="flex h-8 max-w-44 items-center gap-2 rounded-lg px-2 text-start transition hover:bg-slate-900">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-[10px] font-black text-amber-300">{displayName.trim().slice(0, 1)}</span>
+                <span className="min-w-0 truncate text-[11px] font-semibold text-slate-300">{displayName}</span>
+              </button>
+              <button type="button" onClick={onOpenTour} title={isAr ? 'جولة تعريفية' : 'Guided tour'} className="h-8 whitespace-nowrap rounded-lg px-2 text-[11px] font-semibold text-slate-400 transition hover:bg-slate-900 hover:text-white">{isAr ? 'الجولة' : 'Tour'}</button>
+            </div>
+            <button type="button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen} aria-label={isAr ? 'الملف الشخصي' : 'Profile'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-800 text-amber-300 transition hover:bg-slate-900 lg:hidden">
+              <UserRound className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex h-8 items-center justify-center">
+            <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إظهار شريط التنقل' : 'Show navigation'} title={isAr ? 'إظهار شريط التنقل' : 'Show navigation'} className="inline-flex items-center gap-2 rounded-md px-3 py-1 text-[11px] font-semibold text-slate-400 transition hover:bg-slate-900 hover:text-amber-300">
+              <PanelRightOpen className="h-3.5 w-3.5" />{isAr ? 'إظهار التنقل' : 'Show navigation'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {profileOpen && (
+        <div className="fixed end-3 top-28 z-[70] w-64 rounded-2xl border border-slate-700 bg-slate-950 p-4 shadow-2xl sm:end-6" dir={isAr ? 'rtl' : 'ltr'}>
+          <ProfileDetails />
+          <div className="mt-3 border-t border-slate-800 pt-2 text-[11px] text-slate-400">@{user.username}</div>
         </div>
-
-        <nav className="hidden flex-1 flex-col gap-1 overflow-y-auto overscroll-contain p-3 lg:flex">
-          {navItems.map((item) => renderNavItem(item))}
-        </nav>
-
-        <div className="hidden flex-col gap-2 border-t border-slate-800 p-3 lg:flex">
-          {profileOpen && <div className="rounded-xl border border-slate-800 bg-slate-900 p-3"><ProfileDetails /></div>}
-          <button type="button" onClick={onToggleLanguage} className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300 hover:border-amber-400/40 hover:text-white">
-            <span>{isAr ? 'EN' : 'عربي'}</span>
-          </button>
-          <button type="button" onClick={() => setProfileOpen((open) => !open)} aria-expanded={profileOpen} className={`flex min-h-11 items-center gap-2 rounded-xl border px-2 py-2 text-start transition-colors ${profileOpen ? 'border-amber-400/50 bg-slate-800' : 'border-slate-800 bg-slate-900 hover:border-slate-700'}`}>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-xs font-black text-amber-300">{displayName.trim().slice(0, 1)}</span>
-            <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-white">{displayName}</span><span className="block truncate text-[10px] text-slate-500">{displayRole}</span></span>
-          </button>
-          <button type="button" onClick={onOpenTour} className="rounded-xl px-3 py-2 text-start text-[11px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">{isAr ? 'جولة تعريفية' : 'Guided tour'}</button>
-        </div>
-
-        {/* Slim, fixed mobile rail on the right edge */}
-        <nav className="flex flex-1 flex-col items-center gap-1 overflow-y-auto overscroll-contain px-1 py-2 lg:hidden">
-          <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إخفاء القائمة الجانبية' : 'Hide sidebar'} title={isAr ? 'إخفاء القائمة الجانبية' : 'Hide sidebar'} className="mb-1 flex min-h-9 w-full items-center justify-center rounded-lg text-slate-400 hover:bg-slate-900 hover:text-amber-300"><PanelRightClose className="h-4 w-4" /></button>
-          {mobilePrimary.map((item) => renderNavItem(item, true))}
-          <button type="button" onClick={() => { setMoreOpen((open) => !open); setProfileOpen(false); }} aria-expanded={moreOpen} className={`flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[9px] font-bold transition-colors ${moreOpen || secondaryItems.some((item) => item.id === currentTab) ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`}>
-            {moreOpen ? <X className="h-4 w-4" /> : <MoreHorizontal className="h-4 w-4" />}
-            <span>{isAr ? 'المزيد' : 'More'}</span>
-          </button>
-          <button type="button" onClick={() => { setProfileOpen((open) => !open); setMoreOpen(false); }} aria-expanded={profileOpen} className={`flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[9px] font-bold transition-colors ${profileOpen ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`}>
-            <UserRound className="h-4 w-4" />
-            <span className="max-w-full truncate">{isAr ? 'الملف' : 'Profile'}</span>
-          </button>
-          <button type="button" onClick={onToggleLanguage} title={isAr ? 'Switch language' : 'تغيير اللغة'} className="mt-auto flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-800 bg-slate-900 px-1 py-2 text-[10px] font-black text-slate-300 hover:border-amber-400/40">{isAr ? 'EN' : 'ع'}</button>
-        </nav>
-      </aside>}
-      {isHidden && <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} title={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} className="fixed right-0 top-24 z-[70] flex h-10 w-8 items-center justify-center rounded-l-xl border border-r-0 border-slate-700 bg-slate-900 text-amber-300 shadow-lg transition hover:bg-slate-800"><PanelRightOpen className="h-4 w-4" /></button>}
+      )}
 
       {moreOpen && (
         <>
