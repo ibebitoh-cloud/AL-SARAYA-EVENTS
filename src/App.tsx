@@ -246,7 +246,49 @@ export default function App() {
       {currentTab === 'staff' && portalUser && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
       {currentTab === 'reports' && portalUser && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
     </motion.div></AnimatePresence></main>
-    <footer className="w-full border-t border-amber-500/15 bg-slate-950 py-7 px-4 text-xs text-slate-400 mt-10"><div className="max-w-7xl mx-auto flex flex-col items-center gap-5 text-center"><div className="w-full"><div className="flex items-center justify-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(212,175,55,0.8)]" /><span className="text-amber-300 font-serif font-black tracking-wider text-sm">SARAYA EVENT</span><span className="text-slate-600">·</span><span className="text-slate-300 font-semibold">{language === 'ar' ? 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر' : 'Luxury Weddings & Venues'}</span></div><p className="mt-1 text-[10px] text-slate-500">{language === 'ar' ? 'القاهرة الجديدة (الطريق الدائري) · الكورنيش (الإسكندرية) · هاتف: 27950000 2 20+ · واتساب: 4567 123 100 20+' : 'Ring Road, New Cairo · Corniche, Alexandria · Hotline: +20 2 2795 0000 · WhatsApp: +20 100 123 4567'}</p></div><div className="flex flex-wrap items-center justify-center gap-3 text-slate-400 font-mono text-[10px]"><span>{language === 'ar' ? '4 قاعات فندقية مستقلة' : '4 Independent Royal Halls'}</span><span>·</span><span>{language === 'ar' ? 'عزل صوتي 65dB' : '65dB Acoustic Isolation'}</span><span>·</span><button type="button" onClick={() => { sound.click(650); setCurrentTab(currentTab === 'home' ? 'dashboard' : 'home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-amber-400 hover:text-amber-300 underline font-sans">{currentTab === 'home' ? (language === 'ar' ? 'بوابة إدارة القاعات للموظفين' : 'Staff Portal') : (language === 'ar' ? 'العودة لموقع العملاء' : 'Customer Website')}</button><span>·</span><span>© 2026 SARAYA EVENT</span></div><div className="w-full border-t border-white/10 pt-5"><div className="text-[8px] font-semibold uppercase tracking-[0.3em] text-slate-500">POWERED BY</div><div className="mt-0.5 select-none font-sans text-lg font-black uppercase tracking-[0.16em] text-amber-400" title="Bebito">BEBITO</div><div className="mt-1 text-[9px] font-medium tracking-wide text-slate-400">MOHAMED ALAA · +20 114 647 5759</div></div></div></footer>
+    <footer className="mt-12 w-full border-t border-white/10 bg-[#080d17] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-400/10 text-lg font-black tracking-tight text-amber-300">S</div>
+              <div>
+                <div className="text-sm font-bold tracking-[0.16em] text-white">SARAYA EVENT</div>
+                <div className="mt-1 text-xs text-slate-400">{language === 'ar' ? 'السرايا للمناسبات' : 'Luxury Weddings & Venues'}</div>
+              </div>
+            </div>
+            <p className="max-w-md text-sm leading-6 text-slate-400">{language === 'ar' ? 'مساحة راقية للاحتفال بأهم مناسباتكم، مع خدمات وتنظيم يليق بكل لحظة.' : 'An elegant setting for life’s important celebrations, supported by thoughtful service and event planning.'}</p>
+          </div>
+          <div className={language === 'ar' ? 'text-right' : 'text-left'}>
+            <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">{language === 'ar' ? 'تواصل معنا' : 'Contact'}</h2>
+            <div className="mt-4 space-y-3 text-sm text-slate-300">
+              <p className="flex items-start gap-2"><span className="mt-0.5 text-amber-300">⌖</span><span>{language === 'ar' ? 'القاهرة الجديدة · الطريق الدائري' : 'New Cairo · Ring Road'}<br />{language === 'ar' ? 'الكورنيش · الإسكندرية' : 'Corniche · Alexandria'}</span></p>
+              <a className="block transition-colors hover:text-amber-300" href={`tel:${companyProfile.phone.replace(/[^+\d]/g, '')}`}>{language === 'ar' ? 'هاتف' : 'Phone'}: {companyProfile.phone}</a>
+              <a className="block transition-colors hover:text-amber-300" href={`https://wa.me/${companyProfile.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">WhatsApp: {companyProfile.whatsapp}</a>
+            </div>
+          </div>
+          <div className={language === 'ar' ? 'text-right' : 'text-left'}>
+            <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">{language === 'ar' ? 'روابط سريعة' : 'Quick links'}</h2>
+            <div className="mt-4 flex flex-col items-start gap-3 text-sm text-slate-300">
+              <button type="button" onClick={() => { sound.click(650); setCurrentTab(currentTab === 'home' ? 'dashboard' : 'home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="transition-colors hover:text-amber-300">{currentTab === 'home' ? (language === 'ar' ? 'بوابة إدارة القاعات للموظفين' : 'Staff Portal') : (language === 'ar' ? 'العودة لموقع العملاء' : 'Customer Website')}</button>
+              {companyProfile.instagramUrl && <a href={companyProfile.instagramUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-amber-300">Instagram</a>}
+              {companyProfile.tiktokUrl && <a href={companyProfile.tiktokUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-amber-300">TikTok</a>}
+            </div>
+          </div>
+        </div>
+        <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-slate-500">© {new Date().getFullYear()} SARAYA EVENT. {language === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</div>
+          <div className="flex items-center gap-3 sm:justify-end">
+            <div className="h-8 w-px bg-white/10" />
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">{language === 'ar' ? 'تطوير وتصميم' : 'Designed & developed by'}</div>
+              <div className="mt-1 text-xs font-bold tracking-[0.12em] text-slate-300">BEBITO <span className="font-normal tracking-normal text-slate-500">· Mohamed Alaa</span></div>
+              <a href="tel:+201146475759" className="mt-1 block text-[11px] text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
     <NewBookingModal isOpen={isNewBookingModalOpen} onClose={() => setIsNewBookingModalOpen(false)} halls={halls} servicesCatalogue={servicesCatalogue} existingBookings={bookings} onCreateBooking={handleCreateBooking} preselectedHallId={preselectedHallId} customerMode={currentTab === 'home' || currentTab.startsWith('public_')} />
     <EventProfitCalculatorModal isOpen={!!selectedBookingForProfit} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} />
     <InvoicePrintModal isOpen={!!selectedBookingForInvoice} onClose={() => setSelectedBookingForInvoice(null)} booking={selectedBookingForInvoice} />
