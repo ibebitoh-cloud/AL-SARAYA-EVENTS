@@ -37,7 +37,7 @@ export function PhotoLibraryPage({ language, photos, onSavePhotos }: PhotoLibrar
   });
   const [draft, setDraft] = useState<{ titleAr: string; titleEn: string; captionAr: string; captionEn: string; src: string; category: VenuePhoto['category'] } | null>(null);
 
-  const managed = useMemo<ManagedPhoto[]>(() => photos.map((photo) => ({ ...photo, reviewStatus: statuses[photo.id] || 'approved' })), [photos, statuses]);
+  const managed = useMemo<ManagedPhoto[]>(() => photos.map((photo) => ({ ...photo, reviewStatus: statuses[photo.id] || photo.reviewStatus || 'approved' })), [photos, statuses]);
   const sourceKey = (src: string) => (src || '').trim().replace(/[?#].*$/, '').toLowerCase();
   const duplicates = useMemo(() => {
     const counts = new Map<string, number>();
@@ -63,7 +63,7 @@ export function PhotoLibraryPage({ language, photos, onSavePhotos }: PhotoLibrar
     setStatuses(next);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { setNotice(isAr ? 'تعذر حفظ حالات المراجعة في تخزين المتصفح.' : 'Could not save review statuses in browser storage.'); }
   };
-  const setStatus = (id: string, status: ReviewStatus) => persistStatuses({ ...statuses, [id]: status });
+  const setStatus = (id: string, status: ReviewStatus) => { persistStatuses({ ...statuses, [id]: status }); onSavePhotos(photos.map((photo) => photo.id === id ? { ...photo, reviewStatus: status } : photo)); };
   const openNew = () => {
     setSelectedId(null);
     setDraft({ titleAr: '', titleEn: '', captionAr: '', captionEn: '', src: '', category: 'wedding' });
@@ -94,7 +94,7 @@ export function PhotoLibraryPage({ language, photos, onSavePhotos }: PhotoLibrar
       setNotice(isAr ? 'تم حفظ تعديلات الصورة.' : 'Photo changes saved.');
     } else {
       const id = 'photo-' + Date.now();
-      onSavePhotos([{ id, ...draft, hallNameAr: 'غير محدد', hallNameEn: 'Unassigned', captionAr: draft.captionAr, captionEn: draft.captionEn, parallaxSpeed: 0, tags: [] }, ...photos]);
+      onSavePhotos([{ id, ...draft, reviewStatus: 'pending', hallNameAr: 'غير محدد', hallNameEn: 'Unassigned', captionAr: draft.captionAr, captionEn: draft.captionEn, parallaxSpeed: 0, tags: [] }, ...photos]);
       persistStatuses({ ...statuses, [id]: 'pending' });
       setNotice(isAr ? 'تمت إضافة الصورة إلى قائمة المراجعة.' : 'Photo added to the review queue.');
     }
