@@ -51,6 +51,7 @@ export function VenueHeaderNav({
     { id: 'expenses', label: isAr ? 'المصروفات' : 'Expenses', icon: Receipt },
     { id: 'staff', label: isAr ? 'الموظفون' : 'Staff', icon: Users },
     { id: 'reports', label: isAr ? 'التقارير' : 'Reports', icon: ClipboardList },
+    { id: 'photo_library', label: isAr ? 'مكتبة الصور' : 'Photo Library', icon: Images },
   ];
   const desktopPrimary = navItems.slice(0, 8);
   const mobilePrimary = navItems.filter((item) => ['dashboard', 'bookings', 'agenda', 'inventory'].includes(item.id));
