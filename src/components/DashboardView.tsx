@@ -31,22 +31,28 @@ export function DashboardView({
   onNavigateTab,
 }: DashboardViewProps) {
   const isAr = language === 'ar';
-  // A booking should appear once on the dashboard even if a duplicate record
-  // was accidentally added locally. Booking code is the business-level key.
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  // Deduplicate by either stable ID or booking code, including collisions where one differs.
   const uniqueBookings = useMemo(() => {
-    const seen = new Set<string>();
+    const seenIds = new Set<string>();
+    const seenCodes = new Set<string>();
     return bookings.filter((booking) => {
-      const key = (booking.code || booking.id || '').trim().toLowerCase();
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
+      const id = (booking.id || '').trim().toLowerCase();
+      const code = (booking.code || '').trim().toLowerCase();
+      if ((!id && !code) || (id && seenIds.has(id)) || (code && seenCodes.has(code))) return false;
+      if (id) seenIds.add(id);
+      if (code) seenCodes.add(code);
       return true;
     });
   }, [bookings]);
   const activeBookings = uniqueBookings.filter((b) => b.status !== 'cancelled');
   const confirmedBookings = activeBookings.filter((b) => b.status === 'confirmed');
-  const upcoming = [...activeBookings].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
-
-  const today = new Date();
+  const upcoming = activeBookings
+    .filter((booking) => booking.date >= todayKey)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
+    .slice(0, 5);
   const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [hoveredBooking, setHoveredBooking] = useState<Booking | null>(null);
 
@@ -143,7 +149,7 @@ export function DashboardView({
                     <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-bold ${isToday ? 'bg-amber-400 text-slate-950' : current ? 'text-slate-300' : 'text-slate-600'}`}>{date.getDate()}</span>
                   </div>
                   <div className="mt-1 space-y-1">
-                    {dayBookings.map((booking) => (
+                    {dayBookings.slice(0, 2).map((booking) => (
                       <div
                         key={booking.id}
                         className="relative"
@@ -178,6 +184,15 @@ export function DashboardView({
                         )}
                       </div>
                     ))}
+                    {dayBookings.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateTab('bookings')}
+                        className="w-full rounded px-1 py-1 text-[9px] font-bold text-amber-300 hover:bg-slate-800"
+                      >
+                        +{dayBookings.length - 2} {isAr ? 'مواعيد أخرى' : 'more'}
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -195,7 +210,7 @@ export function DashboardView({
           </button>
         </div>
         {upcoming.length === 0 ? (
-          <div className="py-10 text-center text-xs text-slate-500">{isAr ? 'لا توجد حجوزات حالياً.' : 'No bookings yet.'}</div>
+          <div className="py-10 text-center text-xs text-slate-500">{isAr ? 'لا توجد حجوزات قادمة حالياً.' : 'No upcoming bookings.'}</div>
         ) : (
           <div className="space-y-2">
             {upcoming.map((booking) => (
