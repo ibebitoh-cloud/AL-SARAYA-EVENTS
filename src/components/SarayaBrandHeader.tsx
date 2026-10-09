@@ -50,6 +50,7 @@ export function SarayaBrandHeader({
 }: SarayaBrandHeaderProps) {
   const isAr = language === 'ar';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(sound.enabled);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -100,7 +101,7 @@ export function SarayaBrandHeader({
 
   return (
     <header className={`sticky top-0 z-50 shrink-0 border-b border-amber-500/15 bg-slate-950/95 shadow-sm shadow-black/10 backdrop-blur-md transition-[width,margin] duration-200 ${isManagementMode ? 'w-full lg:ms-64 lg:w-[calc(100%-16rem)]' : 'w-full'}`}>
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-3 sm:h-[72px] sm:gap-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-16 w-full max-w-[1600px] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2 sm:px-5 lg:px-6 xl:flex-nowrap xl:gap-4">
         {/* Zone 1: Single text element Brand Wordmark */}
         <div className="flex items-center gap-3 shrink-0">
           <a
@@ -120,7 +121,7 @@ export function SarayaBrandHeader({
 
         {/* Zone 2: Clean 4-6 text navigation links */}
         {!isManagementMode ? (
-          <nav className="hidden lg:flex items-center gap-6 text-xs xl:text-sm font-medium text-slate-300">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-3 text-[11px] font-semibold text-slate-300 lg:flex xl:gap-5 xl:text-xs">
             {navLinks.slice(0, 6).map((link) => (
               <a
                 key={link.id}
@@ -139,12 +140,12 @@ export function SarayaBrandHeader({
             <div className="relative group">
               <button
                 type="button"
-                className="flex items-center gap-1 hover:text-amber-300 transition-colors py-1 whitespace-nowrap"
+                onClick={() => setIsMoreOpen((open) => !open)} aria-expanded={isMoreOpen} className="flex items-center gap-1 rounded-lg px-2 py-2 hover:bg-slate-900 hover:text-amber-300 transition-colors whitespace-nowrap"
               >
                 <span>{isAr ? 'المزيد' : 'More'}</span>
                 <ChevronDown className="w-3.5 h-3.5" />
               </button>
-              <div className="absolute top-full start-0 mt-2 hidden group-hover:flex flex-col min-w-[140px] p-2 bg-slate-900/95 border border-amber-500/20 rounded-xl shadow-xl backdrop-blur-md z-50">
+              <div className={`absolute top-full start-0 mt-2 ${isMoreOpen ? 'flex' : 'hidden group-hover:flex'} flex-col min-w-[160px] p-2 bg-slate-900/95 border border-amber-500/20 rounded-xl shadow-xl backdrop-blur-md z-50`}>
                 {navLinks.slice(6).map((link) => (
                   <a
                     key={link.id}
@@ -153,6 +154,7 @@ export function SarayaBrandHeader({
                       e.preventDefault();
                       sound.tick();
                       onNavigateSection(link.id);
+                      setIsMoreOpen(false);
                     }}
                     className="px-3 py-2 text-xs text-slate-300 hover:text-amber-300 hover:bg-slate-800/80 rounded-lg transition-colors"
                   >
@@ -170,10 +172,10 @@ export function SarayaBrandHeader({
         )}
 
         {/* Zone 3: Primary Actions (Language, Audio, Booking CTA, Discreet Management) */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {!isManagementMode && (
             <>
-              <a href={instagramHref} target="_blank" rel="noreferrer" aria-label="Instagram profile" title={instagramUrl?.trim() ? 'Instagram profile' : 'Set the official Instagram URL in Company Profile'} className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 text-slate-300 transition-colors hover:border-amber-400/50 hover:bg-slate-900 hover:text-amber-300">
+              <a href={instagramHref} target="_blank" rel="noreferrer" aria-label="Instagram profile" title={instagramUrl?.trim() ? 'Instagram profile' : 'Set the official Instagram URL in Company Profile'} className="hidden xl:inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 transition-colors hover:border-amber-400/50 hover:bg-slate-900 hover:text-amber-300">
                 <Instagram className="h-4 w-4" />
               </a>
               <a href={tiktokHref} target="_blank" rel="noreferrer" aria-label="TikTok profile" title={tiktokUrl?.trim() ? 'TikTok profile' : 'Set the official TikTok URL in Company Profile'} className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 text-slate-300 transition-colors hover:border-amber-400/50 hover:bg-slate-900 hover:text-amber-300">
@@ -186,7 +188,7 @@ export function SarayaBrandHeader({
             type="button"
             onClick={toggleSound}
             aria-label={soundEnabled ? 'Mute' : 'Enable audio'}
-            className="hidden sm:flex p-2 text-slate-400 hover:text-amber-300 transition-colors rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800"
+            className="hidden xl:flex h-8 w-8 items-center justify-center text-slate-400 hover:text-amber-300 transition-colors rounded-lg hover:bg-slate-900 border border-slate-800"
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
           </button>
@@ -200,7 +202,7 @@ export function SarayaBrandHeader({
             }}
             aria-label={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الداكن' : 'Dark theme')}
             title={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الداكن' : 'Dark theme')}
-            className="saraya-theme-toggle hidden sm:inline-flex"
+            className="saraya-theme-toggle inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 px-2 text-[11px] font-semibold text-slate-200 transition-colors hover:border-amber-400/50 hover:text-amber-300"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             <span className="hidden xl:inline">{theme === 'dark' ? (isAr ? 'فاتح' : 'Light') : (isAr ? 'داكن' : 'Dark')}</span>
@@ -213,7 +215,7 @@ export function SarayaBrandHeader({
             aria-label={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Enter full screen')}
             aria-pressed={isFullscreen}
             title={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Enter full screen')}
-            className="hidden sm:inline-flex h-8 min-w-8 w-auto items-center justify-center gap-1.5 rounded-md border border-slate-700/70 bg-slate-900/60 px-2 text-xs font-medium leading-none whitespace-nowrap text-slate-300 transition-colors hover:border-amber-400/50 hover:bg-slate-800 hover:text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
+            className="inline-flex h-8 min-w-8 w-8 items-center justify-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 px-2 text-xs font-medium leading-none whitespace-nowrap text-slate-300 transition-colors hover:border-amber-400/50 hover:bg-slate-800 hover:text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 xl:w-auto"
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4 shrink-0" /> : <Maximize2 className="h-4 w-4 shrink-0" />}
             <span className="hidden xl:inline">{isFullscreen ? (isAr ? 'خروج من الشاشة' : 'Exit fullscreen') : (isAr ? 'ملء الشاشة' : 'Fullscreen')}</span>
@@ -226,7 +228,7 @@ export function SarayaBrandHeader({
               sound.click(700);
               onToggleLanguage();
             }}
-            className="hidden sm:inline-flex px-2.5 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors whitespace-nowrap"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-700/80 bg-slate-900/70 px-2 text-[11px] font-bold text-slate-200 transition-colors hover:border-amber-400/50 hover:text-white whitespace-nowrap"
           >
             {isAr ? 'EN' : 'العربية'}
           </button>
@@ -251,7 +253,7 @@ export function SarayaBrandHeader({
                 onOpenManagementPortal();
               }}
               title={isAr ? 'بوابة إدارة القاعات للموظفين' : 'Staff Management Portal'}
-              className="p-2 text-slate-400 hover:text-amber-300 transition-colors rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800 hidden sm:flex items-center gap-1.5 text-xs"
+              className="h-8 rounded-lg border border-slate-700/80 bg-slate-900/70 px-2 text-slate-300 transition-colors hover:border-amber-400/50 hover:text-amber-300 hidden sm:flex items-center gap-1.5 text-xs"
             >
               <Shield className="w-3.5 h-3.5" />
               <span className="hidden md:inline text-[11px] text-slate-400">{isAr ? 'الإدارة' : 'Portal'}</span>
@@ -265,7 +267,7 @@ export function SarayaBrandHeader({
               sound.chime();
               onOpenBookingModal();
             }}
-            className="px-3 py-2 sm:px-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-lg transition-all shadow-[0_0_15px_rgba(212,175,55,0.4)] whitespace-nowrap"
+            className="h-8 px-2.5 sm:px-3 text-[11px] font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-lg transition-all shadow-[0_0_15px_rgba(212,175,55,0.4)] whitespace-nowrap"
           >
             <Calendar className="inline h-4 w-4 sm:hidden" />
             <span className="hidden sm:inline">{isAr ? 'احجز مناسبتك' : 'Book Your Event'}</span>
