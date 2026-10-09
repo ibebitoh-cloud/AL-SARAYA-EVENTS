@@ -9,50 +9,32 @@ interface OnboardingFlowProps {
   language: Language;
   onClose: () => void;
   onComplete: () => void;
-  onNavigate?: (tab: 'dashboard' | 'bookings' | 'photo_library' | 'finance' | 'clients') => void;
+  onNavigate?: (tab: import('../types/venueSystem').VenueTab) => void;
 }
 
 export function OnboardingFlow({ isOpen, language, onClose, onComplete, onNavigate }: OnboardingFlowProps) {
   const isAr = language === 'ar';
   const [step, setStep] = useState(0);
   const steps = [
-    {
-      icon: LayoutDashboard,
-      title: isAr ? 'مرحباً بك في بوابة السرايا' : 'Welcome to SARAYA EVENT',
-      description: isAr ? 'هذه جولة سريعة للتعرّف على أقسام إدارة القاعات. استخدم القائمة الجانبية للتنقل بين الشاشات.' : 'Take a quick tour of the venue management portal. Use the sidebar to move between screens.',
-      action: isAr ? 'لوحة التحكم' : 'Dashboard',
-      tab: 'dashboard' as const,
-    },
-    {
-      icon: CalendarDays,
-      title: isAr ? 'الحجوزات والمناسبات' : 'Bookings & Events',
-      description: isAr ? 'أنشئ حجزاً، وسجّل بيانات العميل والقاعة وموعد المناسبة والسعر والعربون. راجع حالة الحجز والمدفوعات المستحقة.' : 'Create reservations and manage customer, hall, event date, price, deposit, and booking status.',
-      action: isAr ? 'فتح الحجوزات' : 'Open bookings',
-      tab: 'bookings' as const,
-    },
-    {
-      icon: Images,
-      title: isAr ? 'مكتبة الصور' : 'Photo Library',
-      description: isAr ? 'تصفّح صور المناسبات في مكان واحد. لكل عملية حجز ألبوم مستقل لتسهيل الوصول إلى صور المناسبة.' : 'Browse event photos in one place. Each booking has its own album to keep event photos organized.',
-      action: isAr ? 'فتح مكتبة الصور' : 'Open photo library',
-      tab: 'photo_library' as const,
-    },
-    {
-      icon: Wallet,
-      title: isAr ? 'المالية والمدفوعات' : 'Finance & Payments',
-      description: isAr ? 'تابع المقبوضات والعربون والمبالغ المتبقية والمصروفات. راجع السجلات قبل اعتماد أي إجراء مالي.' : 'Track receipts, deposits, outstanding balances, and expenses. Review entries before confirming financial actions.',
-      action: isAr ? 'فتح المالية' : 'Open finance',
-      tab: 'finance' as const,
-    },
-    {
-      icon: Users,
-      title: isAr ? 'العملاء وإنهاء الجولة' : 'Clients & Finish',
-      description: isAr ? 'استخدم شاشة العملاء لمراجعة بيانات العملاء والحجوزات المرتبطة بهم. يمكنك الرجوع إلى هذه الجولة من القائمة الجانبية في أي وقت.' : 'Use the Clients screen to review customer records and related bookings. You can reopen this tour from the sidebar whenever you need it.',
-      action: isAr ? 'فتح العملاء' : 'Open clients',
-      tab: 'clients' as const,
-    },
-  ];
-  const active = steps[step];
+    { icon: LayoutDashboard, title: isAr ? 'نظرة عامة على السرايا' : 'SARAYA EVENT at a glance', description: isAr ? 'السرايا منصة لإدارة أعمال قاعات الأفراح والمناسبات من أول استفسار وحجز، مروراً بتجهيز المناسبة والعقد والخدمات، وحتى التحصيل والمصروفات والتقارير والصور. هذه الجولة تشرح وظيفة كل شاشة وكيف تتكامل الأقسام معاً.' : 'SARAYA EVENT brings venue operations together: enquiries and bookings, event planning, contracts and services, payments and expenses, reports, and event photos. This tour explains what each screen is for and how the sections fit together.', action: isAr ? 'فتح لوحة التحكم' : 'Open dashboard', tab: 'dashboard' as const },
+    { icon: LayoutDashboard, title: isAr ? 'لوحة التحكم' : 'Dashboard', description: isAr ? 'ابدأ من هنا للحصول على نظرة سريعة على النشاط والحجوزات والمؤشرات المهمة. استخدمها كنقطة بداية، ثم انتقل إلى الشاشة المتخصصة لتنفيذ الإجراء أو مراجعة التفاصيل.' : 'Start here for a high-level view of venue activity, bookings, and key indicators. Use it as your starting point, then open the relevant screen to take action or inspect details.', action: isAr ? 'فتح لوحة التحكم' : 'Open dashboard', tab: 'dashboard' as const },
+    { icon: CalendarDays, title: isAr ? 'الحجوزات والمناسبات' : 'Bookings & Events', description: isAr ? 'أنشئ الحجز وسجّل العميل ورقم الهاتف ونوع المناسبة والتاريخ والوقت والقاعة وعدد الضيوف والسعر والخدمات والعربون والتأمين. راجع حالة الحجز والمبلغ المدفوع والمتبقي، وحدّث بيانات المناسبة عند الحاجة. إنشاء الحجز يضيف ألبومه إلى مكتبة الصور، وإذا سُجّل عربون يُنشأ له سجل تحصيل.' : 'Create a booking with client contacts, event type, date and time, venue, guest count, pricing, services, deposit, and security deposit. Review booking status, paid amount, and remaining balance. A new booking is linked to its own photo album, and a recorded deposit creates a payment entry.', action: isAr ? 'فتح الحجوزات' : 'Open bookings', tab: 'bookings' as const },
+    { icon: CalendarDays, title: isAr ? 'الأجندة ومواعيد المناسبات' : 'Calendar & Agenda', description: isAr ? 'استخدم الأجندة لمراجعة المناسبات حسب مواعيدها ومتابعة جدول القاعات، واكتشاف تداخل المواعيد مبكراً. ارجع إلى شاشة الحجوزات لتعديل تفاصيل الحجز نفسه.' : 'Use the agenda to review upcoming events by date and keep track of the venue schedule. Spot potential timing conflicts early, then return to Bookings to change reservation details.', action: isAr ? 'فتح الأجندة' : 'Open agenda', tab: 'agenda' as const },
+    { icon: Images, title: isAr ? 'مكتبة الصور وألبومات الحجوزات' : 'Photo Library & Albums', description: isAr ? 'تجمع مكتبة الصور صور المناسبات في شاشة مستقلة. لكل حجز ألبوم مرتبط به حتى يسهل العثور على الصور الخاصة بكل عميل ومناسبة بدلاً من خلط الصور بين الحجوزات. افتح المكتبة لمراجعة الصور وإدارة محتوى الألبومات.' : 'The separate Photo Library organizes event photos. Each booking has its own associated album so photos can be found by event instead of being mixed together. Open the library to browse and manage event imagery.', action: isAr ? 'فتح مكتبة الصور' : 'Open photo library', tab: 'photo_library' as const },
+    { icon: CalendarDays, title: isAr ? 'تصميم المناسبة ومخطط القاعة' : 'Event Designer & Floor Plan', description: isAr ? 'استخدم مصمم المناسبة ومخطط القاعة لترتيب تصور تجهيز المكان وتوزيع العناصر والطاولات. هذه الشاشات مخصصة للتخطيط البصري؛ احتفظ ببيانات الحجز الأساسية في شاشة الحجوزات.' : 'Use the event designer and floor-plan tools to plan the visual setup of a venue and arrange layout elements or tables. These tools support planning; keep the official reservation details in Bookings.', action: isAr ? 'فتح مخطط القاعة' : 'Open floor plan', tab: 'floorplan' as const },
+    { icon: Users, title: isAr ? 'توزيع الضيوف والطاولات' : 'Guest & Table Planning', description: isAr ? 'عند تجهيز مناسبة تتطلب توزيع جلوس، استخدم أدوات تخطيط المناسبة لمراجعة الطاولات وربط الضيوف بالطاولات المتاحة. راجع التوزيع بعد كل تعديل لتجنب ترك ضيوف بلا مقاعد أو تكرار التخصيص.' : 'For events that need seating plans, use the event-planning tools to review tables and assign guests to available tables. Check the layout after changes so guests are not left unassigned or assigned twice.', action: isAr ? 'فتح مصمم المناسبة' : 'Open event designer', tab: 'event_designer' as const },
+    { icon: Sparkles, title: isAr ? 'البوفيه والخدمات الإضافية' : 'Catering & Services', description: isAr ? 'راجع خيارات البوفيه وباقات الضيافة من شاشة البوفيه، واستخدم الخدمات لتعريف الخدمات الإضافية مثل الديكور والصوت والإضاءة والتصوير والطاولات والكراسي مع أسعارها وتكلفتها. أضف الخدمات المناسبة إلى الحجز وراجع أثرها على الإجمالي.' : 'Review food and hospitality options in Catering. Use Services to maintain add-ons such as décor, sound, lighting, photography, tables, and chairs, including their prices and costs. Add the appropriate services to a booking and verify the updated total.', action: isAr ? 'فتح الخدمات' : 'Open services', tab: 'services' as const },
+    { icon: CheckCircle2, title: isAr ? 'العقود والاتفاقات' : 'Contracts', description: isAr ? 'استخدم شاشة العقود لمراجعة بيانات الاتفاق المرتبط بالحجز، والمبالغ والعربون والتأمين وحالة العقد. تأكد من مطابقة اسم العميل والقاعة والتاريخ والقيم قبل اعتماد العقد أو تحديث حالته.' : 'Use Contracts to review the agreement tied to a booking, including client and venue details, event date, amounts, deposit, security deposit, and contract status. Verify these details before confirming or updating an agreement.', action: isAr ? 'فتح العقود' : 'Open contracts', tab: 'contracts' as const },
+    { icon: Users, title: isAr ? 'العملاء' : 'Clients', description: isAr ? 'شاشة العملاء تساعدك على مراجعة ملفات العملاء ووسائل الاتصال والحجوزات المرتبطة بهم وإجمالي التعاملات والأرصدة المستحقة. استخدمها للعثور على سجل العميل قبل إنشاء حجز جديد أو متابعة حجز قائم.' : 'Clients keeps customer records and contact details together with related bookings, total activity, and outstanding balances. Find the client record before creating a new booking or following up on an existing one.', action: isAr ? 'فتح العملاء' : 'Open clients', tab: 'clients' as const },
+    { icon: Wallet, title: isAr ? 'سجل التحصيل والإيصالات' : 'Payments Ledger & Receipts', description: isAr ? 'سجّل وراجع دفعات العملاء والإيصالات وطرق الدفع، بما في ذلك العربون والأقساط والتأمين ورد التأمين. راجع رقم الإيصال واسم العميل وكود الحجز والمبلغ والتاريخ قبل إتمام التسجيل؛ ويُحدّث التحصيل رصيد الحجز المرتبط به.' : 'Record and review customer payments and receipts, including deposits, installments, security deposits, and security refunds. Verify receipt number, client, booking code, amount, date, and payment method. A payment updates the balance of its linked booking.', action: isAr ? 'فتح سجل التحصيل' : 'Open payment ledger', tab: 'payments' as const },
+    { icon: Wallet, title: isAr ? 'المصروفات' : 'Expenses', description: isAr ? 'سجّل المصروفات التشغيلية مثل العمالة والمرافق والنظافة والصيانة والتجهيزات والتسويق، وحدد المستفيد والتاريخ والقيمة. اربط المصروف بالحجز عند انطباق ذلك حتى يمكن مراجعة تكلفة المناسبة بصورة أوضح.' : 'Record operating costs such as labor, utilities, cleaning, maintenance, supplies, and marketing. Enter the payee, date, and amount, and link an expense to a booking when relevant to make event costs easier to review.', action: isAr ? 'فتح المصروفات' : 'Open expenses', tab: 'expenses' as const },
+    { icon: Wallet, title: isAr ? 'المالية' : 'Finance Overview', description: isAr ? 'استخدم شاشة المالية لمراجعة الصورة الإجمالية للتحصيل والمبالغ المستحقة والمصروفات. سجل الدفعات في سجل التحصيل وسجّل التكاليف في المصروفات أولاً حتى تكون المراجعة المالية مبنية على بيانات واضحة ومحدثة.' : 'Use Finance for a broader view of collections, outstanding balances, and expenses. Enter receipts in the Payments Ledger and costs in Expenses first so the overview reflects the records maintained by the team.', action: isAr ? 'فتح المالية' : 'Open finance', tab: 'finance' as const },
+    { icon: Sparkles, title: isAr ? 'المخزون والمستلزمات' : 'Inventory & Supplies', description: isAr ? 'تابع كميات المستلزمات ووحدات القياس والحد الأدنى المطلوب والكميات التالفة وتاريخ آخر توريد. حدّث الكميات بعد الاستلام أو الاستخدام، وراجع الأصناف التي اقتربت من حد التنبيه قبل موعد المناسبة.' : 'Track supply quantities, units, minimum thresholds, damaged items, and last restock date. Update quantities after receiving or using items, and review low-stock items before an event.', action: isAr ? 'فتح المخزون' : 'Open inventory', tab: 'inventory' as const },
+    { icon: Users, title: isAr ? 'الموظفون وفريق العمل' : 'Staff & Team', description: isAr ? 'راجع بيانات الموظفين وأدوارهم وأجورهم وحالة الحضور والسلف والحوافز. حدّث الحضور وراجع توزيع المسؤوليات قبل المناسبة، وتحقق من البيانات المالية الخاصة بالفريق قبل اعتمادها.' : 'Review staff contacts, roles, pay arrangements, attendance, loans, and bonuses. Update attendance and check responsibilities before an event, then verify team-related financial details before relying on them.', action: isAr ? 'فتح الموظفين' : 'Open staff', tab: 'staff' as const },
+    { icon: LayoutDashboard, title: isAr ? 'التقارير' : 'Reports', description: isAr ? 'ارجع إلى التقارير لمراجعة ملخصات النشاط ومؤشرات الأداء المتاحة. استخدمها للمتابعة واكتشاف ما يحتاج إلى اهتمام، ثم افتح شاشة الحجوزات أو المالية أو المصروفات للوصول إلى السجل التفصيلي والتحقق منه.' : 'Use Reports to review available activity summaries and performance indicators. Identify items that need attention, then open Bookings, Finance, or Expenses to inspect and verify the underlying records.', action: isAr ? 'فتح التقارير' : 'Open reports', tab: 'reports' as const },
+    { icon: Sparkles, title: isAr ? 'الموقع العام وتجربة العميل' : 'Public Website & Customer Experience', description: isAr ? 'الواجهة العامة مخصصة لتعريف الزوار بالسرايا والقاعات والخدمات والمعرض وأدوات التخطيط والجولة الافتراضية المتاحة. بوابة الإدارة منفصلة عنها وتُستخدم لتشغيل الحجوزات والبيانات الداخلية. افتح الموقع العام لمراجعة ما يراه العميل.' : 'The public-facing website introduces visitors to SARAYA EVENT, venues, services, gallery, planning tools, and the available virtual tour. The management portal is separate and handles internal operations. Review the public pages to understand the customer-facing experience.', action: isAr ? 'العودة إلى الصفحة الرئيسية' : 'Return to public home', tab: 'home' as const },
+    { icon: CheckCircle2, title: isAr ? 'ملخص التطبيق وطريقة العمل' : 'Full App Overview & Recommended Workflow', description: isAr ? 'باختصار: ابدأ بملف العميل ثم أنشئ الحجز، وتأكد من القاعة والتاريخ والسعر والخدمات والعربون والتأمين. بعد ذلك راجع الأجندة، جهّز مخطط القاعة والبوفيه والموظفين والمخزون، وراجع العقد. سجّل كل دفعة في سجل التحصيل وكل تكلفة في المصروفات، ثم تابع الرصيد والنتائج من المالية والتقارير. أخيراً، احتفظ بصور المناسبة في ألبوم الحجز الخاص بها. استخدم الشاشة المتخصصة لكل مهمة، ولا تعتبر الأرقام أو السجلات نهائية قبل مراجعة تفاصيلها. يمكنك الرجوع إلى هذا الدليل من القائمة الجانبية في أي وقت.' : 'In short: find or create the client record, create the booking, and verify venue, date, price, services, deposit, and security deposit. Check the agenda, plan the layout and catering, coordinate staff and inventory, and review the contract. Record every collection in the Payments Ledger and every cost in Expenses, then monitor balances and results in Finance and Reports. Keep event photos in that booking’s album. Use the dedicated screen for each task and verify the underlying record before treating a figure as final. Reopen this guide from the sidebar whenever you need it.', action: isAr ? 'إنهاء الجولة' : 'Finish tour', tab: 'dashboard' as const },
+  ];  const active = steps[step];
   const Icon = active.icon;
 
   useEffect(() => {
@@ -95,7 +77,7 @@ export function OnboardingFlow({ isOpen, language, onClose, onComplete, onNaviga
           <div className="mb-6 pe-8">
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400">{isAr ? 'دليل الاستخدام التفاعلي' : 'Interactive onboarding'} · {isAr ? `الخطوة ${step + 1} من ${steps.length}` : `Step ${step + 1} of ${steps.length}`}</div>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800"><motion.div className="h-full rounded-full bg-amber-400" animate={{ width: `${((step + 1) / steps.length) * 100}%` }} transition={{ duration: 0.25 }} /></div>
-            <div className="mt-3 grid grid-cols-5 gap-2">
+            <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6">
               {steps.map((item, index) => <button key={item.title} type="button" onClick={() => setStep(index)} aria-label={isAr ? `الانتقال إلى الخطوة ${index + 1}` : `Go to step ${index + 1}`} className={`flex h-9 items-center justify-center rounded-lg border text-xs font-bold transition ${index === step ? 'border-amber-400 bg-amber-400 text-slate-950' : index < step ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-slate-700 bg-slate-950 text-slate-500'}`}>{index < step ? <CheckCircle2 className="h-4 w-4" /> : index + 1}</button>)}
             </div>
           </div>
