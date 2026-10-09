@@ -213,10 +213,10 @@ export function SarayaBrandHeader({
             aria-label={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Enter full screen')}
             aria-pressed={isFullscreen}
             title={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Enter full screen')}
-            className="hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-700/70 bg-slate-900/60 p-1.5 text-slate-400 transition-colors hover:border-amber-400/40 hover:bg-slate-800 hover:text-amber-300"
+            className="hidden sm:inline-flex h-8 min-w-8 w-auto items-center justify-center gap-1.5 rounded-md border border-slate-700/70 bg-slate-900/60 px-2 text-xs font-medium leading-none whitespace-nowrap text-slate-300 transition-colors hover:border-amber-400/50 hover:bg-slate-800 hover:text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
           >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            <span className="hidden xl:inline">{isFullscreen ? (isAr ? 'خروج' : 'Exit') : (isAr ? 'ملء الشاشة' : 'Fullscreen')}</span>
+            {isFullscreen ? <Minimize2 className="h-4 w-4 shrink-0" /> : <Maximize2 className="h-4 w-4 shrink-0" />}
+            <span className="hidden xl:inline">{isFullscreen ? (isAr ? 'خروج من الشاشة' : 'Exit fullscreen') : (isAr ? 'ملء الشاشة' : 'Fullscreen')}</span>
           </button>
 
           {/* Language Toggle */}
