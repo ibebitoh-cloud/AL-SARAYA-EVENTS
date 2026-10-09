@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
   ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, MoreHorizontal,
-  CalendarDays, Settings2, X, ChevronRight,
+  CalendarDays, Settings2, X, ChevronRight, PanelRightClose, PanelRightOpen,
 } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
@@ -16,15 +16,24 @@ interface VenueHeaderNavProps {
   onTabChange: (tab: VenueTab) => void;
   onToggleLanguage: () => void;
   onOpenTour: () => void;
+  onVisibilityChange: (visible: boolean) => void;
 }
 
 type NavItem = { id: VenueTab; label: string; icon: typeof LayoutDashboard };
 
-export function VenueHeaderNav({ currentTab, language, user, onTabChange, onToggleLanguage, onOpenTour }: VenueHeaderNavProps) {
+export function VenueHeaderNav({ currentTab, language, user, onTabChange, onToggleLanguage, onOpenTour, onVisibilityChange }: VenueHeaderNavProps) {
   const isAr = language === 'ar';
   const t = DICTIONARY[language];
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+  const toggleVisibility = () => {
+    const nextVisible = isHidden;
+    setIsHidden(!isHidden);
+    setMoreOpen(false);
+    setProfileOpen(false);
+    onVisibilityChange(nextVisible);
+  };
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: isAr ? 'لوحة التحكم' : 'Dashboard', icon: LayoutDashboard },
@@ -88,12 +97,13 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
   return (
     <>
       {/* Persistent right-side navigation for desktop and mobile */}
-      <aside
+      {!isHidden && <aside
         className="fixed right-0 top-16 bottom-0 z-[60] flex w-[4.25rem] flex-col border-l border-slate-800/90 bg-slate-950 shadow-2xl shadow-black/20 backdrop-blur-xl sm:top-[72px] lg:w-64"
         dir={isAr ? 'rtl' : 'ltr'}
         aria-label={isAr ? 'التنقل الداخلي' : 'Internal navigation'}
       >
-        <div className="hidden border-b border-slate-800 px-4 py-4 lg:block">
+        <div className="hidden border-b border-slate-800 px-3 py-3 lg:block">
+          <button type="button" onClick={toggleVisibility} className="mb-2 flex w-full items-center justify-end rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-amber-300" aria-label={isAr ? 'إخفاء القائمة الجانبية' : 'Hide sidebar'} title={isAr ? 'إخفاء القائمة الجانبية' : 'Hide sidebar'}><PanelRightClose className="h-4 w-4" /></button>
           <button type="button" onClick={() => goTo('dashboard')} className="flex w-full items-center gap-2 text-start text-xs font-black tracking-tight text-white" aria-label={isAr ? 'لوحة التحكم' : 'Dashboard'}>
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400" />
             <span className="truncate">{t.appName}</span>
@@ -119,6 +129,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
 
         {/* Slim, fixed mobile rail on the right edge */}
         <nav className="flex flex-1 flex-col items-center gap-1 overflow-y-auto overscroll-contain px-1 py-2 lg:hidden">
+          <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إخفاء القائمة الجانبية' : 'Hide sidebar'} title={isAr ? 'إخفاء القائمة الجانبية' : 'Hide sidebar'} className="mb-1 flex min-h-9 w-full items-center justify-center rounded-lg text-slate-400 hover:bg-slate-900 hover:text-amber-300"><PanelRightClose className="h-4 w-4" /></button>
           {mobilePrimary.map((item) => renderNavItem(item, true))}
           <button type="button" onClick={() => { setMoreOpen((open) => !open); setProfileOpen(false); }} aria-expanded={moreOpen} className={`flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[9px] font-bold transition-colors ${moreOpen || secondaryItems.some((item) => item.id === currentTab) ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`}>
             {moreOpen ? <X className="h-4 w-4" /> : <MoreHorizontal className="h-4 w-4" />}
@@ -130,7 +141,8 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
           </button>
           <button type="button" onClick={onToggleLanguage} title={isAr ? 'Switch language' : 'تغيير اللغة'} className="mt-auto flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-800 bg-slate-900 px-1 py-2 text-[10px] font-black text-slate-300 hover:border-amber-400/40">{isAr ? 'EN' : 'ع'}</button>
         </nav>
-      </aside>
+      </aside>}
+      {isHidden && <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} title={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} className="fixed right-0 top-24 z-[70] flex h-10 w-8 items-center justify-center rounded-l-xl border border-r-0 border-slate-700 bg-slate-900 text-amber-300 shadow-lg transition hover:bg-slate-800"><PanelRightOpen className="h-4 w-4" /></button>}
 
       {moreOpen && (
         <>
