@@ -30,7 +30,8 @@ export type VenueTab =
   | 'expenses'
   | 'inventory'
   | 'staff'
-  | 'reports';
+  | 'reports'
+  | 'photo_library';
 
 export interface CateringItem {
   id: string;
