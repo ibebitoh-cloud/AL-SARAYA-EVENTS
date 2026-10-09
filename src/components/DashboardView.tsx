@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Calendar, Building, Clock, Plus, ArrowRight, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { Calendar, Building, Clock, ArrowRight, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { Booking, Hall, Language } from '../types/venueSystem';
 
 interface DashboardViewProps {
   bookings: Booking[];
   halls: Hall[];
   language: Language;
-  onOpenNewBooking: () => void;
   onNavigateTab: (tab: any) => void;
 }
 
@@ -29,7 +28,6 @@ export function DashboardView({
   bookings,
   halls,
   language,
-  onOpenNewBooking,
   onNavigateTab,
 }: DashboardViewProps) {
   const isAr = language === 'ar';
@@ -94,9 +92,6 @@ export function DashboardView({
           <h1 className="text-xl sm:text-2xl font-black text-white">{isAr ? 'لوحة التحكم' : 'Dashboard'}</h1>
           <p className="text-xs text-slate-400 mt-1">{isAr ? 'كل ما تحتاجه لإدارة الحجوزات اليومية.' : 'Everything you need for daily booking management.'}</p>
         </div>
-        <button onClick={onOpenNewBooking} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black">
-          <Plus className="w-4 h-4" />{isAr ? 'حجز جديد' : 'New Booking'}
-        </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
