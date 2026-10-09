@@ -33,7 +33,18 @@ export function DashboardView({
   onNavigateTab,
 }: DashboardViewProps) {
   const isAr = language === 'ar';
-  const activeBookings = bookings.filter((b) => b.status !== 'cancelled');
+  // A booking should appear once on the dashboard even if a duplicate record
+  // was accidentally added locally. Booking code is the business-level key.
+  const uniqueBookings = useMemo(() => {
+    const seen = new Set<string>();
+    return bookings.filter((booking) => {
+      const key = (booking.code || booking.id || '').trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [bookings]);
+  const activeBookings = uniqueBookings.filter((b) => b.status !== 'cancelled');
   const confirmedBookings = activeBookings.filter((b) => b.status === 'confirmed');
   const upcoming = [...activeBookings].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
 
