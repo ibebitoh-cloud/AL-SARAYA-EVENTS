@@ -60,6 +60,7 @@ export interface VenuePhoto {
   parallaxSpeed: number; // e.g. 0.15, -0.2, 0.25 for multi-speed motion
   hallId?: string;
   tags?: string[];
+  reviewStatus?: 'pending' | 'approved' | 'rejected' | 'archived';
 }
 
 export const ALSARAYA_PHOTOS: VenuePhoto[] = [
