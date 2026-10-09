@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Plus, LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
+  LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
   ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, MoreHorizontal,
   ChevronDown, CalendarDays, Settings2,
 } from 'lucide-react';
@@ -15,7 +15,6 @@ interface VenueHeaderNavProps {
   user: SystemUser;
   onTabChange: (tab: VenueTab) => void;
   onToggleLanguage: () => void;
-  onOpenNewBooking: () => void;
   onOpenTour: () => void;
   onOpenPhotoLibrary: () => void;
 }
@@ -28,7 +27,6 @@ export function VenueHeaderNav({
   user,
   onTabChange,
   onToggleLanguage,
-  onOpenNewBooking,
   onOpenPhotoLibrary,
 }: VenueHeaderNavProps) {
   const isAr = language === 'ar';
@@ -94,17 +92,14 @@ export function VenueHeaderNav({
   return (
     <>
       {/* Fixed desktop side panel. Logical start places it on the right in Arabic and left in English. */}
-      <aside className="fixed inset-y-[72px] start-0 z-40 hidden w-60 flex-col border-e border-slate-800/90 bg-slate-950/98 shadow-xl backdrop-blur-xl lg:flex xl:w-64"
+      <aside className="fixed top-[72px] bottom-0 start-0 z-40 hidden w-60 flex-col border-e border-slate-800/90 bg-slate-950/98 shadow-xl backdrop-blur-xl lg:flex xl:w-64"
         aria-label={isAr ? 'التنقل الداخلي' : 'Internal navigation'}>
         <div className="flex min-h-0 flex-1 flex-col px-3 py-4">
           <button type="button" onClick={() => goTo('dashboard')} className="mb-4 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-3 text-start">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400 text-slate-950"><LayoutDashboard className="h-4 w-4" /></span>
             <span className="min-w-0"><span className="block truncate text-xs font-black tracking-[0.16em] text-white">SARAYA</span><span className="mt-1 block truncate text-[10px] text-slate-500">{isAr ? 'إدارة وتشغيل القاعات' : 'Venue Operations'}</span></span>
           </button>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={onOpenNewBooking} className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 px-2 py-2.5 text-[11px] font-black text-slate-950 hover:bg-amber-300"><Plus className="h-4 w-4" />{isAr ? 'حجز جديد' : 'New Booking'}</button>
-            <button type="button" onClick={onOpenPhotoLibrary} title={isAr ? 'مكتبة الصور' : 'Photo library'} className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800"><Images className="h-4 w-4" />{isAr ? 'الصور' : 'Photos'}</button>
-          </div>
+          <button type="button" onClick={onOpenPhotoLibrary} title={isAr ? 'مكتبة الصور' : 'Photo library'} className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800"><Images className="h-4 w-4" />{isAr ? 'مكتبة الصور' : 'Photo Library'}</button>
           <div className="mb-2 mt-5 px-3 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600">{isAr ? 'مساحات العمل' : 'WORKSPACE'}</div>
           <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto pb-3">
             {desktopPrimary.map((item) => <SidebarItem key={item.id} item={item} />)}
