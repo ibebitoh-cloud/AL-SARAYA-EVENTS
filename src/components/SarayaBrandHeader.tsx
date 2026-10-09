@@ -213,7 +213,7 @@ export function SarayaBrandHeader({
             aria-label={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Enter full screen')}
             aria-pressed={isFullscreen}
             title={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Enter full screen')}
-            className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-transparent p-2 text-slate-400 transition-colors hover:border-slate-800 hover:bg-slate-900 hover:text-amber-300"
+            className="hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-700/70 bg-slate-900/60 p-1.5 text-slate-400 transition-colors hover:border-amber-400/40 hover:bg-slate-800 hover:text-amber-300"
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             <span className="hidden xl:inline">{isFullscreen ? (isAr ? 'خروج' : 'Exit') : (isAr ? 'ملء الشاشة' : 'Fullscreen')}</span>
@@ -258,8 +258,8 @@ export function SarayaBrandHeader({
             </button>
           )}
 
-          {/* Primary Booking / Inquiry CTA */}
-          <button
+          {/* Booking CTA is public-site only; keep it off the staff portal header. */}
+          {!isManagementMode && <button
             type="button"
             onClick={() => {
               sound.chime();
@@ -270,7 +270,7 @@ export function SarayaBrandHeader({
             <Calendar className="inline h-4 w-4 sm:hidden" />
             <span className="hidden sm:inline">{isAr ? 'احجز مناسبتك' : 'Book Your Event'}</span>
             <span className="sm:hidden">{isAr ? 'احجز' : 'Book'}</span>
-          </button>
+          </button>}
 
           {/* Mobile Menu Hamburger */}
           <button
