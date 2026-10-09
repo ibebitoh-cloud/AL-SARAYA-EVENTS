@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
-import { DICTIONARY } from '../utils/i18n';
 import { SystemUser } from '../data/systemProfiles';
 
 interface VenueHeaderNavProps {
@@ -32,7 +31,6 @@ export function VenueHeaderNav({
   onOpenPhotoLibrary,
 }: VenueHeaderNavProps) {
   const isAr = language === 'ar';
-  const t = DICTIONARY[language];
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -55,7 +53,7 @@ export function VenueHeaderNav({
     { id: 'reports', label: isAr ? 'التقارير' : 'Reports', icon: ClipboardList },
   ];
 
-  const desktopPrimary = navItems.slice(0, 8);
+  const desktopPrimary = navItems.slice(0, 4);
   const mobilePrimary = navItems.filter((item) =>
     ['dashboard', 'bookings', 'agenda', 'inventory'].includes(item.id)
   );
@@ -83,15 +81,15 @@ export function VenueHeaderNav({
     <>
       {/* Desktop navigation: one sticky row, with secondary screens inside More. */}
       <header className="fixed inset-x-0 top-[72px] z-40 hidden w-full border-b border-slate-800/80 bg-slate-950/95 backdrop-blur-md lg:block">
-        <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-2 px-3 xl:px-6">
+        <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-3 xl:px-6">
           <button
             type="button"
             onClick={() => goTo('dashboard')}
-            className="flex shrink-0 items-center gap-2 text-sm font-black tracking-tight text-white"
+            className="flex shrink-0 items-center gap-2 text-xs font-black tracking-tight text-white xl:text-sm"
             aria-label={isAr ? 'الرئيسية' : 'Dashboard'}
           >
             <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-            <span>{t.appName}</span>
+            <span className="tracking-[0.16em]">SARAYA</span>
           </button>
 
           <nav className="flex min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto px-1">
@@ -104,7 +102,7 @@ export function VenueHeaderNav({
                   type="button"
                   onClick={() => goTo(item.id)}
                   aria-current={active ? 'page' : undefined}
-                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-[11px] font-semibold transition-colors xl:px-3 ${active ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                  title={item.label} className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 text-[10px] font-semibold transition-colors xl:px-2.5 xl:text-[11px] ${active ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                   <span>{item.label}</span>
@@ -132,15 +130,15 @@ export function VenueHeaderNav({
           </nav>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <button type="button" onClick={onOpenPhotoLibrary} title={isAr ? 'مكتبة صور المناسبات' : 'Event Photo Library'} className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-slate-900 px-2.5 py-2 text-[11px] font-bold text-amber-300 hover:bg-slate-800">
-              <Images className="h-4 w-4" /><span className="hidden xl:inline">{isAr ? 'مكتبة الصور' : 'Photo Library'}</span>
+            <button type="button" onClick={onOpenPhotoLibrary} title={isAr ? 'مكتبة صور المناسبات' : 'Event Photo Library'} className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-500/30 bg-slate-900 text-amber-300 hover:bg-slate-800">
+              <Images className="h-4 w-4" />
             </button>
-            <button type="button" onClick={onToggleLanguage} className="rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-2 text-[11px] font-bold text-slate-300">{isAr ? 'EN' : 'عربي'}</button>
-            <button type="button" onClick={onOpenNewBooking} className="flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300"><Plus className="h-3.5 w-3.5" /><span>{isAr ? 'حجز جديد' : 'New Booking'}</span></button>
+            <button type="button" onClick={onToggleLanguage} className="h-9 rounded-lg border border-slate-800 bg-slate-900 px-2 py-2 text-[10px] font-bold text-slate-300">{isAr ? 'EN' : 'عربي'}</button>
+            <button type="button" onClick={onOpenNewBooking} className="flex h-9 items-center gap-1 rounded-lg bg-amber-400 px-2.5 py-2 text-[11px] font-bold text-slate-950 hover:bg-amber-300"><Plus className="h-4 w-4" /><span>{isAr ? 'حجز' : 'New'}</span></button>
             <div className="relative">
-              <button type="button" onClick={() => { setProfileOpen((open) => !open); setMoreOpen(false); }} aria-expanded={profileOpen} className="flex max-w-48 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-2.5 py-1.5 hover:border-amber-400/50">
+              <button type="button" onClick={() => { setProfileOpen((open) => !open); setMoreOpen(false); }} aria-expanded={profileOpen} title={isAr ? (user.nameAr + ' · ' + user.roleAr) : (user.name + ' · ' + user.role)} className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-1.5 py-1 hover:border-amber-400/50">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-xs font-black text-amber-300">{(isAr ? user.nameAr : user.name).trim().slice(0, 1)}</span>
-                <span className="min-w-0 text-start"><span className="block truncate text-[11px] font-bold text-white">{isAr ? user.nameAr : user.name}</span><span className="block truncate text-[10px] text-slate-500">{isAr ? user.roleAr : user.role}</span></span>
+                
                 <ChevronDown className="h-3 w-3 shrink-0 text-slate-400" />
               </button>
               {profileOpen && <div className="absolute end-0 top-full z-50 mt-2 w-64 rounded-xl border border-slate-700 bg-slate-950 p-4 shadow-2xl"><ProfileDetails /></div>}
