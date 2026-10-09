@@ -69,15 +69,36 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const [depth, setDepth] = useState(initialDesign?.depth ?? 30);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('3d');
   const [cameraYaw, setCameraYaw] = useState(0);
-  const [items, setItems] = useState<LayoutItem[]>(initialDesign?.items?.length ? initialDesign.items : INITIAL_ITEMS);
+  const [items, setItems] = useState<LayoutItem[]>(() => {
+    if (initialDesign?.items?.length) return initialDesign.items;
+    try {
+      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('saraya-event-layout-design-v1') : null;
+      if (stored) {
+        const parsed = JSON.parse(stored) as { items?: LayoutItem[]; width?: number; depth?: number; projectName?: string };
+        if (Array.isArray(parsed.items) && parsed.items.length) return parsed.items;
+      }
+    } catch {}
+    return INITIAL_ITEMS;
+  });
   const [selectedId, setSelectedId] = useState<string | null>('stage-1');
   const [clientView, setClientView] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [projectName, setProjectName] = useState('');
+  const [projectName, setProjectName] = useState(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('saraya-event-layout-design-v1') : null;
+      return stored ? ((JSON.parse(stored) as { projectName?: string }).projectName || '') : '';
+    } catch { return ''; }
+  });
   const [autoBuilderOpen, setAutoBuilderOpen] = useState(false);
   const [autoSelection, setAutoSelection] = useState<Record<string, number>>({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, flowers: 0, buffet: 0, registration: 0 });
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number; dx: number; dy: number; rotation: number; canvasWidth: number; canvasHeight: number } | null>(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('saraya-event-layout-design-v1', JSON.stringify({ width, depth, items, projectName }));
+    } catch {}
+  }, [width, depth, items, projectName]);
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const eventName = EVENT_NAMES[eventKind][isAr ? 1 : 0];
@@ -114,7 +135,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   const applyDragTransform = (drag: NonNullable<typeof dragRef.current>) => {
-    drag.el.style.transform = `translate3d(${drag.dx}px, ${drag.dy}px, 0) rotate(${drag.rotation}deg)`;
+    drag.el.style.transform = `translate(-50%, -50%) translate3d(${drag.dx}px, ${drag.dy}px, 0) rotate(${drag.rotation}deg)`;
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, item: LayoutItem) => {
@@ -171,7 +192,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     const finalX = drag.x;
     const finalY = drag.y;
     const element = drag.el;
-    const originalTransform = `rotate(${drag.rotation}deg)`;
+    const originalTransform = `translate(-50%, -50%) rotate(${drag.rotation}deg)`;
 
     setItems((prev) => prev.map((item) =>
       item.id === drag.id ? { ...item, x: finalX, y: finalY } : item
@@ -247,6 +268,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   const saveDesign = () => {
+    try { window.localStorage.setItem('saraya-event-layout-design-v1', JSON.stringify({ width, depth, items, projectName })); } catch {}
     onSaveDesign?.({ width, depth, items });
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
@@ -303,7 +325,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             <div className="relative mx-auto max-w-5xl h-[520px] sm:h-[620px] overflow-hidden rounded-xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-950">
               <div className="absolute inset-[7%] border border-white/10 rounded-xl">
                 {items.map((item) => (
-                  <div key={item.id} className={itemVisual(item)} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `rotate(${item.rotation}deg)` }}>
+                  <div key={item.id} className={itemVisual(item)} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)` }}>
                     {item.type === 'screen' ? 'LED SCREEN' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? '10' : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.labelEn}
                   </div>
                 ))}
@@ -360,7 +382,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)', backgroundSize: '8% 10%' }} />
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
                   {items.map((item) => (
-                    <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
+                    <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
                       {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{Array.from({ length: item.seats || 10 }, (_, seat) => <span key={seat} className="absolute w-2 h-2 rounded-full bg-slate-200/80" style={{ left: (50 + Math.cos((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%', top: (50 + Math.sin((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                     </button>
                   ))}
