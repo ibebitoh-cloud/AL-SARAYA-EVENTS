@@ -138,7 +138,7 @@ export default function App() {
     if (typeof window === 'undefined') return uniqueEventPhotos(ALSARAYA_PHOTOS);
     try {
       const saved = JSON.parse(window.localStorage.getItem('alsaraya_custom_photos') || 'null');
-      const list = Array.isArray(saved) && saved.length ? [...saved, ...ALSARAYA_PHOTOS.filter((photo) => photo.hallId?.startsWith('external-venue-') && !saved.some((existing: VenuePhoto) => existing.id === photo.id))] : ALSARAYA_PHOTOS; return uniqueEventPhotos(list);
+      const list = Array.isArray(saved) && saved.length ? [...saved.filter((existing: VenuePhoto) => !existing.hallId?.startsWith('external-venue-')), ...ALSARAYA_PHOTOS.filter((photo) => photo.hallId?.startsWith('external-venue-')), ...saved.filter((existing: VenuePhoto) => existing.hallId?.startsWith('external-venue-') && !ALSARAYA_PHOTOS.some((photo) => photo.id === existing.id))] : ALSARAYA_PHOTOS; return uniqueEventPhotos(list);
     } catch {
       return uniqueEventPhotos(ALSARAYA_PHOTOS);
     }
