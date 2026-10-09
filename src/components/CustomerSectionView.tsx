@@ -26,6 +26,7 @@ const copy = {
 export function CustomerSectionView({ screen, halls, photos: libraryPhotos, language, onOpenBooking, onGoHome }: Props) {
   const isAr = language === 'ar';
   const [selectedVenuePhoto, setSelectedVenuePhoto] = useState<VenuePhoto | null>(null);
+  const [venueAlbumSlides, setVenueAlbumSlides] = useState<Record<string, number>>({});
   const data = copy[screen][isAr ? 'ar' : 'en'];
   const Arrow = isAr ? ArrowLeft : ArrowRight;
   const sourcePhotos = libraryPhotos?.length ? libraryPhotos : ALSARAYA_PHOTOS;
@@ -89,11 +90,27 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
                   <div><h2 className="font-serif text-xl font-bold">{isAr ? hall.name : (hall.nameEn || hall.name)}</h2><p className="mt-1 text-xs text-slate-400">{hall.capacity || '—'} {hall.capacity ? (isAr ? 'ضيف' : 'guests') : ''}{hall.city ? ` · ${isAr ? (hall.cityAr || hall.city) : hall.city}` : ''}</p>{hall.isExternalListing && hall.sourceUrl && <a href={hall.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-amber-300 underline underline-offset-4">{isAr ? 'مصدر بيانات القاعة' : 'Venue listing source'}</a>}{hall.isExternalListing && <p className="mt-2 text-[11px] leading-5 text-slate-500">{isAr ? 'قد تتضمن الصور مراجع بصرية وليست صوراً مؤكدة للمكان نفسه.' : 'The album may include visual references that are not verified photos of this exact venue.'}</p>}</div>
                   <button onClick={() => onOpenBooking(hall.id)} className="shrink-0 rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950">{isAr ? 'احجز' : 'Book'}</button>
                 </div>
-                {albumPhotos.length > 0 && <div className="grid grid-cols-4 gap-2 px-4 pb-4">
-                  {albumPhotos.slice(0, 8).map((albumPhoto, index) => <button key={albumPhoto.id} type="button" onClick={() => setSelectedVenuePhoto(albumPhoto)} aria-label={`${isAr ? 'عرض صورة' : 'View photo'} ${index + 1}`} className="relative overflow-hidden rounded-lg border border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
-                    <img src={albumPhoto.src} alt={isAr ? albumPhoto.titleAr : albumPhoto.titleEn} loading="lazy" className="h-20 w-full object-cover transition hover:opacity-80 sm:h-24" />
-                  </button>)}
-                </div>}
+                {albumPhotos.length > 0 && (() => {
+                  const slide = venueAlbumSlides[hall.id] ?? 0;
+                  const maxSlide = Math.max(0, Math.ceil(albumPhotos.length / 2) - 1);
+                  const visiblePhotos = albumPhotos.slice(slide * 2, slide * 2 + 2);
+                  const moveSlide = (direction: number) => setVenueAlbumSlides(current => ({ ...current, [hall.id]: (slide + direction + maxSlide + 1) % (maxSlide + 1) }));
+                  return <div className="px-4 pb-4">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-slate-400">{isAr ? 'ألبوم الصور' : 'Photo album'} · {Math.min(slide * 2 + 1, albumPhotos.length)}–{Math.min(slide * 2 + visiblePhotos.length, albumPhotos.length)} / {albumPhotos.length}</span>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => moveSlide(-1)} aria-label={isAr ? 'الصورتان السابقتان' : 'Previous two photos'} className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/40 bg-slate-900 text-amber-200 transition hover:bg-amber-400 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-400"><ArrowLeft className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => moveSlide(1)} aria-label={isAr ? 'الصورتان التاليتان' : 'Next two photos'} className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/40 bg-slate-900 text-amber-200 transition hover:bg-amber-400 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-400"><ArrowRight className="h-4 w-4" /></button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2" onTouchStart={event => { (event.currentTarget as HTMLDivElement).dataset.touchStartX = String(event.touches[0].clientX); }} onTouchEnd={event => { const startX = Number((event.currentTarget as HTMLDivElement).dataset.touchStartX || 0); const deltaX = event.changedTouches[0].clientX - startX; if (Math.abs(deltaX) > 40) moveSlide(deltaX < 0 ? 1 : -1); }}>
+                      {visiblePhotos.map((albumPhoto, index) => <button key={albumPhoto.id} type="button" onClick={() => setSelectedVenuePhoto(albumPhoto)} aria-label={`${isAr ? 'عرض صورة' : 'View photo'} ${slide * 2 + index + 1}`} className="relative overflow-hidden rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <img src={albumPhoto.src} alt={isAr ? albumPhoto.titleAr : albumPhoto.titleEn} loading="lazy" className="h-28 w-full object-cover transition duration-300 hover:scale-[1.03] sm:h-36" />
+                      </button>)}
+                    </div>
+                    {maxSlide > 0 && <div className="mt-3 flex justify-center gap-1.5">{Array.from({ length: maxSlide + 1 }, (_, index) => <button key={index} type="button" onClick={() => setVenueAlbumSlides(current => ({ ...current, [hall.id]: index }))} aria-label={`${isAr ? 'الانتقال إلى الشريحة' : 'Go to slide'} ${index + 1}`} className={`h-1.5 rounded-full transition-all ${slide === index ? 'w-6 bg-amber-300' : 'w-1.5 bg-slate-600 hover:bg-slate-400'}`} />)}</div>}
+                  </div>;
+                })()}
               </article>;
             })}
           </div>
