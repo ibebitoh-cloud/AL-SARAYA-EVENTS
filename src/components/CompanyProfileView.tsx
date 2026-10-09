@@ -10,7 +10,7 @@ import whiteLogo from '../assets/images/logo/Company LOGO - white version.png';
 interface CompanyProfile {
   nameEn: string; nameAr: string; taglineEn: string; taglineAr: string;
   businessEn: string; businessAr: string; locationsEn: string; locationsAr: string;
-  phone: string; whatsapp: string; instagramUrl?: string; tiktokUrl?: string; logo: 'black' | 'white';
+  phone: string; whatsapp: string; instagramUrl: string; tiktokUrl: string; logo: 'black' | 'white';
 }
 interface Props {
   language: Language; halls: Hall[]; bookings: Booking[]; services: ServiceDefinition[];
