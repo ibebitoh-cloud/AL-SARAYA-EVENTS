@@ -8,6 +8,7 @@ import {
   Employee,
   ClientProfile,
 } from '../types/venueSystem';
+import { FEATURED_EXTERNAL_HALLS } from './featuredVenueCatalog';
 
 export const INITIAL_HALLS: Hall[] = [
   {
@@ -39,6 +40,7 @@ export const INITIAL_HALLS: Hall[] = [
     basePrice: 32000,
     color: '#10b981',
   },
+  ...FEATURED_EXTERNAL_HALLS,
 ];
 
 export const INITIAL_SERVICES: ServiceDefinition[] = [
