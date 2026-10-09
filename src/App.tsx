@@ -20,7 +20,6 @@ import {
   Booking, BookingStatus, PaymentReceipt, Expense, InventoryItem, Employee,
   ServiceDefinition, VenueTab, Language, Hall,
 } from './types/venueSystem';
-import { TableAssignment, Guest } from './types/event';
 import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
@@ -34,7 +33,6 @@ import { SystemUser } from './data/systemProfiles';
 import { DashboardView } from './components/DashboardView';
 import { BookingsView } from './components/BookingsView';
 import { CalendarAgendaView } from './components/CalendarAgendaView';
-import { FloorPlanStudio } from './components/FloorPlanStudio';
 import { EventLayoutDesigner } from './components/EventLayoutDesigner';
 import { CateringMenuView } from './components/CateringMenuView';
 import { ContractsView } from './components/ContractsView';
@@ -163,8 +161,6 @@ export default function App() {
     try { return { ...defaults, ...(JSON.parse(window.localStorage.getItem('saraya-company-profile') || '') || {}) }; } catch { return defaults; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-company-profile', JSON.stringify(companyProfile)); }, [companyProfile]);
-  const [tables, setTables] = useState<TableAssignment[]>(INITIAL_EVENTS[0].tables);
-  const [guests, setGuests] = useState<Guest[]>(INITIAL_EVENTS[0].guests);
   const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
   const [selectedBookingForProfit, setSelectedBookingForProfit] = useState<Booking | null>(null);
   const [selectedBookingForInvoice, setSelectedBookingForInvoice] = useState<Booking | null>(null);
@@ -200,11 +196,8 @@ export default function App() {
   const handleEditInventoryItem = (updatedItem: InventoryItem) => setInventory((prev) => prev.map((item) => item.id === updatedItem.id ? updatedItem : item));
   const handleAddStaff = (newStaff: Employee) => setStaff((prev) => [...prev, newStaff]);
   const handleUpdateStaffAttendance = (staffId: string, status: Employee['attendanceStatus']) => setStaff((prev) => prev.map((emp) => emp.id === staffId ? { ...emp, attendanceStatus: status } : emp));
-  const handleAssignGuestToTable = (guestId: string, tableId: string) => { setTables((prev) => prev.map((t) => { const withoutGuest = t.assignedGuestIds.filter((id) => id !== guestId); return t.id === tableId ? { ...t, assignedGuestIds: [...withoutGuest, guestId] } : { ...t, assignedGuestIds: withoutGuest }; })); setGuests((prev) => prev.map((g) => g.id === guestId ? { ...g, tableId } : g)); sound.chime(); };
-  const handleRemoveGuestFromTable = (guestId: string) => { setTables((prev) => prev.map((t) => ({ ...t, assignedGuestIds: t.assignedGuestIds.filter((id) => id !== guestId) }))); setGuests((prev) => prev.map((g) => g.id === guestId ? { ...g, tableId: undefined } : g)); sound.tick(); };
-  const handleAddTable = (newTable: TableAssignment) => { setTables((prev) => [...prev, newTable]); sound.pop(); };
   const swipeStartX = useRef<number | null>(null);
-  const swipeableTabs: VenueTab[] = ['dashboard', 'bookings', 'agenda', 'company', 'event_designer', 'inventory', 'services', 'finance', 'floorplan', 'catering', 'contracts', 'clients', 'payments', 'expenses', 'staff', 'reports', 'photo_library'];
+  const swipeableTabs: VenueTab[] = ['dashboard', 'bookings', 'agenda', 'company', 'event_designer', 'inventory', 'services', 'finance', 'catering', 'contracts', 'clients', 'payments', 'expenses', 'staff', 'reports', 'photo_library'];
   const handleScreenTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest('input, textarea, select, button, a, [role="button"], [data-no-screen-swipe]')) {
@@ -242,7 +235,6 @@ export default function App() {
       {currentTab === 'bookings' && portalUser && <BookingsView bookings={bookings} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={handleUpdateBookingStatus} />}
       {currentTab === 'agenda' && portalUser && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} />}
       {currentTab === 'event_designer' && portalUser && <EventLayoutDesigner language={language} />}
-      {currentTab === 'floorplan' && portalUser && <div className="space-y-4"><div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between"><div><h2 className="text-xl font-bold text-white">{language === 'ar' ? 'مخطط القاعة وتوزيع الطاولات ثلاثي الأبعاد' : 'Interactive 3D Floor Plan & Seating Studio'}</h2><p className="text-xs text-slate-400">{language === 'ar' ? 'توزيع مقاعد الضيوف، تحديد طاولات كبار الشخصيات VIP، محاكاة حركة المسرح والبوفيه' : 'Arrange guest seating, VIP tables, stage proximity, and catering stations'}</p></div></div><FloorPlanStudio tables={tables} guests={guests} onAssignGuestToTable={handleAssignGuestToTable} onRemoveGuestFromTable={handleRemoveGuestFromTable} onAddTable={handleAddTable} /></div>}
       {currentTab === 'catering' && portalUser && <CateringMenuView language={language} />}
       {currentTab === 'contracts' && portalUser && <ContractsView bookings={bookings} language={language} />}
       {currentTab === 'clients' && portalUser && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} />}
