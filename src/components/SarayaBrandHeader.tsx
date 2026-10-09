@@ -84,8 +84,8 @@ export function SarayaBrandHeader({
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-amber-500/15 bg-slate-950/90 backdrop-blur-md transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 w-full shrink-0 border-b border-amber-500/15 bg-slate-950/95 shadow-sm shadow-black/10 backdrop-blur-md transition-colors">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-3 sm:h-[72px] sm:gap-3 sm:px-6 lg:px-8">
         {/* Zone 1: Single text element Brand Wordmark */}
         <div className="flex items-center gap-3 shrink-0">
           <a
