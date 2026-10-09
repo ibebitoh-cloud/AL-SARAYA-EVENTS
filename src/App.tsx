@@ -246,8 +246,8 @@ export default function App() {
       {currentTab === 'staff' && portalUser && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
       {currentTab === 'reports' && portalUser && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
     </motion.div></AnimatePresence></main>
-    <footer className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-colors duration-300 ${theme === 'dark' ? 'border-white/10 bg-[#080d17]' : 'border-slate-200 bg-white'}`}>
-      <div className="mx-auto max-w-7xl">
+    <footer className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-[width,margin,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${theme === 'dark' ? 'border-white/10 bg-[#080d17]' : 'border-slate-200 bg-white'} ${isInternalManagementScreen ? `lg:w-[calc(100%-${sidebarVisible ? '16rem' : '0rem'})] ${sidebarVisible ? 'lg:ms-64' : 'lg:ms-0'} lg:px-8` : ''}`}>
+      <div className={`mx-auto ${isInternalManagementScreen ? 'w-full max-w-none' : 'max-w-7xl'}`}>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
