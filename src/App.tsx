@@ -94,7 +94,7 @@ export default function App() {
   const [portalUser, setPortalUser] = useState<SystemUser | null>(null);
   const [portalLoginOpen, setPortalLoginOpen] = useState(false);
   const [portalWelcome, setPortalWelcome] = useState<SystemUser | null>(null);
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [, setSidebarVisible] = useState(true);
   useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; window.localStorage.setItem('saraya-theme', theme); }, [theme]);
   useEffect(() => { document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = language; }, [language]);
   const toggleLanguage = () => setLanguage((prev) => (prev === 'ar' ? 'en' : 'ar'));
