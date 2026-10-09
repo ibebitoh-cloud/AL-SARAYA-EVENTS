@@ -82,7 +82,7 @@ export function VenueHeaderNav({
   return (
     <>
       {/* Desktop navigation: one sticky row, with secondary screens inside More. */}
-      <header className="sticky top-[72px] z-40 hidden w-full border-b border-slate-800/80 bg-slate-950/95 backdrop-blur-md lg:block">
+      <header className="fixed inset-x-0 top-[72px] z-40 hidden w-full border-b border-slate-800/80 bg-slate-950/95 backdrop-blur-md lg:block">
         <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-2 px-3 xl:px-6">
           <button
             type="button"
@@ -148,6 +148,9 @@ export function VenueHeaderNav({
           </div>
         </div>
       </header>
+
+      {/* Reserve space for the fixed desktop bar so the dashboard never sits underneath it. */}
+      <div className="hidden h-14 lg:block" aria-hidden="true" />
 
       {/* Mobile navigation: a single fixed bottom bar; More opens the other screens. */}
       <nav className="fixed inset-x-0 bottom-0 z-[60] border-t border-slate-700/90 bg-slate-950/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur-xl lg:hidden" aria-label={isAr ? 'التنقل الداخلي' : 'Internal navigation'}>
