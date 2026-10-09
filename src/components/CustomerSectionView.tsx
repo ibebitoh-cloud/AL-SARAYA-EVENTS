@@ -1,4 +1,5 @@
-import { Calendar, Building2, Sparkles, Ruler, Image as ImageIcon, Cuboid, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Building2, Sparkles, Ruler, Image as ImageIcon, Cuboid, ArrowRight, ArrowLeft, X } from 'lucide-react';
 import { Hall, Language } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 
@@ -24,6 +25,7 @@ const copy = {
 
 export function CustomerSectionView({ screen, halls, photos: libraryPhotos, language, onOpenBooking, onGoHome }: Props) {
   const isAr = language === 'ar';
+  const [selectedVenuePhoto, setSelectedVenuePhoto] = useState<VenuePhoto | null>(null);
   const data = copy[screen][isAr ? 'ar' : 'en'];
   const Arrow = isAr ? ArrowLeft : ArrowRight;
   const sourcePhotos = libraryPhotos?.length ? libraryPhotos : ALSARAYA_PHOTOS;
@@ -76,15 +78,34 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
         {screen === 'venues' && (
           <div className="grid gap-5 border-t border-slate-800 p-6 md:grid-cols-2">
             {availableHalls.map(hall => {
-              const photo = photos.find(p => p.hallId === hall.id) || photos[0];
+              const albumPhotos = sourcePhotos.filter(photo => photo.hallId === hall.id && !/garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${photo.titleAr} ${photo.titleEn} ${photo.hallNameAr} ${photo.hallNameEn} ${(photo.tags ?? []).join(' ')}`));
+              const photo = albumPhotos[0] || photos.find(p => p.hallId === hall.id) || photos[0];
               return <article key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-                <img src={photo?.src} alt="" className="h-60 w-full object-cover" />
+                <button type="button" onClick={() => photo && setSelectedVenuePhoto(photo)} className="group relative block w-full text-left">
+                  <img src={photo?.src} alt={isAr ? hall.name : (hall.nameEn || hall.name)} className="h-60 w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
+                  <span className="absolute bottom-3 right-3 rounded-full border border-white/20 bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white">{albumPhotos.length} {isAr ? 'صور في الألبوم' : 'photos in album'}</span>
+                </button>
                 <div className="flex items-center justify-between gap-3 p-5">
-                  <div><h2 className="font-serif text-xl font-bold">{isAr ? hall.name : (hall.nameEn || hall.name)}</h2><p className="mt-1 text-xs text-slate-400">{hall.capacity || '—'} {hall.capacity ? (isAr ? 'ضيف' : 'guests') : ''}{hall.city ? ` · ${isAr ? (hall.cityAr || hall.city) : hall.city}` : ''}</p>{hall.isExternalListing && hall.sourceUrl && <a href={hall.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-amber-300 underline underline-offset-4">{isAr ? 'مصدر بيانات القاعة' : 'Venue listing source'}</a>}{hall.isExternalListing && <p className="mt-2 text-[11px] leading-5 text-slate-500">{isAr ? 'صور مرجعية مرخّصة وليست صوراً مؤكدة للمكان نفسه.' : 'Licensed stock reference photos, not verified photographs of this venue.'}</p>}</div>
-                  <button onClick={() => onOpenBooking(hall.id)} className="rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950">{isAr ? 'احجز' : 'Book'}</button>
+                  <div><h2 className="font-serif text-xl font-bold">{isAr ? hall.name : (hall.nameEn || hall.name)}</h2><p className="mt-1 text-xs text-slate-400">{hall.capacity || '—'} {hall.capacity ? (isAr ? 'ضيف' : 'guests') : ''}{hall.city ? ` · ${isAr ? (hall.cityAr || hall.city) : hall.city}` : ''}</p>{hall.isExternalListing && hall.sourceUrl && <a href={hall.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-amber-300 underline underline-offset-4">{isAr ? 'مصدر بيانات القاعة' : 'Venue listing source'}</a>}{hall.isExternalListing && <p className="mt-2 text-[11px] leading-5 text-slate-500">{isAr ? 'قد تتضمن الصور مراجع بصرية وليست صوراً مؤكدة للمكان نفسه.' : 'The album may include visual references that are not verified photos of this exact venue.'}</p>}</div>
+                  <button onClick={() => onOpenBooking(hall.id)} className="shrink-0 rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950">{isAr ? 'احجز' : 'Book'}</button>
                 </div>
+                {albumPhotos.length > 0 && <div className="grid grid-cols-4 gap-2 px-4 pb-4">
+                  {albumPhotos.slice(0, 8).map((albumPhoto, index) => <button key={albumPhoto.id} type="button" onClick={() => setSelectedVenuePhoto(albumPhoto)} aria-label={`${isAr ? 'عرض صورة' : 'View photo'} ${index + 1}`} className="relative overflow-hidden rounded-lg border border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    <img src={albumPhoto.src} alt={isAr ? albumPhoto.titleAr : albumPhoto.titleEn} loading="lazy" className="h-20 w-full object-cover transition hover:opacity-80 sm:h-24" />
+                  </button>)}
+                </div>}
               </article>;
             })}
+          </div>
+        )}
+
+        {selectedVenuePhoto && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4" role="dialog" aria-modal="true" aria-label={isAr ? 'عرض صورة القاعة' : 'Venue photo viewer'} onClick={() => setSelectedVenuePhoto(null)}>
+            <button type="button" onClick={() => setSelectedVenuePhoto(null)} aria-label={isAr ? 'إغلاق' : 'Close'} className="absolute right-4 top-4 z-10 rounded-full border border-white/20 bg-slate-900/80 p-3 text-white"><X className="h-5 w-5" /></button>
+            <div className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-slate-950" onClick={event => event.stopPropagation()}>
+              <img src={selectedVenuePhoto.src} alt={isAr ? selectedVenuePhoto.titleAr : selectedVenuePhoto.titleEn} className="max-h-[78vh] w-full object-contain" />
+              <div className="p-4 text-sm font-semibold text-white">{isAr ? selectedVenuePhoto.titleAr : selectedVenuePhoto.titleEn}<p className="mt-1 text-xs font-normal text-slate-400">{isAr ? selectedVenuePhoto.captionAr : selectedVenuePhoto.captionEn}</p>{selectedVenuePhoto.sourceUrl && <a href={selectedVenuePhoto.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-bold text-amber-300 underline">{isAr ? 'مصدر الصورة' : 'Photo source'}</a>}</div>
+            </div>
           </div>
         )}
 
