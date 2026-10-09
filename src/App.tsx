@@ -332,25 +332,19 @@ export default function App() {
             .saraya-credit-main, .saraya-credit-layer, .saraya-credit-scan { animation: none !important; }
           }
         `}</style>
-        <div className="mt-8 flex flex-col gap-5 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="order-2 text-xs text-slate-500 sm:order-1">© {new Date().getFullYear()} SARAYA EVENT. {language === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</div>
-          <div className="order-1 flex min-w-0 items-center justify-start gap-4 sm:order-2 sm:justify-end">
-            <div className="hidden h-12 w-px bg-gradient-to-b from-transparent via-amber-300/60 to-transparent sm:block" />
-            <div className="min-w-0">
-              <div className={`mb-1 text-[9px] font-semibold uppercase tracking-[0.24em] text-slate-500 ${language === 'ar' ? 'text-right' : 'text-left'}`}>{language === 'ar' ? 'تطوير وتصميم بواسطة' : 'Designed & developed by'}</div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="relative inline-block overflow-visible py-1 pr-1">
-                  {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-scan pointer-events-none absolute -left-3 right-0 top-1/2 z-0 h-5 bg-gradient-to-r from-transparent via-cyan-300/70 to-fuchsia-400/70 blur-[2px]" style={{ animation: 'saraya-credit-scan 1.25s ease-out both' }} />}
-                  <span className={`saraya-credit-main relative z-10 inline-block text-lg font-black tracking-[0.18em] text-amber-300 drop-shadow-[0_0_14px_rgba(245,185,66,0.28)] ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-main 1.35s cubic-bezier(.2,.8,.2,1) both' } : undefined}>BEBITO</span>
-                  {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-1 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-lg font-black tracking-[0.18em] text-cyan-300 mix-blend-screen" style={{ animation: 'saraya-credit-cyan 1.1s steps(2, end) both' }}>BEBITO</span>}
-                  {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-1 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-lg font-black tracking-[0.18em] text-rose-400 mix-blend-screen" style={{ animation: 'saraya-credit-pink 1.1s steps(2, end) both' }}>BEBITO</span>}
-                </span>
-                <span className="text-sm font-medium text-slate-300">Mohamed Alaa</span>
-                <span className="hidden text-slate-600 sm:inline">/</span>
-                <a href="tel:+201146475759" className="text-xs text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
-              </div>
-            </div>
+        <div className="mt-8 flex flex-col items-center gap-5 border-t border-white/10 pt-6 text-center">
+          <div className="flex w-full flex-col items-center justify-center gap-1 text-center">
+            <div className="mb-1 text-[9px] font-semibold uppercase tracking-[0.24em] text-slate-500">{language === 'ar' ? 'تطوير وتصميم بواسطة' : 'Designed & developed by'}</div>
+            <span className="relative inline-block overflow-visible py-1 px-2">
+              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-scan pointer-events-none absolute -left-3 right-0 top-1/2 z-0 h-5 bg-gradient-to-r from-transparent via-cyan-300/70 to-fuchsia-400/70 blur-[2px]" style={{ animation: 'saraya-credit-scan 1.25s ease-out both' }} />}
+              <span className={`saraya-credit-main relative z-10 inline-block text-xl font-black tracking-[0.22em] text-amber-300 drop-shadow-[0_0_14px_rgba(245,185,66,0.28)] ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-main 1.35s cubic-bezier(.2,.8,.2,1) both' } : undefined}>BEBITO</span>
+              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-cyan-300 mix-blend-screen" style={{ animation: 'saraya-credit-cyan 1.1s steps(2, end) both' }}>BEBITO</span>}
+              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-rose-400 mix-blend-screen" style={{ animation: 'saraya-credit-pink 1.1s steps(2, end) both' }}>BEBITO</span>}
+            </span>
+            <span className="text-sm font-medium text-slate-300">Mohamed Alaa</span>
+            <a href="tel:+201146475759" className="text-xs text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
           </div>
+          <div className="text-xs text-slate-500">© {new Date().getFullYear()} SARAYA EVENT. {language === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</div>
         </div>
       </div>
     </footer>
