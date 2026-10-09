@@ -1,4 +1,5 @@
 // Asset references for AlSaraya Royal Palaces & Venues
+import { FEATURED_VENUE_PHOTOS } from './featuredVenueCatalog';
 import ballroomImg from '../assets/images/alsaraya_grand_ballroom_1791458716707.jpg';
 import koshaImg from '../assets/images/alsaraya_royal_kosha_1791458732633.jpg';
 import diningImg from '../assets/images/alsaraya_banquet_dining_1791458748323.jpg';
@@ -65,9 +66,13 @@ export interface VenuePhoto {
   albumName?: string;
   tags?: string[];
   reviewStatus?: 'pending' | 'approved' | 'rejected' | 'archived';
+  /** Image source and licensing information for imported venue-gallery entries. */
+  sourceUrl?: string;
+  photoCredit?: string;
 }
 
 export const ALSARAYA_PHOTOS: VenuePhoto[] = [
+  ...FEATURED_VENUE_PHOTOS,
   {
     id: 'photo-1',
     src: ballroomImg,
