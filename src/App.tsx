@@ -70,6 +70,20 @@ const uniqueEventPhotos = (items: VenuePhoto[]) => {
   });
 };
 
+// De-duplicate at the application boundary so every screen receives the same clean booking list.
+const dedupeBookings = (items: Booking[]) => {
+  const seenIds = new Set<string>();
+  const seenCodes = new Set<string>();
+  return items.filter((booking) => {
+    const id = String(booking.id || '').trim().toLowerCase();
+    const code = String(booking.code || '').trim().toLowerCase();
+    if ((id && seenIds.has(id)) || (code && seenCodes.has(code))) return false;
+    if (id) seenIds.add(id);
+    if (code) seenCodes.add(code);
+    return true;
+  });
+};
+
 export default function App() {
   const [language, setLanguage] = useState<Language>('ar');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -83,7 +97,22 @@ export default function App() {
   useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; window.localStorage.setItem('saraya-theme', theme); }, [theme]);
   useEffect(() => { document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = language; }, [language]);
   const toggleLanguage = () => setLanguage((prev) => (prev === 'ar' ? 'en' : 'ar'));
-  const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    if (typeof window === 'undefined') return dedupeBookings(INITIAL_BOOKINGS);
+    try {
+      const saved = JSON.parse(window.localStorage.getItem('saraya-bookings') || 'null');
+      return dedupeBookings(Array.isArray(saved) ? saved : INITIAL_BOOKINGS);
+    } catch {
+      return dedupeBookings(INITIAL_BOOKINGS);
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('saraya-bookings', JSON.stringify(dedupeBookings(bookings)));
+    } catch (error) {
+      console.warn('Bookings could not be saved locally:', error);
+    }
+  }, [bookings]);
   const [halls, setHalls] = useState<Hall[]>(() => {
     if (typeof window === 'undefined') return INITIAL_HALLS;
     try { const saved = JSON.parse(window.localStorage.getItem('saraya-halls') || 'null'); const list = Array.isArray(saved) && saved.length ? saved : INITIAL_HALLS; return list.map((hall: Hall) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${hall.name} ${hall.nameEn || ''}`) ? { ...hall, name: 'قاعة المؤتمرات الدبلوماسية', nameEn: 'The Diplomat Conference & Summit Hall' } : hall); } catch { return INITIAL_HALLS; }
@@ -128,7 +157,7 @@ export default function App() {
   const [staff, setStaff] = useState<Employee[]>(INITIAL_STAFF);
   const [clients, setClients] = useState(INITIAL_CLIENTS);
   const [companyProfile, setCompanyProfile] = useState(() => {
-    const defaults = { nameEn: 'SARAYA EVENT', nameAr: 'السرايا للمناسبات', taglineEn: 'Luxury Weddings & Venues', taglineAr: 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر', businessEn: 'Wedding halls, events & event management', businessAr: 'قاعات أفراح ومناسبات وإدارة فعاليات', locationsEn: 'Ring Road, New Cairo · Corniche, Alexandria', locationsAr: 'القاهرة الجديدة · الإسكندرية', phone: '+20 2 2795 0000', whatsapp: '+20 100 123 4567', logo: 'black' as 'black' | 'white' };
+    const defaults = { nameEn: 'SARAYA EVENT', nameAr: 'السرايا للمناسبات', taglineEn: 'Luxury Weddings & Venues', taglineAr: 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر', businessEn: 'Wedding halls, events & event management', businessAr: 'قاعات أفراح ومناسبات وإدارة فعاليات', locationsEn: 'Ring Road, New Cairo · Corniche, Alexandria', locationsAr: 'القاهرة الجديدة · الإسكندرية', phone: '+20 2 2795 0000', whatsapp: '+20 100 123 4567', instagramUrl: '', tiktokUrl: '', logo: 'black' as 'black' | 'white' };
     if (typeof window === 'undefined') return defaults;
     try { return { ...defaults, ...(JSON.parse(window.localStorage.getItem('saraya-company-profile') || '') || {}) }; } catch { return defaults; }
   });
@@ -140,7 +169,25 @@ export default function App() {
   const [selectedBookingForInvoice, setSelectedBookingForInvoice] = useState<Booking | null>(null);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [preselectedHallId, setPreselectedHallId] = useState<string | undefined>(undefined);
-  const handleCreateBooking = (newBooking: Booking) => { setBookings((prev) => [newBooking, ...prev]); if (newBooking.deposit > 0) { setPayments((prev) => [{ id: `rcp-${Date.now()}`, receiptNo: `REC-${Math.floor(1000 + Math.random() * 9000)}`, bookingId: newBooking.id, bookingCode: newBooking.code, clientName: newBooking.clientName, amount: newBooking.deposit, date: new Date().toISOString().split('T')[0], method: 'cash', type: 'deposit', notes: `عربون حجز ${newBooking.hallName}` }, ...prev]); } };
+  const handleCreateBooking = (newBooking: Booking) => {
+    // Ignore a repeat submit for the same booking; the Photo Library creates one album card per booking ID.
+    if (bookings.some((booking) => booking.id === newBooking.id || booking.code === newBooking.code)) return;
+    setBookings((prev) => dedupeBookings([newBooking, ...prev]));
+    if (newBooking.deposit > 0) {
+      setPayments((prev) => [{
+        id: `rcp-${Date.now()}`,
+        receiptNo: `REC-${Math.floor(1000 + Math.random() * 9000)}`,
+        bookingId: newBooking.id,
+        bookingCode: newBooking.code,
+        clientName: newBooking.clientName,
+        amount: newBooking.deposit,
+        date: new Date().toISOString().split('T')[0],
+        method: 'cash',
+        type: 'deposit',
+        notes: `عربون حجز ${newBooking.hallName}`,
+      }, ...prev]);
+    }
+  };
   const handleUpdateBookingStatus = (bookingId: string, status: BookingStatus) => setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status } : b)));
   const handleUpdateBookingCosts = (bookingId: string, updates: Partial<Booking>) => setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, ...updates } : b)));
   const handleAddPayment = (newPayment: PaymentReceipt) => { setPayments((prev) => [newPayment, ...prev]); setBookings((prev) => prev.map((b) => b.id === newPayment.bookingId && newPayment.type !== 'security_refund' ? { ...b, paidAmount: b.paidAmount + newPayment.amount, remainingAmount: Math.max(0, b.totalPrice - (b.paidAmount + newPayment.amount)) } : b)); };
@@ -180,10 +227,10 @@ export default function App() {
   };
   const t = DICTIONARY[language];
   return (<div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white relative box-border font-sans">
-    <SarayaBrandHeader language={language} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onToggleLanguage={toggleLanguage} onOpenBookingModal={() => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); }} onNavigateSection={(sectionId) => { const screenMap: Record<string, VenueTab> = { events: 'public_events', venues: 'public_venues', services: 'public_services', planner: 'public_planner', gallery: 'public_gallery', '3d-tour': 'public_3d_tour' }; const nextTab = screenMap[sectionId]; if (nextTab) { setCurrentTab(nextTab); window.scrollTo({ top: 0, behavior: 'smooth' }); } else if (sectionId === 'hero') { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); } else { setCurrentTab('home'); window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' }), 350); } }} onOpenManagementPortal={() => { sound.click(650); setPortalLoginOpen(true); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} isManagementMode={currentTab !== 'home'} onExitManagementMode={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+    <SarayaBrandHeader language={language} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onToggleLanguage={toggleLanguage} instagramUrl={companyProfile.instagramUrl} tiktokUrl={companyProfile.tiktokUrl} onOpenBookingModal={() => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); }} onNavigateSection={(sectionId) => { const screenMap: Record<string, VenueTab> = { events: 'public_events', venues: 'public_venues', services: 'public_services', planner: 'public_planner', gallery: 'public_gallery', '3d-tour': 'public_3d_tour' }; const nextTab = screenMap[sectionId]; if (nextTab) { setCurrentTab(nextTab); window.scrollTo({ top: 0, behavior: 'smooth' }); } else if (sectionId === 'hero') { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); } else { setCurrentTab('home'); window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' }), 350); } }} onOpenManagementPortal={() => { sound.click(650); setPortalLoginOpen(true); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} isManagementMode={currentTab !== 'home'} onExitManagementMode={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
     {!portalLoginOpen && portalUser && currentTab !== 'home' && <VenueHeaderNav currentTab={currentTab} language={language} user={portalUser} onTabChange={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onToggleLanguage={toggleLanguage} onOpenTour={() => setIsOnboardingOpen(true)}  />}
     {portalWelcome && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-md px-4" onClick={() => setPortalWelcome(null)}><motion.div initial={{opacity:0,scale:.96,y:10}} animate={{opacity:1,scale:1,y:0}} className="w-full max-w-md rounded-3xl border border-amber-400/20 bg-slate-900 p-8 text-center shadow-2xl"><div className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-400">WELCOME</div><h1 className="mt-3 text-3xl font-black text-white">{language === 'ar' ? `أهلاً بك، ${portalWelcome.nameAr}` : `Welcome, ${portalWelcome.name}`}</h1><p className="mt-2 text-xs text-slate-500">{language === 'ar' ? 'تم الدخول إلى البوابة التجريبية' : 'You are now inside the trial portal'}</p><button onClick={() => setPortalWelcome(null)} className="mt-6 px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold">{language === 'ar' ? 'دخول النظام' : 'Enter System'}</button></motion.div></div>}
-    <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${portalUser && currentTab !== 'home' ? 'pb-24 lg:pb-6 lg:mx-0 lg:ms-60 lg:w-[calc(100%-15rem)] xl:ms-64 xl:w-[calc(100%-16rem)]' : ''}`}><AnimatePresence mode="wait"><motion.div onTouchStart={handleScreenTouchStart} onTouchEnd={handleScreenTouchEnd} key={`${currentTab}-${language}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
+    <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${portalUser && currentTab !== 'home' ? 'pb-24 lg:pb-8' : ''}`}><AnimatePresence mode="wait"><motion.div onTouchStart={handleScreenTouchStart} onTouchEnd={handleScreenTouchEnd} key={`${currentTab}-${language}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
       {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? 'home' : 'dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
       {!portalLoginOpen && currentTab === 'home' && <SarayaCustomerHomepage halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenBookingModal={() => setIsNewBookingModalOpen(true)} onCreateBooking={handleCreateBooking} onOpenEventDesigner={() => setCurrentTab('event_designer')} />}
       {currentTab.startsWith('public_') && <CustomerSectionView screen={({ public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour' } as const)[currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour']} halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} onOpenBooking={(hallId) => { if (hallId) setPreselectedHallId(hallId); setIsNewBookingModalOpen(true); }} onGoHome={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
