@@ -59,6 +59,8 @@ export interface VenuePhoto {
   category: 'ballroom' | 'kosha' | 'dining' | 'corporate' | 'wedding' | 'engagement' | 'birthday' | 'party';
   parallaxSpeed: number; // e.g. 0.15, -0.2, 0.25 for multi-speed motion
   hallId?: string;
+  /** User-defined event album; each booking/occasion can keep its own photo set. */
+  albumName?: string;
   tags?: string[];
   reviewStatus?: 'pending' | 'approved' | 'rejected' | 'archived';
 }
