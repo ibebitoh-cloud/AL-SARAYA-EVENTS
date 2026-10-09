@@ -210,6 +210,7 @@ export default function App() {
   const handleRefundSecurityDeposit = (bookingId: string) => { const targetBooking = bookings.find((b) => b.id === bookingId); if (!targetBooking) return; setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, securityDepositStatus: 'refunded' } : b)); setPayments((prev) => [{ id: `rcp-${Date.now()}`, receiptNo: `REF-${Math.floor(1000 + Math.random() * 9000)}`, bookingId: targetBooking.id, bookingCode: targetBooking.code, clientName: targetBooking.clientName, amount: targetBooking.securityDeposit, date: new Date().toISOString().split('T')[0], method: 'cash', type: 'security_refund', notes: 'إيصال رد تأمين القاعة للعميل نقداً بعد سلامة المرافق' }, ...prev]); };
   const handleAddExpense = (newExpense: Expense) => setExpenses((prev) => [newExpense, ...prev]);
   const handleAddService = (newService: ServiceDefinition) => setServicesCatalogue((prev) => [...prev, newService]);
+  const handleUpdateService = (updatedService: ServiceDefinition) => setServicesCatalogue((prev) => prev.map((service) => service.id === updatedService.id ? updatedService : service));
   const handleUpdateInventoryQty = (itemId: string, newQty: number, damagedQty?: number) => setInventory((prev) => prev.map((item) => item.id === itemId ? { ...item, quantity: newQty, damagedQuantity: damagedQty !== undefined ? damagedQty : item.damagedQuantity } : item));
   const handleAddInventoryItem = (newItem: InventoryItem) => setInventory((prev) => [...prev, newItem]);
   const handleEditInventoryItem = (updatedItem: InventoryItem) => setInventory((prev) => prev.map((item) => item.id === updatedItem.id ? updatedItem : item));
@@ -257,7 +258,7 @@ export default function App() {
       {currentTab === 'catering' && portalUser && <CateringMenuView language={language} />}
       {currentTab === 'contracts' && portalUser && <ContractsView bookings={bookings} language={language} />}
       {currentTab === 'clients' && portalUser && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} />}
-      {currentTab === 'services' && portalUser && <ServicesView services={servicesCatalogue} onAddService={handleAddService} />}
+      {currentTab === 'services' && portalUser && <ServicesView services={servicesCatalogue} onAddService={handleAddService} onUpdateService={handleUpdateService} />}
       {currentTab === 'finance' && portalUser && <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} />}
       {currentTab === 'payments' && portalUser && <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} />}
       {currentTab === 'expenses' && portalUser && <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense} />}
