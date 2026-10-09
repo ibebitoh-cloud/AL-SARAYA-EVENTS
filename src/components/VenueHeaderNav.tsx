@@ -16,7 +16,6 @@ interface VenueHeaderNavProps {
   onTabChange: (tab: VenueTab) => void;
   onToggleLanguage: () => void;
   onOpenTour: () => void;
-  onOpenPhotoLibrary: () => void;
 }
 
 type NavItem = { id: VenueTab; label: string; icon: typeof LayoutDashboard };
@@ -27,7 +26,6 @@ export function VenueHeaderNav({
   user,
   onTabChange,
   onToggleLanguage,
-  onOpenPhotoLibrary,
 }: VenueHeaderNavProps) {
   const isAr = language === 'ar';
   const t = DICTIONARY[language];
@@ -100,7 +98,6 @@ export function VenueHeaderNav({
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400 text-slate-950"><LayoutDashboard className="h-4 w-4" /></span>
             <span className="min-w-0"><span className="block truncate text-xs font-black tracking-[0.16em] text-white">SARAYA</span><span className="mt-1 block truncate text-[10px] text-slate-500">{isAr ? 'إدارة وتشغيل القاعات' : 'Venue Operations'}</span></span>
           </button>
-          <button type="button" onClick={onOpenPhotoLibrary} title={isAr ? 'مكتبة الصور' : 'Photo library'} className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800"><Images className="h-4 w-4" />{isAr ? 'مكتبة الصور' : 'Photo Library'}</button>
           <div className="mb-2 mt-5 px-3 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600">{isAr ? 'مساحات العمل' : 'WORKSPACE'}</div>
           <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto pb-3">
             {desktopPrimary.map((item) => <SidebarItem key={item.id} item={item} />)}
