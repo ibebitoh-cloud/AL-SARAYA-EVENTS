@@ -45,7 +45,7 @@ export function PhotoLibraryPage({ language, photos, onSavePhotos }: PhotoLibrar
     managed.forEach((photo) => { const key = sourceKey(photo.src); if (key) counts.set(key, (counts.get(key) || 0) + 1); });
     return new Set(managed.filter((photo) => sourceKey(photo.src) && (counts.get(sourceKey(photo.src)) || 0) > 1).map((photo) => photo.id));
   }, [managed]);
-  const albumNameFor = (photo: VenuePhoto) => photo.albumName?.trim() || CATEGORY_LABELS[photo.category]?.ar || photo.category;
+  const albumNameFor = (photo: VenuePhoto) => photo.albumName?.trim() || CATEGORY_LABELS[photo.category]?.[isAr ? 'ar' : 'en'] || photo.category;
   const albumOptions = Array.from(new Set(managed.map(albumNameFor))).sort((a, b) => a.localeCompare(b, isAr ? 'ar' : 'en'));
   const filtered = managed.filter((photo) => {
     const term = query.trim().toLowerCase();
