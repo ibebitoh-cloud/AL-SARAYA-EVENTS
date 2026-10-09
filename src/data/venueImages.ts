@@ -72,7 +72,7 @@ export interface VenuePhoto {
 }
 
 export const ALSARAYA_PHOTOS: VenuePhoto[] = [
-  ...FEATURED_VENUE_PHOTOS,
+  ...FEATURED_VENUE_PHOTOS.slice().sort((a, b) => Number(a.id.match(/photo-(\\d+)$/)?.[1] || 0) - Number(b.id.match(/photo-(\\d+)$/)?.[1] || 0)),
   {
     id: 'photo-1',
     src: ballroomImg,
