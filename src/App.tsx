@@ -246,7 +246,7 @@ export default function App() {
       {currentTab === 'staff' && portalUser && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
       {currentTab === 'reports' && portalUser && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
     </motion.div></AnimatePresence></main>
-    <footer className="mt-12 w-full border-t border-white/10 bg-[#080d17] px-4 py-8 sm:px-6 lg:px-8">
+    <footer className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-colors duration-300 ${theme === 'dark' ? 'border-white/10 bg-[#080d17]' : 'border-slate-200 bg-white'}`}>
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
           <div className="space-y-3">
@@ -269,10 +269,18 @@ export default function App() {
           </div>
           <div className={language === 'ar' ? 'text-right' : 'text-left'}>
             <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">{language === 'ar' ? 'روابط سريعة' : 'Quick links'}</h2>
-            <div className="mt-4 flex flex-col items-start gap-3 text-sm text-slate-300">
-              <button type="button" onClick={() => { sound.click(650); setCurrentTab(currentTab === 'home' ? 'dashboard' : 'home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="transition-colors hover:text-amber-300">{currentTab === 'home' ? (language === 'ar' ? 'بوابة إدارة القاعات للموظفين' : 'Staff Portal') : (language === 'ar' ? 'العودة لموقع العملاء' : 'Customer Website')}</button>
-              {companyProfile.instagramUrl && <a href={companyProfile.instagramUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-amber-300">Instagram</a>}
-              {companyProfile.tiktokUrl && <a href={companyProfile.tiktokUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-amber-300">TikTok</a>}
+            <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
+              {isInternalManagementScreen && portalUser ? ([
+                ['dashboard', 'لوحة التحكم', 'Dashboard'], ['bookings', 'الحجوزات', 'Bookings'], ['agenda', 'التقويم', 'Calendar'],
+                ['photo_library', 'مكتبة الصور', 'Photo Library'], ['inventory', 'المخزون', 'Inventory'], ['company', 'ملف الشركة', 'Company Profile'],
+                ['event_designer', 'مصمم المناسبات', 'Event Designer'], ['services', 'الخدمات', 'Services'], ['finance', 'المالية', 'Finance'],
+                ['catering', 'الضيافة', 'Catering'], ['contracts', 'العقود', 'Contracts'], ['clients', 'العملاء', 'Clients'],
+                ['payments', 'المدفوعات', 'Payments'], ['expenses', 'المصروفات', 'Expenses'], ['staff', 'الموظفون', 'Staff'], ['reports', 'التقارير', 'Reports'],
+              ] as [VenueTab, string, string][]).map(([tab, arLabel, enLabel]) => <button key={tab} type="button" onClick={() => { sound.click(650); setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-current={currentTab === tab ? 'page' : undefined} className={currentTab === tab ? 'text-start font-bold text-amber-500' : 'text-start text-slate-500 transition-colors hover:text-amber-500'}>{language === 'ar' ? arLabel : enLabel}</button>) : <>
+                <button type="button" onClick={() => { sound.click(650); setPortalLoginOpen(true); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-start transition-colors hover:text-amber-500">{language === 'ar' ? 'بوابة إدارة القاعات للموظفين' : 'Staff Portal'}</button>
+                {companyProfile.instagramUrl && <a href={companyProfile.instagramUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-amber-500">Instagram</a>}
+                {companyProfile.tiktokUrl && <a href={companyProfile.tiktokUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-amber-500">TikTok</a>}
+              </>}
             </div>
           </div>
         </div>
