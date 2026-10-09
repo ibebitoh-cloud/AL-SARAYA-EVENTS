@@ -10,7 +10,7 @@ import whiteLogo from '../assets/images/logo/Company LOGO - white version.png';
 interface CompanyProfile {
   nameEn: string; nameAr: string; taglineEn: string; taglineAr: string;
   businessEn: string; businessAr: string; locationsEn: string; locationsAr: string;
-  phone: string; whatsapp: string; logo: 'black' | 'white';
+  phone: string; whatsapp: string; instagramUrl?: string; tiktokUrl?: string; logo: 'black' | 'white';
 }
 interface Props {
   language: Language; halls: Hall[]; bookings: Booking[]; services: ServiceDefinition[];
@@ -93,7 +93,7 @@ export function CompanyProfileView({ language, halls, bookings, services, client
       {editingCompany && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" onClick={() => setEditingCompany(false)}><div className="w-full max-w-2xl max-h-[90vh] overflow-auto rounded-3xl border border-slate-700 bg-slate-900 p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between"><h2 className="text-lg font-black text-white">{ar ? 'تعديل ملف الشركة' : 'Edit Company Profile'}</h2><button type="button" onClick={() => setEditingCompany(false)} className="p-2 rounded-lg bg-slate-800"><X className="w-4 h-4" /></button></div>
         <div className="mt-4 grid sm:grid-cols-2 gap-3">{[
-          ['nameEn','Company Name (EN)'],['nameAr','اسم الشركة'],['taglineEn','Tagline (EN)'],['taglineAr','الوصف المختصر بالعربي'],['businessEn','Business (EN)'],['businessAr','النشاط بالعربي'],['locationsEn','Locations (EN)'],['locationsAr','المواقع بالعربي'],['phone','Phone'],['whatsapp','WhatsApp']
+          ['nameEn','Company Name (EN)'],['nameAr','اسم الشركة'],['taglineEn','Tagline (EN)'],['taglineAr','الوصف المختصر بالعربي'],['businessEn','Business (EN)'],['businessAr','النشاط بالعربي'],['locationsEn','Locations (EN)'],['locationsAr','المواقع بالعربي'],['phone','Phone'],['whatsapp','WhatsApp'],['instagramUrl','Instagram profile URL'],['tiktokUrl','TikTok profile URL']
         ].map(([key,label]) => <label key={key} className="text-xs text-slate-400">{label}<input value={draftCompany[key as keyof CompanyProfile] as string} onChange={(e) => setDraftCompany({ ...draftCompany, [key]: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" /></label>)}</div>
         <label className="mt-3 flex items-center gap-3 text-xs text-slate-300"><input type="checkbox" checked={draftCompany.logo === 'white'} onChange={(e) => setDraftCompany({ ...draftCompany, logo: e.target.checked ? 'white' : 'black' })} />{ar ? 'استخدام اللوجو الأبيض' : 'Use white logo'}</label>
         <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditingCompany(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-white">{ar ? 'إلغاء' : 'Cancel'}</button><button type="button" onClick={saveCompany} className="px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-2"><Save className="w-3.5 h-3.5" />{ar ? 'حفظ' : 'Save'}</button></div>
