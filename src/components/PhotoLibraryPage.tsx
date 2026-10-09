@@ -28,6 +28,8 @@ const CATEGORY_LABELS: Record<string, { ar: string; en: string }> = {
 export function PhotoLibraryPage({ language, photos, bookings, onSavePhotos }: PhotoLibraryPageProps) {
   const isAr = language === 'ar';
   const fileRef = useRef<HTMLInputElement>(null);
+  const multiFileRef = useRef<HTMLInputElement>(null);
+  const [multiUploading, setMultiUploading] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | ReviewStatus>('all');
   const [category, setCategory] = useState('all');
@@ -98,6 +100,51 @@ export function PhotoLibraryPage({ language, photos, bookings, onSavePhotos }: P
     reader.readAsDataURL(file);
     event.target.value = '';
   };
+  const readMultipleImages = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!files.length) return;
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+    const oversized = imageFiles.filter((file) => file.size > 3 * 1024 * 1024);
+    if (imageFiles.length !== files.length) {
+      setNotice(isAr ? 'تم تجاهل الملفات التي ليست صوراً.' : 'Non-image files were skipped.');
+    }
+    if (oversized.length) {
+      setNotice(isAr ? `تم تجاهل ${oversized.length} صورة لأن حجم كل صورة يجب ألا يتجاوز 3 ميجابايت.` : `${oversized.length} image(s) skipped because each file must be 3 MB or smaller.`);
+    }
+    const accepted = imageFiles.filter((file) => file.size <= 3 * 1024 * 1024);
+    if (!accepted.length) return;
+    setMultiUploading(true);
+    try {
+      const records = await Promise.all(accepted.map((file) => new Promise<ManagedPhoto>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Could not read image'));
+        reader.onload = () => {
+          const id = 'photo-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+          const title = file.name.replace(/\\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Event photo';
+          const booking = bookings.find((item) => item.id === draft?.bookingId);
+          const albumName = booking ? albumNameForBooking(booking) : (draft?.albumName.trim() || CATEGORY_LABELS[draft?.category || 'wedding']?.ar || 'Weddings');
+          resolve({
+            id, src: String(reader.result || ''), titleAr: title, titleEn: title,
+            captionAr: '', captionEn: '', category: draft?.category || 'wedding',
+            albumName, bookingId: draft?.bookingId, reviewStatus: 'pending',
+            hallNameAr: 'غير محدد', hallNameEn: 'Unassigned', parallaxSpeed: 0, tags: [],
+          });
+        };
+        reader.readAsDataURL(file);
+      })));
+      onSavePhotos([...records, ...photos]);
+      persistStatuses({ ...statuses, ...Object.fromEntries(records.map((photo) => [photo.id, 'pending' as ReviewStatus])) });
+      setNotice(isAr ? `تم رفع ${records.length} صورة وإضافتها إلى الألبوم. الصور الجديدة قيد المراجعة.` : `Uploaded ${records.length} photos into the selected album. New photos are pending review.`);
+      setDraft(null);
+      setSelectedId(null);
+    } catch {
+      setNotice(isAr ? 'تعذر قراءة بعض الصور. حاول مرة أخرى.' : 'Some images could not be read. Please try again.');
+    } finally {
+      setMultiUploading(false);
+    }
+  };
+
   const saveDraft = () => {
     if (!draft?.src.trim() || (!draft.titleAr.trim() && !draft.titleEn.trim())) {
       setNotice(isAr ? 'أضف رابط الصورة أو ارفع ملفاً، واكتب عنواناً للصورة.' : 'Add an image URL or upload a file, and provide a title.');
@@ -175,7 +222,7 @@ export function PhotoLibraryPage({ language, photos, bookings, onSavePhotos }: P
         <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-black text-white">{isAr ? (selectedId ? 'تعديل بيانات الصورة' : 'إضافة صورة للمكتبة') : (selectedId ? 'Edit photo details' : 'Add a photo')}</h2><button type="button" onClick={() => { setDraft(null); setSelectedId(null); }} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X className="h-4 w-4" /></button></div>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_280px]">
           <div className="space-y-3"><label className="block text-xs text-slate-400">{isAr ? 'العنوان بالعربية' : 'Arabic title'}<input value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} className="mt-1 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white" /></label><label className="block text-xs text-slate-400">{isAr ? 'العنوان بالإنجليزية' : 'English title'}<input value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} className="mt-1 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white" /></label><label className="block text-xs text-slate-400">{isAr ? 'الوصف بالعربية' : 'Arabic caption'}<textarea value={draft.captionAr} onChange={(e) => setDraft({ ...draft, captionAr: e.target.value })} className="mt-1 min-h-20 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-white" /></label><label className="block text-xs text-slate-400">{isAr ? 'الوصف بالإنجليزية' : 'English caption'}<textarea value={draft.captionEn} onChange={(e) => setDraft({ ...draft, captionEn: e.target.value })} className="mt-1 min-h-20 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-white" /></label></div>
-          <div className="space-y-3"><label className="block text-xs text-slate-400">{isAr ? 'ألبوم الحجز' : 'Booking album'}<select value={draft.bookingId || ''} onChange={(e) => { const booking = bookings.find((item) => item.id === e.target.value); setDraft({ ...draft, bookingId: e.target.value || undefined, albumName: booking ? albumNameForBooking(booking) : (isAr ? 'زفاف وأفراح' : 'Weddings') }); }} className="mt-1 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white"><option value="">{isAr ? 'ألبوم عام / بدون حجز' : 'General album / no booking'}</option>{bookings.map((booking) => <option key={booking.id} value={booking.id}>{albumNameForBooking(booking)}</option>)}</select></label>{!draft.bookingId && <label className="block text-xs text-slate-400">{isAr ? 'اسم الألبوم العام' : 'General album name'}<input value={draft.albumName} onChange={(e) => setDraft({ ...draft, albumName: e.target.value })} placeholder={isAr ? 'مثال: زفاف أحمد - ٢٠/١١' : 'e.g. Ahmed wedding · Nov 20'} className="mt-1 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white" /></label>}<label className="block text-xs text-slate-400">{isAr ? 'رابط الصورة' : 'Image URL'}<input value={draft.src.startsWith('data:') ? '' : draft.src} onChange={(e) => setDraft({ ...draft, src: e.target.value })} placeholder="https://..." className="mt-1 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white" /></label><div className="flex flex-wrap gap-2"><button type="button" onClick={() => fileRef.current?.click()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-700 px-3 text-xs font-bold text-slate-200 hover:bg-slate-800"><Upload className="h-4 w-4" />{isAr ? 'رفع صورة (حتى 3MB)' : 'Upload image (up to 3MB)'}</button><input ref={fileRef} type="file" accept="image/*" onChange={readImage} className="hidden" /><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as VenuePhoto['category'] })} className="min-h-10 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs text-white">{Object.entries(CATEGORY_LABELS).map(([key, label]) => <option key={key} value={key}>{isAr ? label.ar : label.en}</option>)}</select></div><p className="text-[11px] leading-5 text-slate-500">{isAr ? 'في النسخة التجريبية تُحفظ الصور داخل تخزين هذا المتصفح فقط، وليست مخزنة على خادم مشترك.' : 'Demo mode: photos are stored only in this browser, not in shared server storage.'}</p><div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950">{draft.src ? <img src={draft.src} alt="" className="h-48 w-full object-contain" /> : <div className="flex h-48 items-center justify-center text-slate-600"><Images className="h-10 w-10" /></div>}</div></div>
+          <div className="space-y-3"><label className="block text-xs text-slate-400">{isAr ? 'ألبوم الحجز' : 'Booking album'}<select value={draft.bookingId || ''} onChange={(e) => { const booking = bookings.find((item) => item.id === e.target.value); setDraft({ ...draft, bookingId: e.target.value || undefined, albumName: booking ? albumNameForBooking(booking) : (isAr ? 'زفاف وأفراح' : 'Weddings') }); }} className="mt-1 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white"><option value="">{isAr ? 'ألبوم عام / بدون حجز' : 'General album / no booking'}</option>{bookings.map((booking) => <option key={booking.id} value={booking.id}>{albumNameForBooking(booking)}</option>)}</select></label>{!draft.bookingId && <label className="block text-xs text-slate-400">{isAr ? 'اسم الألبوم العام' : 'General album name'}<input value={draft.albumName} onChange={(e) => setDraft({ ...draft, albumName: e.target.value })} placeholder={isAr ? 'مثال: زفاف أحمد - ٢٠/١١' : 'e.g. Ahmed wedding · Nov 20'} className="mt-1 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white" /></label>}<label className="block text-xs text-slate-400">{isAr ? 'رابط الصورة' : 'Image URL'}<input value={draft.src.startsWith('data:') ? '' : draft.src} onChange={(e) => setDraft({ ...draft, src: e.target.value })} placeholder="https://..." className="mt-1 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white" /></label><div className="flex flex-wrap gap-2"><button type="button" onClick={() => fileRef.current?.click()} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-700 px-3 text-xs font-bold text-slate-200 hover:bg-slate-800"><Upload className="h-4 w-4" />{isAr ? 'رفع صورة واحدة' : 'Upload one photo'}</button><input ref={fileRef} type="file" accept="image/*" onChange={readImage} className="hidden" /><button type="button" onClick={() => multiFileRef.current?.click()} disabled={multiUploading} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 text-xs font-bold text-amber-200 hover:bg-amber-400/20 disabled:opacity-50"><Images className="h-4 w-4" />{multiUploading ? (isAr ? 'جارٍ الرفع...' : 'Uploading...') : (isAr ? 'رفع عدة صور' : 'Upload multiple photos')}</button><input ref={multiFileRef} type="file" accept="image/*" multiple onChange={readMultipleImages} className="hidden" /><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as VenuePhoto['category'] })} className="min-h-10 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs text-white">{Object.entries(CATEGORY_LABELS).map(([key, label]) => <option key={key} value={key}>{isAr ? label.ar : label.en}</option>)}</select></div><p className="text-[11px] leading-5 text-slate-500">{isAr ? 'في النسخة التجريبية تُحفظ الصور داخل تخزين هذا المتصفح فقط، وليست مخزنة على خادم مشترك.' : 'Demo mode: photos are stored only in this browser, not in shared server storage.'}</p><div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950">{draft.src ? <img src={draft.src} alt="" className="h-48 w-full object-contain" /> : <div className="flex h-48 items-center justify-center text-slate-600"><Images className="h-10 w-10" /></div>}</div></div>
           <div className="flex flex-col justify-between gap-3"><div className="rounded-xl border border-slate-800 bg-slate-950 p-4"><p className="text-xs font-bold text-white">{isAr ? 'خطوات النشر' : 'Publishing workflow'}</p><ol className="mt-3 list-inside list-decimal space-y-2 text-xs leading-5 text-slate-400"><li>{isAr ? 'حفظ الصورة' : 'Save the photo'}</li><li>{isAr ? 'مراجعة المحتوى' : 'Review content'}</li><li>{isAr ? 'اعتماد الصورة للعرض' : 'Approve for display'}</li></ol></div><button type="button" onClick={saveDraft} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-black text-slate-950"><Save className="h-4 w-4" />{isAr ? 'حفظ الصورة' : 'Save photo'}</button></div>
         </div>
       </div>}
