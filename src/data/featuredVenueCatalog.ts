@@ -73,7 +73,7 @@ export const FEATURED_EXTERNAL_HALLS: Hall[] = [
     cityAr: 'بورسعيد',
     address: 'Inside El Noras Beach Hotel, 26 Atef El Sadat Street',
     addressAr: 'داخل فندق النورس، ٢٦ شارع عاطف السادات',
-    sourceUrl: 'https://yellowpages.com.eg/en/map-category/بور-سعيد-قاعات-افراح/244',
+    sourceUrl: 'https://yellowpages.com.eg/en/map-category/%D8%A8%D9%88%D8%B1-%D8%B3%D8%B9%D9%8A%D8%AF-%D9%82%D8%A7%D8%B9%D8%A7%D8%AA-%D8%A7%D9%81%D8%B1%D8%A7%D8%AD/244',
     isExternalListing: true,
     photo: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=1600&q=85',
     photoUrl: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=1600&q=85',
