@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   INITIAL_BOOKINGS,
@@ -156,12 +156,35 @@ export default function App() {
   const handleAssignGuestToTable = (guestId: string, tableId: string) => { setTables((prev) => prev.map((t) => { const withoutGuest = t.assignedGuestIds.filter((id) => id !== guestId); return t.id === tableId ? { ...t, assignedGuestIds: [...withoutGuest, guestId] } : { ...t, assignedGuestIds: withoutGuest }; })); setGuests((prev) => prev.map((g) => g.id === guestId ? { ...g, tableId } : g)); sound.chime(); };
   const handleRemoveGuestFromTable = (guestId: string) => { setTables((prev) => prev.map((t) => ({ ...t, assignedGuestIds: t.assignedGuestIds.filter((id) => id !== guestId) }))); setGuests((prev) => prev.map((g) => g.id === guestId ? { ...g, tableId: undefined } : g)); sound.tick(); };
   const handleAddTable = (newTable: TableAssignment) => { setTables((prev) => [...prev, newTable]); sound.pop(); };
+  const swipeStartX = useRef<number | null>(null);
+  const swipeableTabs: VenueTab[] = ['dashboard', 'bookings', 'agenda', 'company', 'event_designer', 'inventory', 'services', 'finance', 'floorplan', 'catering', 'contracts', 'clients', 'payments', 'expenses', 'staff', 'reports'];
+  const handleScreenTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('input, textarea, select, button, a, [role="button"], [data-no-screen-swipe]')) {
+      swipeStartX.current = null;
+      return;
+    }
+    swipeStartX.current = event.changedTouches[0]?.clientX ?? null;
+  };
+  const handleScreenTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const startX = swipeStartX.current;
+    swipeStartX.current = null;
+    if (startX === null || !portalUser || currentTab === 'home' || portalLoginOpen) return;
+    const deltaX = event.changedTouches[0]?.clientX - startX;
+    if (!Number.isFinite(deltaX) || Math.abs(deltaX) < 75) return;
+    const currentIndex = swipeableTabs.indexOf(currentTab);
+    if (currentIndex < 0) return;
+    const nextIndex = currentIndex + (deltaX < 0 ? 1 : -1);
+    if (nextIndex < 0 || nextIndex >= swipeableTabs.length) return;
+    setCurrentTab(swipeableTabs[nextIndex]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const t = DICTIONARY[language];
   return (<div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white relative box-border font-sans">
     <SarayaBrandHeader language={language} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onToggleLanguage={toggleLanguage} onOpenBookingModal={() => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); }} onNavigateSection={(sectionId) => { const screenMap: Record<string, VenueTab> = { events: 'public_events', venues: 'public_venues', services: 'public_services', planner: 'public_planner', gallery: 'public_gallery', '3d-tour': 'public_3d_tour' }; const nextTab = screenMap[sectionId]; if (nextTab) { setCurrentTab(nextTab); window.scrollTo({ top: 0, behavior: 'smooth' }); } else if (sectionId === 'hero') { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); } else { setCurrentTab('home'); window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' }), 350); } }} onOpenManagementPortal={() => { sound.click(650); setPortalLoginOpen(true); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} isManagementMode={currentTab !== 'home'} onExitManagementMode={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
     {!portalLoginOpen && portalUser && currentTab !== 'home' && <VenueHeaderNav currentTab={currentTab} language={language} user={portalUser} onTabChange={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onToggleLanguage={toggleLanguage} onOpenNewBooking={() => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); }} onOpenTour={() => setIsOnboardingOpen(true)} onOpenPhotoLibrary={() => setIsPhotoLibraryOpen(true)} />}
     {portalWelcome && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-md px-4" onClick={() => setPortalWelcome(null)}><motion.div initial={{opacity:0,scale:.96,y:10}} animate={{opacity:1,scale:1,y:0}} className="w-full max-w-md rounded-3xl border border-amber-400/20 bg-slate-900 p-8 text-center shadow-2xl"><div className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-400">WELCOME</div><h1 className="mt-3 text-3xl font-black text-white">{language === 'ar' ? `أهلاً بك، ${portalWelcome.nameAr}` : `Welcome, ${portalWelcome.name}`}</h1><p className="mt-2 text-xs text-slate-500">{language === 'ar' ? 'تم الدخول إلى البوابة التجريبية' : 'You are now inside the trial portal'}</p><button onClick={() => setPortalWelcome(null)} className="mt-6 px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold">{language === 'ar' ? 'دخول النظام' : 'Enter System'}</button></motion.div></div>}
-    <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${portalUser && currentTab !== 'home' ? 'pb-24 lg:pb-6' : ''}`}><AnimatePresence mode="wait"><motion.div key={`${currentTab}-${language}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
+    <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${portalUser && currentTab !== 'home' ? 'pb-24 lg:pb-6' : ''}`}><AnimatePresence mode="wait"><motion.div onTouchStart={handleScreenTouchStart} onTouchEnd={handleScreenTouchEnd} key={`${currentTab}-${language}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
       {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? 'home' : 'dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
       {!portalLoginOpen && currentTab === 'home' && <SarayaCustomerHomepage halls={halls} photos={photos} language={language} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenBookingModal={() => setIsNewBookingModalOpen(true)} onCreateBooking={handleCreateBooking} onOpenEventDesigner={() => setCurrentTab('event_designer')} />}
       {currentTab.startsWith('public_') && <CustomerSectionView screen={({ public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour' } as const)[currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour']} halls={halls} photos={photos} language={language} onOpenBooking={(hallId) => { if (hallId) setPreselectedHallId(hallId); setIsNewBookingModalOpen(true); }} onGoHome={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
