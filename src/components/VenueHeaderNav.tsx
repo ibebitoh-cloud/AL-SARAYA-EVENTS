@@ -89,7 +89,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     <>
       {/* Persistent right-side navigation for desktop and mobile */}
       <aside
-        className="fixed right-0 top-16 bottom-0 z-[60] flex w-[4.25rem] flex-col border-l border-slate-800/90 bg-slate-950/97 shadow-2xl shadow-black/20 backdrop-blur-xl sm:top-[72px] lg:w-64"
+        className="fixed right-0 top-16 bottom-0 z-[60] flex w-[4.25rem] flex-col border-l border-slate-800/90 bg-slate-950 shadow-2xl shadow-black/20 backdrop-blur-xl sm:top-[72px] lg:w-64"
         dir={isAr ? 'rtl' : 'ltr'}
         aria-label={isAr ? 'التنقل الداخلي' : 'Internal navigation'}
       >
