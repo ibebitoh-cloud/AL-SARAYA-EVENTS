@@ -241,7 +241,7 @@ export function SarayaCustomerHomepage({
         <div className="relative max-h-[90vh] max-w-5xl overflow-hidden rounded-2xl border border-amber-500/30 bg-slate-900" onClick={e => e.stopPropagation()}>
           <button type="button" onClick={() => setGallery(null)} className="absolute end-3 top-3 z-10 rounded-full bg-slate-950/80 p-2 text-white"><X className="h-5 w-5" /></button>
           <img src={gallery.src} alt={isAr ? gallery.titleAr : gallery.titleEn} className="max-h-[78vh] w-full object-contain" referrerPolicy="no-referrer" />
-          <div className="p-4"><div className="text-xs text-amber-300">{isAr ? gallery.hallNameAr : gallery.hallNameEn}</div><div className="mt-1 font-serif font-bold">{isAr ? gallery.titleAr : gallery.titleEn}</div></div>
+          <div className="space-y-2 p-4"><div className="text-xs text-amber-300">{isAr ? gallery.hallNameAr : gallery.hallNameEn}</div><div className="font-serif font-bold">{isAr ? gallery.titleAr : gallery.titleEn}</div>{(gallery.captionAr || gallery.captionEn) && <p className="text-xs leading-5 text-slate-400">{isAr ? gallery.captionAr : gallery.captionEn}</p>}{gallery.photoCredit && gallery.sourceUrl && <a href={gallery.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex text-xs font-semibold text-amber-300 underline underline-offset-4">{isAr ? `مصدر الصورة والترخيص: ${gallery.photoCredit}` : `Image source & license: ${gallery.photoCredit}`}</a>}</div>
         </div>
       </div>}
     </main>
