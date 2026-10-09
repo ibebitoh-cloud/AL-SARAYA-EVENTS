@@ -121,7 +121,7 @@ export function PhotoLibraryPage({ language, photos, bookings, onSavePhotos }: P
         reader.onerror = () => reject(new Error('Could not read image'));
         reader.onload = () => {
           const id = 'photo-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-          const title = file.name.replace(/\\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Event photo';
+          const title = file.name.split('.').slice(0, -1).join('.').replace(/[_-]+/g, ' ').trim() || file.name || 'Event photo';
           const booking = bookings.find((item) => item.id === draft?.bookingId);
           const albumName = booking ? albumNameForBooking(booking) : (draft?.albumName.trim() || CATEGORY_LABELS[draft?.category || 'wedding']?.ar || 'Weddings');
           resolve({
