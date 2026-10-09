@@ -75,7 +75,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     const Icon = item.icon;
     const active = currentTab === item.id;
     return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined}
-      className={`flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-xs font-semibold transition-colors ${active ? 'bg-amber-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+      className={`flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-xs font-semibold transition-colors ${active ? 'bg-amber-400 text-slate-950 shadow-sm' : (theme === 'dark' ? 'text-slate-300 hover:bg-slate-800 hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950')}`}>
       <Icon className="h-4 w-4 shrink-0" /><span className="min-w-0 flex-1">{item.label}</span>
       {active && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-70" />}
     </button>;
@@ -83,7 +83,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
 
   return <>
     {/* Full-height control rail anchored to the logical start: right in Arabic, left in English. */}
-    <aside dir={isAr ? 'rtl' : 'ltr'} className={`fixed start-0 top-0 z-[60] hidden h-dvh w-64 flex-col border-e border-amber-500/20 bg-slate-950/95 shadow-xl shadow-black/20 backdrop-blur-xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform lg:flex ${isHidden ? (isAr ? 'translate-x-full' : '-translate-x-full') : 'translate-x-0'}`}>
+    <aside dir={isAr ? 'rtl' : 'ltr'} className={`fixed start-0 top-0 z-[60] hidden h-dvh w-64 flex-col border-e shadow-xl shadow-black/20 backdrop-blur-xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform lg:flex ${theme === 'dark' ? 'border-amber-500/20 bg-slate-950/95' : 'border-slate-200 bg-white/95'} ${isHidden ? (isAr ? 'translate-x-full' : '-translate-x-full') : 'translate-x-0'}`}>
       <div className="border-b border-slate-800 p-3">
         <div className="mb-3 flex items-center justify-between gap-2"><div className="min-w-0"><div className="truncate text-xs font-black text-white">{isAr ? 'شاشات الإدارة' : 'Management screens'}</div><div className="mt-1 truncate text-[10px] text-slate-500">{displayName} · {displayRole}</div></div>
         <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إخفاء القائمة' : 'Hide navigation'} title={isAr ? 'إخفاء القائمة' : 'Hide navigation'} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-amber-300"><PanelRightClose className="h-4 w-4" /></button></div>
