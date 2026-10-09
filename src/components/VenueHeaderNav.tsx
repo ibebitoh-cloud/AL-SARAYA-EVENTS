@@ -70,7 +70,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
 
   return <>
     {/* The sidebar begins exactly where the sticky brand header ends, visually joining its top edge. */}
-    <aside dir={isAr ? 'rtl' : 'ltr'} className={`fixed end-0 top-16 sm:top-[72px] z-40 hidden h-[calc(100dvh-4rem)] w-64 flex-col border-s border-t border-amber-500/20 bg-slate-950/95 shadow-xl shadow-black/20 backdrop-blur-xl transition-transform sm:h-[calc(100dvh-72px)] lg:flex ${isHidden ? 'translate-x-full' : 'translate-x-0'}`}>
+    <aside dir={isAr ? 'rtl' : 'ltr'} className={`fixed start-0 top-0 z-[60] hidden h-dvh w-64 flex-col border-e border-amber-500/20 bg-slate-950/95 shadow-xl shadow-black/20 backdrop-blur-xl transition-transform duration-200 lg:flex ${isHidden ? (isAr ? 'translate-x-full' : '-translate-x-full') : 'translate-x-0'}`}>
       <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
         <div className="min-w-0"><div className="truncate text-xs font-black text-white">{isAr ? 'شاشات الإدارة' : 'Management screens'}</div><div className="mt-1 truncate text-[10px] text-slate-500">{displayName} · {displayRole}</div></div>
         <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إخفاء القائمة' : 'Hide navigation'} title={isAr ? 'إخفاء القائمة' : 'Hide navigation'} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-amber-300"><PanelRightClose className="h-4 w-4" /></button>
@@ -83,16 +83,16 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
       </div>
     </aside>
 
-    {isHidden && <button type="button" onClick={toggleVisibility} title={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} aria-label={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} className="fixed end-0 top-20 z-40 hidden rounded-s-xl border border-amber-500/25 bg-slate-950/95 p-3 text-amber-300 shadow-lg lg:block"><PanelRightOpen className="h-4 w-4" /></button>}
+    {isHidden && <button type="button" onClick={toggleVisibility} title={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} aria-label={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} className="fixed start-0 top-20 z-[60] hidden rounded-e-xl border border-amber-500/25 bg-slate-950/95 p-3 text-amber-300 shadow-lg lg:block"><PanelRightOpen className="h-4 w-4" /></button>}
 
     {/* Mobile: the same vertical screen list opens as a right-side drawer. */}
-    <div className="fixed end-3 top-[76px] z-40 lg:hidden">
+    <div className={`fixed ${isAr ? 'end-3' : 'start-3'} top-[76px] z-40 lg:hidden`}>
       <button type="button" onClick={() => setMobileOpen((v) => !v)} aria-expanded={mobileOpen} aria-label={isAr ? 'قائمة الشاشات' : 'Open screen navigation'} className="flex h-10 items-center gap-2 rounded-xl border border-amber-500/30 bg-slate-950/95 px-3 text-xs font-bold text-amber-300 shadow-lg backdrop-blur-xl">
         {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}{isAr ? 'الشاشات' : 'Screens'}
       </button>
     </div>
     {mobileOpen && <><button type="button" aria-label={isAr ? 'إغلاق القائمة' : 'Close menu'} onClick={() => setMobileOpen(false)} className="fixed inset-0 z-[60] bg-slate-950/50 lg:hidden" />
-      <aside dir={isAr ? 'rtl' : 'ltr'} className="fixed end-0 top-16 z-[65] flex h-[calc(100dvh-4rem)] w-[min(84vw,320px)] flex-col border-s border-t border-amber-500/20 bg-slate-950 shadow-2xl sm:top-[72px] sm:h-[calc(100dvh-72px)] lg:hidden">
+      <aside dir={isAr ? 'rtl' : 'ltr'} className="fixed start-0 top-16 z-[65] flex h-[calc(100dvh-4rem)] w-[min(84vw,320px)] flex-col border-e border-amber-500/20 bg-slate-950 shadow-2xl sm:top-[72px] sm:h-[calc(100dvh-72px)] lg:hidden">
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><div><div className="text-xs font-black text-white">{isAr ? 'شاشات الإدارة' : 'Management screens'}</div><div className="mt-1 text-[10px] text-slate-500">{displayName}</div></div><button type="button" onClick={() => setMobileOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X className="h-4 w-4" /></button></div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">{navItems.map(renderNavItem)}</nav>
         <div className="flex gap-2 border-t border-slate-800 p-3"><button type="button" onClick={onToggleLanguage} className="flex-1 rounded-lg border border-slate-800 px-3 py-2 text-xs font-bold text-slate-300">{isAr ? 'EN · English' : 'العربية'}</button><button type="button" onClick={onOpenTour} className="rounded-lg px-3 py-2 text-xs text-slate-300 hover:bg-slate-800">{isAr ? 'الجولة' : 'Tour'}</button></div>
