@@ -334,7 +334,7 @@ export default function App() {
         `}</style>
         <div className="mt-6 flex flex-col items-center gap-2 border-t border-white/10 pt-4 text-center">
           <div className="flex w-full flex-col items-center justify-center gap-0 text-center leading-tight">
-            <div className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-500">{language === 'ar' ? 'تطوير وتصميم بواسطة' : 'Designed & developed by'}</div>
+            <div className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-500">Designed & developed by</div>
             <span className="relative inline-block overflow-visible py-0 px-2">
               {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-scan pointer-events-none absolute -left-3 right-0 top-1/2 z-0 h-5 bg-gradient-to-r from-transparent via-cyan-300/70 to-fuchsia-400/70 blur-[2px]" style={{ animation: 'saraya-credit-scan 1.25s ease-out both' }} />}
               <span className={`saraya-credit-main relative z-10 inline-block text-xl font-black tracking-[0.22em] text-amber-300 drop-shadow-[0_0_14px_rgba(245,185,66,0.28)] ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-main 1.35s cubic-bezier(.2,.8,.2,1) both' } : undefined}>BEBITO</span>
@@ -344,7 +344,7 @@ export default function App() {
             <span className="text-sm font-bold leading-tight text-slate-300">Mohamed Alaa</span>
             <a href="tel:+201146475759" className="text-xs font-bold leading-tight text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
           </div>
-          <div className="mt-1 text-xs font-bold text-slate-500">© {new Date().getFullYear()} SARAYA EVENT. {language === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</div>
+          <div className="mt-1 text-xs font-bold text-slate-500">© {new Date().getFullYear()} SARAYA EVENT. All rights reserved.</div>
         </div>
       </div>
     </footer>
