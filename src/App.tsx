@@ -302,35 +302,53 @@ export default function App() {
           </div>
         </div>
         <style>{`
-          @keyframes saraya-credit-glitch {
-            0% { opacity: 0; transform: translateX(-5px); text-shadow: -3px 0 #22d3ee, 3px 0 #f472b6; clip-path: inset(0 0 75% 0); }
-            18% { opacity: 1; transform: translateX(3px); text-shadow: 3px 0 #22d3ee, -2px 0 #f472b6; clip-path: inset(35% 0 38% 0); }
-            36% { transform: translateX(-2px); text-shadow: -2px 0 #22d3ee, 2px 0 #f472b6; clip-path: inset(68% 0 8% 0); }
-            54% { transform: translateX(1px); text-shadow: 1px 0 #22d3ee, -1px 0 #f472b6; clip-path: inset(0); }
-            72%, 100% { opacity: 1; transform: translateX(0); text-shadow: none; clip-path: inset(0); }
+          @keyframes saraya-credit-main {
+            0% { opacity: 0; transform: translateX(-10px) skewX(-12deg); filter: blur(3px); letter-spacing: .34em; }
+            12% { opacity: 1; transform: translateX(5px) skewX(8deg); filter: blur(0); text-shadow: -5px 0 #22d3ee, 5px 0 #fb7185; clip-path: inset(0 0 52% 0); }
+            24% { transform: translateX(-4px) skewX(-4deg); text-shadow: 5px 0 #22d3ee, -5px 0 #fb7185; clip-path: inset(42% 0 12% 0); }
+            38% { transform: translateX(3px); text-shadow: -3px 0 #22d3ee, 3px 0 #fb7185; clip-path: inset(0); letter-spacing: .22em; }
+            52% { transform: translateX(-1px); text-shadow: 2px 0 #22d3ee, -2px 0 #fb7185; }
+            68%, 100% { opacity: 1; transform: translateX(0) skewX(0); filter: none; text-shadow: 0 0 22px rgba(245, 185, 66, .18); clip-path: inset(0); letter-spacing: .18em; }
           }
-          @keyframes saraya-glitch-lines {
-            0% { opacity: 0; transform: scaleX(.2) translateX(-30%); }
-            20% { opacity: .85; transform: scaleX(1) translateX(8%); }
-            55% { opacity: .45; transform: scaleX(.8) translateX(-4%); }
-            100% { opacity: 0; transform: scaleX(.3) translateX(25%); }
+          @keyframes saraya-credit-cyan {
+            0%, 100% { opacity: 0; transform: translate(-8px, 2px); }
+            14%, 32% { opacity: .95; transform: translate(5px, -1px); }
+            46% { opacity: .5; transform: translate(-3px, 1px); }
+            60% { opacity: 0; transform: translate(0); }
+          }
+          @keyframes saraya-credit-pink {
+            0%, 100% { opacity: 0; transform: translate(7px, -2px); }
+            18%, 36% { opacity: .9; transform: translate(-5px, 1px); }
+            48% { opacity: .4; transform: translate(3px, -1px); }
+            62% { opacity: 0; transform: translate(0); }
+          }
+          @keyframes saraya-credit-scan {
+            0% { opacity: 0; transform: translateX(-120%) scaleX(.35); }
+            16% { opacity: 1; transform: translateX(0) scaleX(1); }
+            42% { opacity: .9; transform: translateX(12%) scaleX(.85); }
+            100% { opacity: 0; transform: translateX(120%) scaleX(.3); }
           }
           @media (prefers-reduced-motion: reduce) {
-            .saraya-credit-glitch, .saraya-glitch-line { animation: none !important; }
+            .saraya-credit-main, .saraya-credit-layer, .saraya-credit-scan { animation: none !important; }
           }
         `}</style>
-        <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-slate-500">© {new Date().getFullYear()} SARAYA EVENT. {language === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</div>
-          <div className="flex items-center gap-4 sm:justify-end">
-            <div className="relative isolate min-w-[190px] overflow-hidden py-1">
-              {footerCreditVisible && <span aria-hidden="true" className="saraya-glitch-line pointer-events-none absolute left-0 right-0 top-[42%] h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-fuchsia-400/70" style={{ animation: 'saraya-glitch-lines 850ms ease-out both' }} />}
-              {footerCreditVisible && <span aria-hidden="true" className="saraya-glitch-line pointer-events-none absolute left-[12%] right-[8%] top-[58%] h-px bg-gradient-to-r from-transparent via-amber-300/70 to-transparent" style={{ animation: 'saraya-glitch-lines 700ms ease-out 90ms both' }} />}
-              <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">{language === 'ar' ? 'تطوير وتصميم' : 'Designed & developed by'}</div>
-              <div className="relative mt-1 flex flex-wrap items-baseline gap-x-1.5">
-                <span className={`saraya-credit-glitch text-sm font-black tracking-[0.18em] text-amber-300 ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-glitch 950ms cubic-bezier(.2,.8,.2,1) both' } : undefined}>BEBITO</span>
-                <span className="text-xs font-medium text-slate-400">· Mohamed Alaa</span>
+        <div className="mt-8 flex flex-col gap-5 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="order-2 text-xs text-slate-500 sm:order-1">© {new Date().getFullYear()} SARAYA EVENT. {language === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</div>
+          <div className="order-1 flex min-w-0 items-center justify-start gap-4 sm:order-2 sm:justify-end">
+            <div className="hidden h-12 w-px bg-gradient-to-b from-transparent via-amber-300/60 to-transparent sm:block" />
+            <div className="min-w-0">
+              <div className={`mb-1 text-[9px] font-semibold uppercase tracking-[0.24em] text-slate-500 ${language === 'ar' ? 'text-right' : 'text-left'}`}>{language === 'ar' ? 'تطوير وتصميم بواسطة' : 'Designed & developed by'}</div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="relative inline-block overflow-visible py-1 pr-1">
+                  {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-scan pointer-events-none absolute -left-3 right-0 top-1/2 z-0 h-5 bg-gradient-to-r from-transparent via-cyan-300/70 to-fuchsia-400/70 blur-[2px]" style={{ animation: 'saraya-credit-scan 1.25s ease-out both' }} />}
+                  <span className={`saraya-credit-main relative z-10 inline-block text-lg font-black tracking-[0.18em] text-amber-300 drop-shadow-[0_0_14px_rgba(245,185,66,0.28)] ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-main 1.35s cubic-bezier(.2,.8,.2,1) both' } : undefined}>BEBITO</span>
+                  {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-1 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-lg font-black tracking-[0.18em] text-cyan-300 mix-blend-screen" style={{ animation: 'saraya-credit-cyan 1.1s steps(2, end) both' }}>BEBITO</span>}
+                  {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-1 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-lg font-black tracking-[0.18em] text-rose-400 mix-blend-screen" style={{ animation: 'saraya-credit-pink 1.1s steps(2, end) both' }}>BEBITO</span>}
+                </span>
+                <span className="text-sm font-medium text-slate-300">Mohamed Alaa</span>
+                <span className="hidden text-slate-600 sm:inline">/</span>
+                <a href="tel:+201146475759" className="text-xs text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
               </div>
-              <a href="tel:+201146475759" className="mt-1 block text-[11px] text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
             </div>
           </div>
         </div>
