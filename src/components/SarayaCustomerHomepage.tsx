@@ -171,10 +171,10 @@ export function SarayaCustomerHomepage({
             return <article key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
               <div className="relative h-64 bg-slate-950">
                 {photoSrc ? <img src={photoSrc} alt={venueName} className="h-full w-full object-cover" loading="lazy" referrerPolicy="no-referrer" /> : <div className="flex h-full items-center justify-center text-sm text-slate-500">{isAr ? 'صورة القاعة ستُضاف قريباً' : 'Venue photo coming soon'}</div>}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-5 pt-16"><h3 className="text-xl font-serif font-bold">{venueName}</h3></div>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 to-transparent p-5 pt-16"><h3 className="text-xl font-serif font-bold">{venueName}</h3>{hall.city && <div className="mt-1 text-xs font-semibold text-amber-200">{isAr ? (hall.cityAr || hall.city) : hall.city}</div>}{hall.isExternalListing && <span className="mt-2 inline-flex rounded-full border border-white/20 bg-slate-950/70 px-2 py-1 text-[10px] font-bold text-slate-200">{isAr ? "دليل قاعات خارجي" : "External venue listing"}</span>}</div>
               </div>
               <div className="space-y-3 p-4">
-                {description && <p className="text-sm leading-6 text-slate-400">{description}</p>}
+                {description && <p className="text-sm leading-6 text-slate-400">{description}</p>}{hall.isExternalListing && hall.sourceUrl && <a href={hall.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex text-xs font-semibold text-amber-300 underline decoration-amber-300/40 underline-offset-4 hover:text-amber-200">{isAr ? "عرض بيانات القاعة ومصدرها" : "View venue listing & source"}</a>}{hall.isExternalListing && <p className="text-[11px] leading-5 text-slate-500">{isAr ? "الصور مرجعية مرخّصة وليست صوراً مؤكدة للمكان. التوافر والأسعار يحتاجان إلى تأكيد من إدارة القاعة." : "Licensed stock reference images, not verified venue photos. Confirm availability and rates with the venue."}</p>}
                 <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
                     <span className="flex items-center gap-2"><Users className="h-4 w-4 text-amber-300" />{hall.capacity || '—'} {isAr ? 'ضيف' : 'guests'}</span>
@@ -182,7 +182,7 @@ export function SarayaCustomerHomepage({
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:flex">
                     <button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-amber-400">{isAr ? 'ناقش تصميم مناسبتك' : 'Discuss Your Event Plan'}</button>
-                    <button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{isAr ? 'احجز' : 'Book'}</button>
+                    <button type="button" onClick={() => openBooking(hall.id)} className="rounded-lg bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300">{hall.isExternalListing ? (isAr ? 'استفسر عن التوافر' : 'Check Availability') : (isAr ? 'احجز' : 'Book')}</button>
                   </div>
                 </div>
               </div>
@@ -211,7 +211,7 @@ export function SarayaCustomerHomepage({
       <section id="gallery" className="mt-20 space-y-7 scroll-mt-24">
         <header><div className="text-xs font-bold tracking-[0.2em] text-amber-400">{isAr ? '05 · معرض الأعمال' : '05 · OUR WORK'}</div><h2 className="mt-2 text-3xl font-serif font-bold sm:text-4xl">{isAr ? 'شاهد ما ننفذ' : 'See what we create'}</h2></header>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {displayPhotos.slice(0, 9).map(photo => <button type="button" key={photo.id} onClick={() => setGallery(photo)} className="group relative h-56 overflow-hidden rounded-xl border border-slate-800 bg-slate-900 text-start sm:h-64"><img src={photo.src} alt={isAr ? photo.titleAr : photo.titleEn} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" referrerPolicy="no-referrer" /><div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" /><div className="absolute inset-x-3 bottom-3"><div className="text-[10px] text-amber-300">{isAr ? photo.hallNameAr : photo.hallNameEn}</div><div className="mt-1 text-xs font-bold text-white">{isAr ? photo.titleAr : photo.titleEn}</div></div></button>)}
+          {displayPhotos.slice(0, 18).map(photo => <button type="button" key={photo.id} onClick={() => setGallery(photo)} className="group relative h-56 overflow-hidden rounded-xl border border-slate-800 bg-slate-900 text-start sm:h-64"><img src={photo.src} alt={isAr ? photo.titleAr : photo.titleEn} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" referrerPolicy="no-referrer" /><div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" /><div className="absolute inset-x-3 bottom-3"><div className="text-[10px] text-amber-300">{isAr ? photo.hallNameAr : photo.hallNameEn}</div><div className="mt-1 text-xs font-bold text-white">{isAr ? photo.titleAr : photo.titleEn}</div></div></button>)}
         </div>
       </section>
 
