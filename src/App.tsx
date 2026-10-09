@@ -61,6 +61,8 @@ const uniqueEventPhotos = (items: VenuePhoto[]) => {
   const seen = new Set<string>();
   return items.filter((photo) => {
     if (!photo.src?.trim() || isOutdoorVenuePhoto(photo)) return false;
+    // External directory albums remain grouped by venue even when a hotel shares official gallery photos across its halls.
+    if (photo.hallId?.startsWith('external-venue-')) return true;
     const source = photo.src.trim().replace(/[?#].*$/, '').toLowerCase();
     if (seen.has(source)) return false;
     seen.add(source);
