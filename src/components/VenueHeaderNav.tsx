@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Plus, LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
-  ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, MoreHorizontal, X,
+  ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, MoreHorizontal,
   ChevronDown, CalendarDays, Settings2,
 } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
