@@ -99,7 +99,7 @@ export function SarayaBrandHeader({
   const tiktokHref = socialHref(tiktokUrl, 'https://www.tiktok.com/@');
 
   return (
-    <header className="sticky top-0 z-50 w-full shrink-0 border-b border-amber-500/15 bg-slate-950/95 shadow-sm shadow-black/10 backdrop-blur-md transition-colors">
+    <header className={`sticky top-0 z-50 shrink-0 border-b border-amber-500/15 bg-slate-950/95 shadow-sm shadow-black/10 backdrop-blur-md transition-[width,margin] duration-200 ${isManagementMode ? 'w-full lg:ms-64 lg:w-[calc(100%-16rem)]' : 'w-full'}`}>
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-2 px-3 sm:h-[72px] sm:gap-3 sm:px-6 lg:px-8">
         {/* Zone 1: Single text element Brand Wordmark */}
         <div className="flex items-center gap-3 shrink-0">
