@@ -131,14 +131,14 @@ export default function App() {
   }, [bookings]);
   const [halls, setHalls] = useState<Hall[]>(() => {
     if (typeof window === 'undefined') return INITIAL_HALLS;
-    try { const saved = JSON.parse(window.localStorage.getItem('saraya-halls') || 'null'); const list = Array.isArray(saved) && saved.length ? saved : INITIAL_HALLS; return list.map((hall: Hall) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${hall.name} ${hall.nameEn || ''}`) ? { ...hall, name: 'قاعة المؤتمرات الدبلوماسية', nameEn: 'The Diplomat Conference & Summit Hall' } : hall); } catch { return INITIAL_HALLS; }
+    try { const saved = JSON.parse(window.localStorage.getItem('saraya-halls') || 'null'); const list = Array.isArray(saved) && saved.length ? [...saved, ...INITIAL_HALLS.filter((hall) => hall.isExternalListing && !saved.some((existing: Hall) => existing.id === hall.id))] : INITIAL_HALLS; return list.map((hall: Hall) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${hall.name} ${hall.nameEn || ''}`) ? { ...hall, name: 'قاعة المؤتمرات الدبلوماسية', nameEn: 'The Diplomat Conference & Summit Hall' } : hall); } catch { return INITIAL_HALLS; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-halls', JSON.stringify(halls)); }, [halls]);
   const [photos, setPhotos] = useState<VenuePhoto[]>(() => {
     if (typeof window === 'undefined') return uniqueEventPhotos(ALSARAYA_PHOTOS);
     try {
       const saved = JSON.parse(window.localStorage.getItem('alsaraya_custom_photos') || 'null');
-      return uniqueEventPhotos(Array.isArray(saved) && saved.length ? saved : ALSARAYA_PHOTOS);
+      const list = Array.isArray(saved) && saved.length ? [...saved, ...ALSARAYA_PHOTOS.filter((photo) => photo.hallId?.startsWith('external-venue-') && !saved.some((existing: VenuePhoto) => existing.id === photo.id))] : ALSARAYA_PHOTOS; return uniqueEventPhotos(list);
     } catch {
       return uniqueEventPhotos(ALSARAYA_PHOTOS);
     }
