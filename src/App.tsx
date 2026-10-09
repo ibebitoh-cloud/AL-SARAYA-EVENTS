@@ -93,6 +93,23 @@ export default function App() {
   const [portalLoginOpen, setPortalLoginOpen] = useState(false);
   const [portalWelcome, setPortalWelcome] = useState<SystemUser | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [footerCreditVisible, setFooterCreditVisible] = useState(false);
+  const footerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const footer = footerRef.current;
+    if (!footer || typeof IntersectionObserver === 'undefined') {
+      setFooterCreditVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setFooterCreditVisible(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.18 });
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; window.localStorage.setItem('saraya-theme', theme); }, [theme]);
   useEffect(() => { document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = language; }, [language]);
   const toggleLanguage = () => setLanguage((prev) => (prev === 'ar' ? 'en' : 'ar'));
@@ -246,7 +263,7 @@ export default function App() {
       {currentTab === 'staff' && portalUser && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
       {currentTab === 'reports' && portalUser && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
     </motion.div></AnimatePresence></main>
-    <footer className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-[width,margin,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${theme === 'dark' ? 'border-white/10 bg-[#080d17]' : 'border-slate-200 bg-white'} ${isInternalManagementScreen ? `lg:w-[calc(100%-${sidebarVisible ? '16rem' : '0rem'})] ${sidebarVisible ? 'lg:ms-64' : 'lg:ms-0'} lg:px-8` : ''}`}>
+    <footer ref={footerRef} className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-[width,margin,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${theme === 'dark' ? 'border-white/10 bg-[#080d17]' : 'border-slate-200 bg-white'} ${isInternalManagementScreen ? `lg:w-[calc(100%-${sidebarVisible ? '16rem' : '0rem'})] ${sidebarVisible ? 'lg:ms-64' : 'lg:ms-0'} lg:px-8` : ''}`}>
       <div className={`mx-auto ${isInternalManagementScreen ? 'w-full max-w-none' : 'max-w-7xl'}`}>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
           <div className="space-y-3">
@@ -284,13 +301,35 @@ export default function App() {
             </div>
           </div>
         </div>
+        <style>{`
+          @keyframes saraya-credit-glitch {
+            0% { opacity: 0; transform: translateX(-5px); text-shadow: -3px 0 #22d3ee, 3px 0 #f472b6; clip-path: inset(0 0 75% 0); }
+            18% { opacity: 1; transform: translateX(3px); text-shadow: 3px 0 #22d3ee, -2px 0 #f472b6; clip-path: inset(35% 0 38% 0); }
+            36% { transform: translateX(-2px); text-shadow: -2px 0 #22d3ee, 2px 0 #f472b6; clip-path: inset(68% 0 8% 0); }
+            54% { transform: translateX(1px); text-shadow: 1px 0 #22d3ee, -1px 0 #f472b6; clip-path: inset(0); }
+            72%, 100% { opacity: 1; transform: translateX(0); text-shadow: none; clip-path: inset(0); }
+          }
+          @keyframes saraya-glitch-lines {
+            0% { opacity: 0; transform: scaleX(.2) translateX(-30%); }
+            20% { opacity: .85; transform: scaleX(1) translateX(8%); }
+            55% { opacity: .45; transform: scaleX(.8) translateX(-4%); }
+            100% { opacity: 0; transform: scaleX(.3) translateX(25%); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .saraya-credit-glitch, .saraya-glitch-line { animation: none !important; }
+          }
+        `}</style>
         <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-slate-500">© {new Date().getFullYear()} SARAYA EVENT. {language === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}</div>
-          <div className="flex items-center gap-3 sm:justify-end">
-            <div className="h-8 w-px bg-white/10" />
-            <div>
+          <div className="flex items-center gap-4 sm:justify-end">
+            <div className="relative isolate min-w-[190px] overflow-hidden py-1">
+              {footerCreditVisible && <span aria-hidden="true" className="saraya-glitch-line pointer-events-none absolute left-0 right-0 top-[42%] h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-fuchsia-400/70" style={{ animation: 'saraya-glitch-lines 850ms ease-out both' }} />}
+              {footerCreditVisible && <span aria-hidden="true" className="saraya-glitch-line pointer-events-none absolute left-[12%] right-[8%] top-[58%] h-px bg-gradient-to-r from-transparent via-amber-300/70 to-transparent" style={{ animation: 'saraya-glitch-lines 700ms ease-out 90ms both' }} />}
               <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">{language === 'ar' ? 'تطوير وتصميم' : 'Designed & developed by'}</div>
-              <div className="mt-1 text-xs font-bold tracking-[0.12em] text-slate-300">BEBITO <span className="font-normal tracking-normal text-slate-500">· Mohamed Alaa</span></div>
+              <div className="relative mt-1 flex flex-wrap items-baseline gap-x-1.5">
+                <span className={`saraya-credit-glitch text-sm font-black tracking-[0.18em] text-amber-300 ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-glitch 950ms cubic-bezier(.2,.8,.2,1) both' } : undefined}>BEBITO</span>
+                <span className="text-xs font-medium text-slate-400">· Mohamed Alaa</span>
+              </div>
               <a href="tel:+201146475759" className="mt-1 block text-[11px] text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
             </div>
           </div>
