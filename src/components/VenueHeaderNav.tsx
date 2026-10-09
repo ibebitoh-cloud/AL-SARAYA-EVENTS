@@ -49,7 +49,6 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     { id: 'event_designer', label: isAr ? 'مصمم المناسبات' : 'Event Designer', icon: Ruler },
     { id: 'services', label: isAr ? 'الخدمات' : 'Services', icon: Utensils },
     { id: 'finance', label: isAr ? 'المالية' : 'Finance', icon: Wallet },
-    { id: 'floorplan', label: isAr ? 'مخطط القاعة' : 'Floor Plan', icon: Settings2 },
     { id: 'catering', label: isAr ? 'الضيافة' : 'Catering', icon: ClipboardList },
     { id: 'contracts', label: isAr ? 'العقود' : 'Contracts', icon: FileText },
     { id: 'clients', label: isAr ? 'العملاء' : 'Clients', icon: Users },
