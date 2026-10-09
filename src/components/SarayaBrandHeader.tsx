@@ -15,6 +15,8 @@ import {
   Moon,
   Maximize2,
   Minimize2,
+  Instagram,
+  Music2,
 } from 'lucide-react';
 import { Language, VenueTab } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
@@ -28,6 +30,8 @@ interface SarayaBrandHeaderProps {
   onNavigateSection: (sectionId: string) => void;
   onOpenManagementPortal: () => void;
   isManagementMode: boolean;
+  instagramUrl?: string;
+  tiktokUrl?: string;
   onExitManagementMode: () => void;
 }
 
@@ -40,6 +44,8 @@ export function SarayaBrandHeader({
   onNavigateSection,
   onOpenManagementPortal,
   isManagementMode,
+  instagramUrl,
+  tiktokUrl,
   onExitManagementMode,
 }: SarayaBrandHeaderProps) {
   const isAr = language === 'ar';
@@ -82,6 +88,15 @@ export function SarayaBrandHeader({
     { id: 'about', labelAr: 'عن السرايا', labelEn: 'About' },
     { id: 'contact', labelAr: 'تواصل معنا', labelEn: 'Contact' },
   ];
+
+  const socialHref = (value: string | undefined, base: string) => {
+    const url = (value || '').trim();
+    if (!url) return base;
+    if (/^https?:\/\//i.test(url)) return url;
+    return `${base}${url.replace(/^@/, '').replace(/^\/+/, '')}`;
+  };
+  const instagramHref = socialHref(instagramUrl, 'https://www.instagram.com/');
+  const tiktokHref = socialHref(tiktokUrl, 'https://www.tiktok.com/@');
 
   return (
     <header className="sticky top-0 z-50 w-full shrink-0 border-b border-amber-500/15 bg-slate-950/95 shadow-sm shadow-black/10 backdrop-blur-md transition-colors">
@@ -156,6 +171,16 @@ export function SarayaBrandHeader({
 
         {/* Zone 3: Primary Actions (Language, Audio, Booking CTA, Discreet Management) */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {!isManagementMode && (
+            <>
+              <a href={instagramHref} target="_blank" rel="noreferrer" aria-label="Instagram profile" title={instagramUrl?.trim() ? 'Instagram profile' : 'Set the official Instagram URL in Company Profile'} className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 text-slate-300 transition-colors hover:border-amber-400/50 hover:bg-slate-900 hover:text-amber-300">
+                <Instagram className="h-4 w-4" />
+              </a>
+              <a href={tiktokHref} target="_blank" rel="noreferrer" aria-label="TikTok profile" title={tiktokUrl?.trim() ? 'TikTok profile' : 'Set the official TikTok URL in Company Profile'} className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 text-slate-300 transition-colors hover:border-amber-400/50 hover:bg-slate-900 hover:text-amber-300">
+                <Music2 className="h-4 w-4" />
+              </a>
+            </>
+          )}
           {/* Sound Toggle */}
           <button
             type="button"
@@ -298,6 +323,16 @@ export function SarayaBrandHeader({
               </a>
             ))}
 
+            {!isManagementMode && (
+              <div className="grid grid-cols-2 gap-2 border-t border-slate-800 pt-3">
+                <a href={instagramHref} target="_blank" rel="noreferrer" className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-200 hover:border-amber-400/50 hover:text-amber-300" title={instagramUrl?.trim() ? 'Instagram profile' : 'Set the official Instagram URL in Company Profile'}>
+                  <Instagram className="h-4 w-4" />Instagram
+                </a>
+                <a href={tiktokHref} target="_blank" rel="noreferrer" className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-200 hover:border-amber-400/50 hover:text-amber-300" title={tiktokUrl?.trim() ? 'TikTok profile' : 'Set the official TikTok URL in Company Profile'}>
+                  <Music2 className="h-4 w-4" />TikTok
+                </a>
+              </div>
+            )}
             <div className="mt-3 grid grid-cols-4 gap-2 border-t border-slate-800 pt-3">
               <button type="button" onClick={() => { setIsMobileMenuOpen(false); onToggleLanguage(); }} className="flex min-h-11 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{isAr ? 'English' : 'العربية'}</button>
               <button type="button" onClick={() => { setIsMobileMenuOpen(false); onToggleTheme(); }} className="flex min-h-11 items-center justify-center gap-1 rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs font-bold text-slate-200">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{isAr ? (theme === 'dark' ? 'فاتح' : 'داكن') : (theme === 'dark' ? 'Light' : 'Dark')}</button>
