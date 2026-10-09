@@ -84,7 +84,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
         aria-current={active ? 'page' : undefined}
         title={compact ? item.label : undefined}
         className={compact
-          ? `flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[9px] font-bold transition-colors ${active ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`
+          ? `flex min-h-10 min-w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold transition-colors ${active ? 'bg-amber-400 text-slate-950' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`
           : `flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-xs font-semibold transition-colors ${active ? 'bg-amber-400 text-slate-950 shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
       >
         <Icon className={compact ? 'h-4 w-4 shrink-0' : 'h-4 w-4 shrink-0'} />
@@ -149,7 +149,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
       {moreOpen && (
         <>
           <button type="button" aria-label={isAr ? 'إغلاق قائمة التنقل' : 'Close navigation menu'} onClick={() => setMoreOpen(false)} className="fixed inset-0 z-[65] bg-slate-950/35 lg:hidden" />
-          <div className="fixed bottom-3 right-[4.25rem] top-20 z-[70] flex w-[min(17rem,calc(100vw-5rem))] flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl lg:hidden" dir={isAr ? 'rtl' : 'ltr'}>
+          <div className="fixed inset-x-2 top-28 bottom-3 z-[70] flex flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl sm:inset-x-auto sm:end-4 sm:w-72 lg:hidden" dir={isAr ? 'rtl' : 'ltr'}>
             <div className="flex items-center justify-between border-b border-slate-800 px-3 py-3">
               <span className="text-xs font-black text-white">{isAr ? 'كل الشاشات' : 'All screens'}</span>
               <button type="button" onClick={() => setMoreOpen(false)} aria-label={isAr ? 'إغلاق' : 'Close'} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"><X className="h-4 w-4" /></button>
@@ -161,11 +161,6 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
         </>
       )}
 
-      {profileOpen && (
-        <div className="fixed bottom-4 right-[4.5rem] z-[70] w-64 rounded-2xl border border-slate-700 bg-slate-950 p-4 shadow-2xl lg:hidden" dir={isAr ? 'rtl' : 'ltr'}>
-          <ProfileDetails />
-        </div>
-      )}
     </>
   );
 }
