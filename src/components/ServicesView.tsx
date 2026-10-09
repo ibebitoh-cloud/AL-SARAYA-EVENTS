@@ -10,6 +10,7 @@ import {
   Tag,
   Layers,
   Check,
+  Pencil,
 } from 'lucide-react';
 import { ServiceDefinition } from '../types/venueSystem';
 import { TiltCard } from './TiltCard';
@@ -18,12 +19,14 @@ import { sound } from '../utils/soundEffects';
 interface ServicesViewProps {
   services: ServiceDefinition[];
   onAddService: (newService: ServiceDefinition) => void;
+  onUpdateService: (updatedService: ServiceDefinition) => void;
 }
 
-export function ServicesView({ services, onAddService }: ServicesViewProps) {
+export function ServicesView({ services, onAddService, onUpdateService }: ServicesViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<ServiceDefinition | null>(null);
 
   // New Service form state
   const [name, setName] = useState('');
@@ -52,23 +55,45 @@ export function ServicesView({ services, onAddService }: ServicesViewProps) {
     return matchesSearch && matchesCategory;
   });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const openCreateModal = () => {
+    setEditingService(null);
+    setName('');
+    setCategory('buffet');
+    setDefaultPrice(2500);
+    setDefaultCost(1200);
+    setUnit('مناسبة');
+    setDescription('');
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (service: ServiceDefinition) => {
+    setEditingService(service);
+    setName(service.name);
+    setCategory(service.category);
+    setDefaultPrice(service.defaultPrice);
+    setDefaultCost(service.defaultCost);
+    setUnit(service.unit);
+    setDescription(service.description || '');
+    setIsModalOpen(true);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-
     sound.success();
-    const newService: ServiceDefinition = {
-      id: `srv-${Date.now()}`,
+    const updatedService: ServiceDefinition = {
+      id: editingService?.id || `srv-${Date.now()}`,
       name: name.trim(),
       category,
-      defaultPrice: Number(defaultPrice) || 1000,
-      defaultCost: Number(defaultCost) || 500,
+      defaultPrice: Number(defaultPrice) || 0,
+      defaultCost: Number(defaultCost) || 0,
       unit: unit.trim() || 'مناسبة',
       description: description.trim(),
     };
-
-    onAddService(newService);
+    if (editingService) onUpdateService(updatedService);
+    else onAddService(updatedService);
     setIsModalOpen(false);
+    setEditingService(null);
     setName('');
     setDescription('');
   };
@@ -89,7 +114,7 @@ export function ServicesView({ services, onAddService }: ServicesViewProps) {
           <button
             onClick={() => {
               sound.click(650);
-              setIsModalOpen(true);
+              openCreateModal();
             }}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md transition-all cursor-pointer whitespace-nowrap active:scale-95"
           >
@@ -132,12 +157,15 @@ export function ServicesView({ services, onAddService }: ServicesViewProps) {
               className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all space-y-3 shadow-md"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 font-semibold">
                     {srv.category}
                   </span>
                   <h3 className="text-sm font-bold text-white mt-1 leading-snug">{srv.name}</h3>
                 </div>
+                <button type="button" onClick={() => openEditModal(srv)} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20 text-xs font-semibold" aria-label={`تعديل ${srv.name}`}>
+                  <Pencil className="w-3.5 h-3.5" /> تعديل
+                </button>
               </div>
 
               {srv.description && (
@@ -181,9 +209,9 @@ export function ServicesView({ services, onAddService }: ServicesViewProps) {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-right">
-            <h3 className="text-base font-bold text-white mb-4">إضافة خدمة أو باقة جديدة</h3>
+            <h3 className="text-base font-bold text-white mb-4">{editingService ? 'تعديل الخدمة الحالية' : 'إضافة خدمة أو باقة جديدة'}</h3>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">اسم الخدمة</label>
                 <input
@@ -270,7 +298,7 @@ export function ServicesView({ services, onAddService }: ServicesViewProps) {
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white"
                 >
-                  حفظ الخدمة
+                  {editingService ? 'حفظ التعديلات' : 'حفظ الخدمة'}
                 </button>
               </div>
             </form>
