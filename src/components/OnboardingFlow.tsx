@@ -63,8 +63,8 @@ export function OnboardingFlow({ isOpen, language, onClose, onComplete, onNaviga
     if (!isOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
-      if (event.key === 'ArrowRight') setStep((value) => Math.min(steps.length - 1, value + (isAr ? -1 : 1)));
-      if (event.key === 'ArrowLeft') setStep((value) => Math.max(0, value + (isAr ? 1 : -1)));
+      if (event.key === 'ArrowRight') setStep((value) => Math.max(0, Math.min(steps.length - 1, value + (isAr ? -1 : 1))));
+      if (event.key === 'ArrowLeft') setStep((value) => Math.max(0, Math.min(steps.length - 1, value + (isAr ? 1 : -1))));
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
