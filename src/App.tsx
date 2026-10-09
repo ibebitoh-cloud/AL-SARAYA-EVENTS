@@ -333,7 +333,7 @@ export default function App() {
           }
         `}</style>
         <div className="mt-6 flex flex-col items-center gap-2 border-t border-white/10 pt-4 text-center">
-          <div className="flex w-full flex-col items-center justify-center gap-0 text-center leading-tight">
+          <div dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'isolate' }} className="flex w-full flex-col items-center justify-center gap-0 text-center leading-tight">
             <div className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-500">Designed & developed by</div>
             <span className="relative inline-block overflow-visible py-0 px-2">
               {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-scan pointer-events-none absolute -left-3 right-0 top-1/2 z-0 h-5 bg-gradient-to-r from-transparent via-cyan-300/70 to-fuchsia-400/70 blur-[2px]" style={{ animation: 'saraya-credit-scan 1.25s ease-out both' }} />}
