@@ -7,7 +7,6 @@ import {
   ChevronUp,
   Copy,
   DoorOpen,
-  Flower2,
   Monitor,
   Move3d,
   Plus,
@@ -36,10 +35,31 @@ const ITEM_LIBRARY = [
   { type: 'screen', labelEn: 'LED Screen', labelAr: 'شاشة LED', icon: Monitor },
   { type: 'podium', labelEn: 'Podium', labelAr: 'منصة خطاب', icon: ScreenShare },
   { type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', icon: Move3d },
-  { type: 'flowers', labelEn: 'Flowers', labelAr: 'زهور وديكور', icon: Flower2 },
   { type: 'buffet', labelEn: 'Buffet', labelAr: 'بوفيه', icon: Sparkles },
   { type: 'registration', labelEn: 'Registration', labelAr: 'تسجيل', icon: DoorOpen },
 ] as const;
+
+// Ready-made table sets (table + chairs) with real sizes, added in bulk from the designer.
+const TABLE_SETS = [6, 8, 10].flatMap((seats) => [
+  { id: `round180-${seats}`, shape: 'round' as const, widthM: 1.8, depthM: 1.8, seats, labelEn: `Round 180cm · ${seats} chairs`, labelAr: `طاولة دائرية 180سم · ${seats} كراسي` },
+  { id: `rect1x2-${seats}`, shape: 'rect' as const, widthM: 2, depthM: 1, seats, labelEn: `Rect 1×2m · ${seats} chairs`, labelAr: `طاولة مستطيلة 1×2م · ${seats} كراسي` },
+]).sort((a, b) => (a.shape === b.shape ? a.seats - b.seats : a.shape === 'round' ? -1 : 1));
+
+// Dot positions (in % of the 2D marker) for the chairs around a table.
+const seatDots = (item: HallLayoutItem) => {
+  const seats = item.seats || 10;
+  if (item.shape !== 'rect') return Array.from({ length: seats }, (_, i) => ({ left: 50 + Math.cos((i / seats) * Math.PI * 2) * 68, top: 50 + Math.sin((i / seats) * Math.PI * 2) * 68 }));
+  const ends = seats >= 8 ? 1 : 0;
+  const perSide = Math.ceil((seats - ends * 2) / 2);
+  const dots: { left: number; top: number }[] = [];
+  for (let i = 0; i < perSide; i++) {
+    const left = (100 / perSide) * (i + 0.5);
+    dots.push({ left, top: 128 });
+    if (i < seats - ends * 2 - perSide) dots.push({ left, top: -28 });
+  }
+  if (ends) dots.push({ left: 112, top: 50 }, { left: -12, top: 50 });
+  return dots;
+};
 
 const EVENT_NAMES: Record<EventKind, [string, string]> = {
   engagement: ['Engagement', 'خطوبة'],
@@ -90,7 +110,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     } catch { return ''; }
   });
   const [autoBuilderOpen, setAutoBuilderOpen] = useState(false);
-  const [autoSelection, setAutoSelection] = useState<Record<string, number>>({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, flowers: 0, buffet: 0, registration: 0 });
+  const [autoSelection, setAutoSelection] = useState<Record<string, number>>({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, buffet: 0, registration: 0 });
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number; dx: number; dy: number; rotation: number; canvasWidth: number; canvasHeight: number } | null>(null);
 
@@ -122,6 +142,43 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     setSelectedId(item.id);
     setSaved(false);
   };
+
+  // Adds `qty` copies of a table set in a grid, spaced by the set's real footprint (table + chairs).
+  const addTableSet = (setId: string, qty: number) => {
+    const set = TABLE_SETS.find((entry) => entry.id === setId);
+    if (!set || qty < 1) return;
+    const stepX = set.widthM + 1.6;
+    const stepY = set.depthM + 1.6;
+    const cols = Math.max(1, Math.floor((width * 0.9) / stepX));
+    const stamp = Date.now();
+    // Start the new batch one row below the lowest table already on the plan.
+    const tableRows = items.filter((item) => item.type === 'table').map((item) => (item.y / 100 - 0.5) * depth);
+    const startY = tableRows.length ? Math.max(...tableRows) + stepY : -depth * 0.2;
+    const added: LayoutItem[] = Array.from({ length: qty }, (_, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const usedCols = Math.min(cols, qty);
+      const xM = (col - (usedCols - 1) / 2) * stepX;
+      const yM = startY + row * stepY;
+      return {
+        id: `table-${set.id}-${stamp}-${i}`,
+        type: 'table',
+        labelEn: set.labelEn,
+        labelAr: set.labelAr,
+        x: Math.max(4, Math.min(96, (xM / width + 0.5) * 100)),
+        y: Math.max(4, Math.min(96, (yM / depth + 0.5) * 100)),
+        rotation: 0,
+        seats: set.seats,
+        shape: set.shape,
+        widthM: set.widthM,
+        depthM: set.depthM,
+      };
+    });
+    setItems((prev) => [...prev, ...added]);
+    setSelectedId(added[0].id);
+    setSaved(false);
+  };
+  const [setQty, setSetQty] = useState<Record<string, number>>({});
 
   const updateSelected = (patch: Partial<LayoutItem>) => {
     if (!selectedId) return;
@@ -262,7 +319,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     const tableQty = autoSelection.table || 0;
     const cols = Math.max(1, Math.min(6, Math.floor((width - margin * 2) / 3.8)));
     for (let i = 0; i < tableQty; i++) { const row = Math.floor(i / cols); const col = i % cols; const x = cols === 1 ? 0 : -((cols - 1) * 3.8) / 2 + col * 3.8; add('table', i + 1, x, -depth / 2 + margin + 4 + row * 3.8); }
-    const simple = ['stage','screen','podium','dance','flowers','buffet','registration'];
+    const simple = ['stage','screen','podium','dance','buffet','registration'];
     simple.forEach((type) => { const qty = autoSelection[type] || 0; for (let i = 0; i < qty; i++) { const x = (i - (qty - 1) / 2) * (type === 'stage' || type === 'screen' ? 8 : 2.5); const y = type === 'dance' ? depth / 2 - margin - 2.5 : -depth / 2 + margin + (type === 'screen' ? 1 : type === 'stage' ? 2 : 5); add(type, i + 1, x, y); } });
     setItems(next); setSelectedId(next[0]?.id ?? null); setSaved(false); setAutoBuilderOpen(false);
   };
@@ -276,6 +333,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
   const itemVisual = (item: LayoutItem) => {
     const common = 'absolute flex items-center justify-center select-none';
+    if (item.type === 'table' && item.shape === 'rect') return `${common} w-16 h-8 rounded-md border-2 border-amber-300/70 bg-amber-200/20 text-amber-100`;
     if (item.type === 'table') return `${common} w-14 h-14 rounded-full border-2 border-amber-300/70 bg-amber-200/20 text-amber-100`;
     if (item.type === 'chairs') return `${common} w-7 h-7 rounded-md border border-slate-300/50 bg-slate-300/20 text-slate-200`;
     if (item.type === 'stage') return `${common} w-40 h-12 rounded-lg border-2 border-slate-300/50 bg-slate-400/20 text-white font-bold`;
@@ -326,7 +384,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="absolute inset-[7%] border border-white/10 rounded-xl">
                 {items.map((item) => (
                   <div key={item.id} className={itemVisual(item)} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)` }}>
-                    {item.type === 'screen' ? 'LED SCREEN' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? '10' : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.labelEn}
+                    {item.type === 'screen' ? 'LED SCREEN' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? (item.seats || 10) : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.labelEn}
                   </div>
                 ))}
               </div>
@@ -369,6 +427,21 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                 })}
               </div>
             </div>
+
+            <div className="mt-5 border-t border-slate-800 pt-3">
+              <div className="text-xs font-bold text-white">{isAr ? 'طاولات جاهزة بالكراسي' : 'Table Sets'}</div>
+              <p className="mt-0.5 mb-2 text-[10px] text-slate-500">{isAr ? 'حدد العدد ثم أضف دفعة واحدة' : 'Set a quantity, then add them in bulk'}</p>
+              <div className="space-y-1.5">
+                {TABLE_SETS.map((set) => (
+                  <div key={set.id} className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5">
+                    <span className={`shrink-0 border border-amber-300/70 bg-amber-200/20 ${set.shape === 'round' ? 'h-4 w-4 rounded-full' : 'h-3 w-5 rounded-sm'}`} />
+                    <span className="flex-1 text-[10px] leading-4 text-slate-300">{isAr ? set.labelAr : set.labelEn}</span>
+                    <input type="number" min={1} max={100} value={setQty[set.id] ?? 1} onChange={(e) => setSetQty((prev) => ({ ...prev, [set.id]: Math.max(1, Math.min(100, Number(e.target.value) || 1)) }))} aria-label={isAr ? 'العدد' : 'Quantity'} className="w-11 rounded-md border border-slate-700 bg-slate-900 px-1.5 py-1 text-[10px] text-white" />
+                    <button type="button" onClick={() => addTableSet(set.id, setQty[set.id] ?? 1)} aria-label={isAr ? 'إضافة' : 'Add'} className="rounded-md bg-amber-400 p-1 text-slate-950 hover:bg-amber-300"><Plus className="h-3 w-3" /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </aside>
 
           <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-2 sm:p-3 min-w-0">
@@ -383,7 +456,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
                   {items.map((item) => (
                     <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
-                      {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{Array.from({ length: item.seats || 10 }, (_, seat) => <span key={seat} className="absolute w-2 h-2 rounded-full bg-slate-200/80" style={{ left: (50 + Math.cos((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%', top: (50 + Math.sin((seat / (item.seats || 10)) * Math.PI * 2) * 68) + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
+                      {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{seatDots(item).map((dot, seat) => <span key={seat} className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-200/80" style={{ left: dot.left + '%', top: dot.top + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                     </button>
                   ))}
                 </div>
@@ -409,7 +482,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <>
                 <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
                   <div className="text-sm font-bold text-white">{isAr ? selected.labelAr : selected.labelEn}</div>
-                  {selected.type === 'table' && <div className="text-[10px] text-slate-500 mt-1">{isAr ? '10 مقاعد' : '10 seats'}</div>}
+                  {selected.type === 'table' && <div className="text-[10px] text-slate-500 mt-1">{selected.seats || 10} {isAr ? 'مقاعد' : 'seats'}</div>}
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 mt-3">
                   <button type="button" onClick={() => nudge(0, -3)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronUp className="w-4 h-4" /></button>
@@ -433,7 +506,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </aside>
         </div>
       )}
-      {autoBuilderOpen && <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4" onClick={() => setAutoBuilderOpen(false)}><div className="w-full max-w-2xl max-h-[90vh] overflow-auto rounded-3xl border border-slate-700 bg-slate-900 p-5" onClick={(e) => e.stopPropagation()}><div className="flex items-center justify-between"><div><div className="text-[10px] font-black uppercase tracking-widest text-amber-400">AUTO LAYOUT BUILDER</div><h2 className="mt-1 text-xl font-black text-white">{isAr ? "اختر ما تحتاجه أولاً" : "Choose what you need first"}</h2><p className="mt-1 text-xs text-slate-500">{isAr ? "يمكنك اختيار أكثر من عنصر وتحديد الكمية لكل عنصر." : "Select multiple elements and set the quantity for each."}</p></div><button type="button" onClick={() => setAutoBuilderOpen(false)} className="p-2 rounded-xl bg-slate-800"><X className="w-4 h-4" /></button></div><div className="mt-5 grid sm:grid-cols-2 gap-2">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; const value = autoSelection[item.type] || 0; return <label key={item.type} className={"flex items-center gap-3 rounded-xl border p-3 cursor-pointer " + (value > 0 ? "border-amber-400/50 bg-amber-400/10" : "border-slate-800 bg-slate-950/60")}><input type="checkbox" checked={value > 0} onChange={(e) => setAutoSelection((prev) => ({ ...prev, [item.type]: e.target.checked ? (item.type === "table" ? Math.max(1, Math.ceil(guests / 10)) : 1) : 0 }))} className="accent-amber-400" /><Icon className="w-4 h-4 text-amber-400" /><span className="flex-1 text-xs font-bold text-white">{isAr ? item.labelAr : item.labelEn}{item.type === "table" && <span className="block text-[9px] font-normal text-slate-500">{isAr ? "كل طاولة معها كراسي" : "chairs included with every table"}</span>}</span>{value > 0 && <input type="number" min={1} max={500} value={value} onChange={(e) => setAutoSelection((prev) => ({ ...prev, [item.type]: Math.max(1, Math.min(500, Number(e.target.value) || 1)) }))} className="w-16 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-white" />}</label>; })}</div><div className="mt-5 flex justify-between"><button type="button" onClick={() => setAutoSelection({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, flowers: 0, buffet: 0, registration: 0 })} className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-white">{isAr ? "إعادة ضبط" : "Reset"}</button><button type="button" onClick={buildSelectedLayout} className="px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-black">{isAr ? "إنشاء المخطط" : "Create Layout"}</button></div></div></div>}
+      {autoBuilderOpen && <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4" onClick={() => setAutoBuilderOpen(false)}><div className="w-full max-w-2xl max-h-[90vh] overflow-auto rounded-3xl border border-slate-700 bg-slate-900 p-5" onClick={(e) => e.stopPropagation()}><div className="flex items-center justify-between"><div><div className="text-[10px] font-black uppercase tracking-widest text-amber-400">AUTO LAYOUT BUILDER</div><h2 className="mt-1 text-xl font-black text-white">{isAr ? "اختر ما تحتاجه أولاً" : "Choose what you need first"}</h2><p className="mt-1 text-xs text-slate-500">{isAr ? "يمكنك اختيار أكثر من عنصر وتحديد الكمية لكل عنصر." : "Select multiple elements and set the quantity for each."}</p></div><button type="button" onClick={() => setAutoBuilderOpen(false)} className="p-2 rounded-xl bg-slate-800"><X className="w-4 h-4" /></button></div><div className="mt-5 grid sm:grid-cols-2 gap-2">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; const value = autoSelection[item.type] || 0; return <label key={item.type} className={"flex items-center gap-3 rounded-xl border p-3 cursor-pointer " + (value > 0 ? "border-amber-400/50 bg-amber-400/10" : "border-slate-800 bg-slate-950/60")}><input type="checkbox" checked={value > 0} onChange={(e) => setAutoSelection((prev) => ({ ...prev, [item.type]: e.target.checked ? (item.type === "table" ? Math.max(1, Math.ceil(guests / 10)) : 1) : 0 }))} className="accent-amber-400" /><Icon className="w-4 h-4 text-amber-400" /><span className="flex-1 text-xs font-bold text-white">{isAr ? item.labelAr : item.labelEn}{item.type === "table" && <span className="block text-[9px] font-normal text-slate-500">{isAr ? "كل طاولة معها كراسي" : "chairs included with every table"}</span>}</span>{value > 0 && <input type="number" min={1} max={500} value={value} onChange={(e) => setAutoSelection((prev) => ({ ...prev, [item.type]: Math.max(1, Math.min(500, Number(e.target.value) || 1)) }))} className="w-16 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-white" />}</label>; })}</div><div className="mt-5 flex justify-between"><button type="button" onClick={() => setAutoSelection({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, buffet: 0, registration: 0 })} className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-white">{isAr ? "إعادة ضبط" : "Reset"}</button><button type="button" onClick={buildSelectedLayout} className="px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-black">{isAr ? "إنشاء المخطط" : "Create Layout"}</button></div></div></div>}
     </section>
   );
 }

@@ -91,6 +91,10 @@ export interface HallLayoutItem {
   rotation: number;
   quantity?: number;
   seats?: number;
+  /** Table shape and real size in metres (round tables use widthM as the diameter). */
+  shape?: 'round' | 'rect';
+  widthM?: number;
+  depthM?: number;
 }
 
 export interface Hall3DProfile {

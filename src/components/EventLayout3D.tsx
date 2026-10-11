@@ -9,6 +9,9 @@ type LayoutItem = {
   y: number;
   rotation: number;
   seats?: number;
+  shape?: 'round' | 'rect';
+  widthM?: number;
+  depthM?: number;
 };
 
 type Props = {
@@ -149,13 +152,46 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         const green = makeMaterial(0x2f7b61, 0.1, 0.55);
         const pink = makeMaterial(0xd987a7, 0.05, 0.5);
 
-        if (item.type === 'table') {
-          addPart(group, new THREE.CylinderGeometry(1.25, 1.25, 0.14, 40), gold, [0, 1.05, 0]);
-          addPart(group, new THREE.CylinderGeometry(0.12, 0.18, 1.0, 16), dark, [0, 0.52, 0]);
+        // Banquet chair facing local -z; (nx, nz) is the direction from the table towards the chair.
+        const addChair = (cx: number, cz: number, nx: number, nz: number) => {
+          const chair = new THREE.Group();
+          addPart(chair, new THREE.BoxGeometry(0.44, 0.06, 0.44), white, [0, 0.46, 0]);
+          addPart(chair, new THREE.BoxGeometry(0.44, 0.5, 0.05), white, [0, 0.74, 0.2]);
+          for (const [lx, lz] of [[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]]) {
+            addPart(chair, new THREE.BoxGeometry(0.035, 0.45, 0.035), gold, [lx, 0.22, lz]);
+          }
+          chair.position.set(cx, 0, cz);
+          chair.rotation.y = Math.atan2(nx, nz);
+          group.add(chair);
+        };
+
+        if (item.type === 'table' && item.shape === 'rect') {
+          const w = item.widthM ?? 2;
+          const d = item.depthM ?? 1;
+          addPart(group, new THREE.BoxGeometry(w + 0.06, 0.04, d + 0.06), white, [0, 0.76, 0]);
+          addPart(group, new THREE.BoxGeometry(w, 0.72, d), white, [0, 0.37, 0]);
+          addPart(group, new THREE.BoxGeometry(w * 0.85, 0.01, 0.3), gold, [0, 0.785, 0]);
+          const seats = item.seats || 6;
+          const ends = seats >= 8 ? 1 : 0;
+          const perSide = Math.ceil((seats - ends * 2) / 2);
+          const gap = 0.42;
+          for (let i = 0; i < perSide; i++) {
+            const cx = -w / 2 + (w / perSide) * (i + 0.5);
+            addChair(cx, d / 2 + gap, 0, 1);
+            if (i < seats - ends * 2 - perSide) addChair(cx, -d / 2 - gap, 0, -1);
+          }
+          if (ends) { addChair(w / 2 + gap, 0, 1, 0); addChair(-w / 2 - gap, 0, -1, 0); }
+        } else if (item.type === 'table') {
+          const r = (item.widthM ?? 1.8) / 2;
+          addPart(group, new THREE.CylinderGeometry(r + 0.03, r + 0.03, 0.04, 48), white, [0, 0.76, 0]);
+          addPart(group, new THREE.CylinderGeometry(r, r + 0.06, 0.72, 48), white, [0, 0.37, 0]);
+          addPart(group, new THREE.CylinderGeometry(r * 0.35, r * 0.35, 0.012, 32), gold, [0, 0.785, 0]);
           const seats = item.seats || 10;
           for (let i = 0; i < seats; i++) {
             const a = (i / seats) * Math.PI * 2;
-            addPart(group, new THREE.BoxGeometry(0.55, 0.45, 0.55), white, [Math.cos(a) * 1.75, 0.3, Math.sin(a) * 1.75]);
+            const nx = Math.cos(a);
+            const nz = Math.sin(a);
+            addChair(nx * (r + 0.42), nz * (r + 0.42), nx, nz);
           }
         } else if (item.type === 'chairs') {
           addPart(group, new THREE.BoxGeometry(0.55, 0.08, 0.55), white, [0, 0.45, 0]);
