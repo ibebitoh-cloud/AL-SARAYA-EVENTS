@@ -8,7 +8,7 @@ export interface Translations {
   otherLangName: string;
 
   // Tabs
-  tabs: Record<VenueTab, string>;
+  tabs: Partial<Record<VenueTab, string>>;
   tabCategories: {
     overview: string;
     operations: string;

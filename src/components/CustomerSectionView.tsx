@@ -31,11 +31,10 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
   const Arrow = isAr ? ArrowLeft : ArrowRight;
   const sourcePhotos = libraryPhotos?.length ? libraryPhotos : ALSARAYA_PHOTOS;
   const photos = sourcePhotos.filter((photo, index, list) => {
-    const outdoor = (photo.category as string) === 'garden' || /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test([photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' '));
     const key = photo.src.trim().replace(/[?#].*$/, '').toLowerCase();
-    return !outdoor && !!key && list.findIndex((other) => other.src.trim().replace(/[?#].*$/, '').toLowerCase() === key) === index;
+    return !!key && list.findIndex((other) => other.src.trim().replace(/[?#].*$/, '').toLowerCase() === key) === index;
   });
-  const availableHalls = halls.filter((hall) => !/garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${hall.name} ${hall.nameEn || ''}`));
+  const availableHalls = halls;
 
   return (
     <main dir={isAr ? 'rtl' : 'ltr'} className="min-h-[70vh] pb-20">
@@ -79,7 +78,7 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
         {screen === 'venues' && (
           <div className="grid gap-5 border-t border-slate-800 p-6 md:grid-cols-2">
             {availableHalls.map(hall => {
-              const albumPhotos = sourcePhotos.filter(photo => photo.hallId === hall.id && !/garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${photo.titleAr} ${photo.titleEn} ${photo.hallNameAr} ${photo.hallNameEn} ${(photo.tags ?? []).join(' ')}`));
+              const albumPhotos = sourcePhotos.filter(photo => photo.hallId === hall.id);
               const photo = albumPhotos[0] || photos.find(p => p.hallId === hall.id) || photos[0];
               return <article key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
                 <button type="button" onClick={() => photo && setSelectedVenuePhoto(photo)} className="group relative block w-full text-left">

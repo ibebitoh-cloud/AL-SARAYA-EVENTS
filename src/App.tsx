@@ -18,7 +18,7 @@ import {
 import { INITIAL_EVENTS } from './data/mockEvents';
 import {
   Booking, BookingStatus, PaymentReceipt, Expense, InventoryItem, Employee,
-  ServiceDefinition, VenueTab, Language, Hall,
+  ServiceDefinition, VenueTab, Language, Hall, PriceBook,
 } from './types/venueSystem';
 import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
@@ -29,7 +29,10 @@ import { CustomerSectionView } from './components/CustomerSectionView';
 import { CompanyShowcaseView } from './components/CompanyShowcaseView';
 import { CompanyProfileView } from './components/CompanyProfileView';
 import { PortalLogin } from './components/PortalLogin';
-import { SystemUser } from './data/systemProfiles';
+import { SystemUser, canAccess, landingTab } from './data/systemProfiles';
+import { PackageBuilderView } from './components/PackageBuilderView';
+import { PriceListsView } from './components/PriceListsView';
+import { buildInitialPriceBook } from './data/pricing';
 import { DashboardView } from './components/DashboardView';
 import { BookingsView } from './components/BookingsView';
 import { CalendarAgendaView } from './components/CalendarAgendaView';
@@ -51,18 +54,11 @@ import { OnboardingFlow } from './components/OnboardingFlow';
 import { DICTIONARY } from './utils/i18n';
 import { sound } from './utils/soundEffects';
 
-const isOutdoorVenuePhoto = (photo: VenuePhoto) =>
-  (photo.category as string) === 'garden' ||
-  /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(
-    [photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' ')
-  );
 
 const uniqueEventPhotos = (items: VenuePhoto[]) => {
   const seen = new Set<string>();
   return items.filter((photo) => {
-    if (!photo.src?.trim() || isOutdoorVenuePhoto(photo)) return false;
-    // External directory albums remain grouped by venue even when a hotel shares official gallery photos across its halls.
-    if (photo.hallId?.startsWith('external-venue-')) return true;
+    if (!photo.src?.trim()) return false;
     const source = photo.src.trim().replace(/[?#].*$/, '').toLowerCase();
     if (seen.has(source)) return false;
     seen.add(source);
@@ -118,7 +114,7 @@ export default function App() {
   const [bookings, setBookings] = useState<Booking[]>(() => {
     if (typeof window === 'undefined') return dedupeBookings(INITIAL_BOOKINGS);
     try {
-      const saved = JSON.parse(window.localStorage.getItem('saraya-bookings') || 'null');
+      const saved = JSON.parse(window.localStorage.getItem('saraya-bookings-v2') || 'null');
       return dedupeBookings(Array.isArray(saved) ? saved : INITIAL_BOOKINGS);
     } catch {
       return dedupeBookings(INITIAL_BOOKINGS);
@@ -126,27 +122,32 @@ export default function App() {
   });
   useEffect(() => {
     try {
-      window.localStorage.setItem('saraya-bookings', JSON.stringify(dedupeBookings(bookings)));
+      window.localStorage.setItem('saraya-bookings-v2', JSON.stringify(dedupeBookings(bookings)));
     } catch (error) {
       console.warn('Bookings could not be saved locally:', error);
     }
   }, [bookings]);
+  // v2 key: the venue list was replaced with the 6 Arcane Hotel / Porto Said venues, so older saved halls are ignored.
   const [halls, setHalls] = useState<Hall[]>(() => {
     if (typeof window === 'undefined') return INITIAL_HALLS;
-    try { const saved = JSON.parse(window.localStorage.getItem('saraya-halls') || 'null'); const list = Array.isArray(saved) && saved.length ? [...saved, ...INITIAL_HALLS.filter((hall) => hall.isExternalListing && !saved.some((existing: Hall) => existing.id === hall.id))] : INITIAL_HALLS; return list.map((hall: Hall) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(`${hall.name} ${hall.nameEn || ''}`) ? { ...hall, name: 'قاعة المؤتمرات الدبلوماسية', nameEn: 'The Diplomat Conference & Summit Hall' } : hall); } catch { return INITIAL_HALLS; }
+    try {
+      const saved = JSON.parse(window.localStorage.getItem('saraya-halls-v2') || 'null');
+      return Array.isArray(saved) && saved.length ? saved : INITIAL_HALLS;
+    } catch { return INITIAL_HALLS; }
   });
-  useEffect(() => { window.localStorage.setItem('saraya-halls', JSON.stringify(halls)); }, [halls]);
+  useEffect(() => { window.localStorage.setItem('saraya-halls-v2', JSON.stringify(halls)); }, [halls]);
   const [photos, setPhotos] = useState<VenuePhoto[]>(() => {
     if (typeof window === 'undefined') return uniqueEventPhotos(ALSARAYA_PHOTOS);
     try {
-      const saved = JSON.parse(window.localStorage.getItem('alsaraya_custom_photos') || 'null');
-      const list = Array.isArray(saved) && saved.length ? [...saved.filter((existing: VenuePhoto) => !existing.hallId?.startsWith('external-venue-')), ...ALSARAYA_PHOTOS.filter((photo) => photo.hallId?.startsWith('external-venue-')), ...saved.filter((existing: VenuePhoto) => existing.hallId?.startsWith('external-venue-') && !ALSARAYA_PHOTOS.some((photo) => photo.id === existing.id))] : ALSARAYA_PHOTOS; return uniqueEventPhotos(list);
+      const saved = JSON.parse(window.localStorage.getItem('alsaraya_custom_photos_v2') || 'null');
+      const list = Array.isArray(saved) && saved.length ? saved : ALSARAYA_PHOTOS;
+      return uniqueEventPhotos(list);
     } catch {
       return uniqueEventPhotos(ALSARAYA_PHOTOS);
     }
   });
   useEffect(() => {
-    try { window.localStorage.setItem('alsaraya_custom_photos', JSON.stringify(uniqueEventPhotos(photos))); } catch (error) {
+    try { window.localStorage.setItem('alsaraya_custom_photos_v2', JSON.stringify(uniqueEventPhotos(photos))); } catch (error) {
       console.warn('Photo library could not be saved locally:', error);
     }
   }, [photos]);
@@ -165,6 +166,15 @@ export default function App() {
     try { return JSON.parse(window.localStorage.getItem('saraya-expenses') || '') || INITIAL_EXPENSES; } catch { return INITIAL_EXPENSES; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-services', JSON.stringify(servicesCatalogue)); }, [servicesCatalogue]);
+  // Separate full price list per location (Arcane / Porto), edited by the manager in "قوائم الأسعار".
+  const [priceBook, setPriceBook] = useState<PriceBook>(() => {
+    if (typeof window === 'undefined') return buildInitialPriceBook(INITIAL_SERVICES);
+    try {
+      const saved = JSON.parse(window.localStorage.getItem('saraya-price-book-v1') || 'null');
+      return saved?.arcane && saved?.porto ? saved : buildInitialPriceBook(INITIAL_SERVICES);
+    } catch { return buildInitialPriceBook(INITIAL_SERVICES); }
+  });
+  useEffect(() => { window.localStorage.setItem('saraya-price-book-v1', JSON.stringify(priceBook)); }, [priceBook]);
   useEffect(() => { window.localStorage.setItem('saraya-payments', JSON.stringify(payments)); }, [payments]);
   useEffect(() => { window.localStorage.setItem('saraya-expenses', JSON.stringify(expenses)); }, [expenses]);
   const [inventory, setInventory] = useState<InventoryItem[]>(() => {
@@ -175,7 +185,7 @@ export default function App() {
   const [staff, setStaff] = useState<Employee[]>(INITIAL_STAFF);
   const [clients, setClients] = useState(INITIAL_CLIENTS);
   const [companyProfile, setCompanyProfile] = useState(() => {
-    const defaults = { nameEn: 'SARAYA EVENT', nameAr: 'السرايا للمناسبات', taglineEn: 'Luxury Weddings & Venues', taglineAr: 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر', businessEn: 'Wedding halls, events & event management', businessAr: 'قاعات أفراح ومناسبات وإدارة فعاليات', locationsEn: 'Ring Road, New Cairo · Corniche, Alexandria', locationsAr: 'القاهرة الجديدة · الإسكندرية', phone: '+20 2 2795 0000', whatsapp: '+20 100 123 4567', instagramUrl: '', tiktokUrl: '', logo: 'black' as 'black' | 'white' };
+    const defaults = { nameEn: 'SARAYA EVENT', nameAr: 'السرايا للمناسبات', taglineEn: 'Luxury Weddings & Venues', taglineAr: 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر', businessEn: 'Wedding halls, events & event management', businessAr: 'قاعات أفراح ومناسبات وإدارة فعاليات', locationsEn: 'Arcane Hotel · Porto Said', locationsAr: 'فندق آركين · بورتو سعيد', phone: '+20 2 2795 0000', whatsapp: '+20 100 123 4567', instagramUrl: '', tiktokUrl: '', logo: 'black' as 'black' | 'white' };
     if (typeof window === 'undefined') return defaults;
     try { return { ...defaults, ...(JSON.parse(window.localStorage.getItem('saraya-company-profile') || '') || {}) }; } catch { return defaults; }
   });
@@ -217,7 +227,7 @@ export default function App() {
   const handleAddStaff = (newStaff: Employee) => setStaff((prev) => [...prev, newStaff]);
   const handleUpdateStaffAttendance = (staffId: string, status: Employee['attendanceStatus']) => setStaff((prev) => prev.map((emp) => emp.id === staffId ? { ...emp, attendanceStatus: status } : emp));
   const swipeStartX = useRef<number | null>(null);
-  const swipeableTabs: VenueTab[] = ['dashboard', 'bookings', 'agenda', 'company', 'event_designer', 'inventory', 'services', 'finance', 'catering', 'contracts', 'clients', 'payments', 'expenses', 'staff', 'reports', 'photo_library'];
+  const swipeableTabs: VenueTab[] = (['package_builder', 'price_lists', 'dashboard', 'bookings', 'agenda', 'company', 'event_designer', 'inventory', 'services', 'finance', 'catering', 'contracts', 'clients', 'payments', 'expenses', 'staff', 'reports', 'photo_library'] as VenueTab[]).filter((tab) => canAccess(portalUser, tab));
   const handleScreenTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest('input, textarea, select, button, a, [role="button"], [data-no-screen-swipe]')) {
@@ -246,25 +256,28 @@ export default function App() {
     {!portalLoginOpen && portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && <VenueHeaderNav currentTab={currentTab} language={language} user={portalUser} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onVisibilityChange={setSidebarVisible} onTabChange={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onToggleLanguage={toggleLanguage} onOpenTour={() => setIsOnboardingOpen(true)} />}
     {portalWelcome && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-md px-4" onClick={() => setPortalWelcome(null)}><motion.div initial={{opacity:0,scale:.96,y:10}} animate={{opacity:1,scale:1,y:0}} className="w-full max-w-md rounded-3xl border border-amber-400/20 bg-slate-900 p-8 text-center shadow-2xl"><div className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-400">WELCOME</div><h1 className="mt-3 text-3xl font-black text-white">{language === 'ar' ? `أهلاً بك، ${portalWelcome.nameAr}` : `Welcome, ${portalWelcome.name}`}</h1><p className="mt-2 text-xs text-slate-500">{language === 'ar' ? 'تم الدخول إلى البوابة التجريبية' : 'You are now inside the trial portal'}</p><button onClick={() => setPortalWelcome(null)} className="mt-6 px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold">{language === 'ar' ? 'دخول النظام' : 'Enter System'}</button></motion.div></div>}
     <main className={`flex-1 w-full px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${isInternalManagementScreen ? `lg:flex-none mx-0 w-full max-w-none pb-6 sm:px-4 lg:px-8 lg:pb-8 transition-[width,margin] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${sidebarVisible ? 'lg:w-[calc(100%-16rem)] lg:ms-64' : 'lg:w-full lg:ms-0'}` : 'max-w-7xl mx-auto'}`}><AnimatePresence mode="wait"><motion.div onTouchStart={handleScreenTouchStart} onTouchEnd={handleScreenTouchEnd} key={`${currentTab}-${language}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
-      {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? 'home' : 'dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
+      {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(landingTab(user)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
       {!portalLoginOpen && currentTab === 'home' && <SarayaCustomerHomepage halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenBookingModal={() => setIsNewBookingModalOpen(true)} onCreateBooking={handleCreateBooking} onOpenEventDesigner={() => setCurrentTab('event_designer')} />}
       {currentTab.startsWith('public_') && <CustomerSectionView screen={({ public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour' } as const)[currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour']} halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} onOpenBooking={(hallId) => { if (hallId) setPreselectedHallId(hallId); setIsNewBookingModalOpen(true); }} onGoHome={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
-      {currentTab === 'company' && portalUser && <CompanyProfileView language={language} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} companyProfile={companyProfile} onUpdateCompanyProfile={setCompanyProfile} onUpdateHall={handleUpdateHall} />}
-      {currentTab === 'photo_library' && portalUser && <PhotoLibraryPage language={language} photos={photos} bookings={bookings} onSavePhotos={handleSavePhotos} />}
-      {currentTab === 'dashboard' && portalUser && <DashboardView bookings={bookings} halls={halls} language={language} onNavigateTab={(tab) => setCurrentTab(tab)} />}
-      {currentTab === 'bookings' && portalUser && <BookingsView bookings={bookings} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={handleUpdateBookingStatus} />}
-      {currentTab === 'agenda' && portalUser && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} />}
-      {currentTab === 'event_designer' && portalUser && <EventLayoutDesigner language={language} />}
-      {currentTab === 'catering' && portalUser && <CateringMenuView language={language} />}
-      {currentTab === 'contracts' && portalUser && <ContractsView bookings={bookings} language={language} />}
-      {currentTab === 'clients' && portalUser && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} />}
-      {currentTab === 'services' && portalUser && <ServicesView services={servicesCatalogue} onAddService={handleAddService} onUpdateService={handleUpdateService} />}
-      {currentTab === 'finance' && portalUser && <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} />}
-      {currentTab === 'payments' && portalUser && <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} />}
-      {currentTab === 'expenses' && portalUser && <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense} />}
-      {currentTab === 'inventory' && portalUser && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} />}
-      {currentTab === 'staff' && portalUser && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
-      {currentTab === 'reports' && portalUser && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
+      {currentTab === 'company' && canAccess(portalUser, 'company') && <CompanyProfileView language={language} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} companyProfile={companyProfile} onUpdateCompanyProfile={setCompanyProfile} onUpdateHall={handleUpdateHall} />}
+      {currentTab === 'photo_library' && canAccess(portalUser, 'photo_library') && <PhotoLibraryPage language={language} photos={photos} bookings={bookings} onSavePhotos={handleSavePhotos} />}
+      {currentTab === 'package_builder' && canAccess(portalUser, 'package_builder') && <PackageBuilderView halls={halls} services={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} />}
+      {currentTab === 'price_lists' && canAccess(portalUser, 'price_lists') && <PriceListsView halls={halls} services={servicesCatalogue} priceBook={priceBook} onUpdatePriceBook={setPriceBook} onUpdateHall={handleUpdateHall} />}
+      {portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && !portalLoginOpen && !canAccess(portalUser, currentTab) && <div className="mx-auto max-w-md py-20 text-center text-sm text-slate-400">{language === 'ar' ? 'هذه الشاشة غير متاحة لحسابك.' : 'This screen is not available for your account.'}</div>}
+      {currentTab === 'dashboard' && canAccess(portalUser, 'dashboard') && <DashboardView bookings={bookings} halls={halls} language={language} onNavigateTab={(tab) => setCurrentTab(tab)} />}
+      {currentTab === 'bookings' && canAccess(portalUser, 'bookings') && <BookingsView bookings={bookings} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={handleUpdateBookingStatus} />}
+      {currentTab === 'agenda' && canAccess(portalUser, 'agenda') && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} />}
+      {currentTab === 'event_designer' && canAccess(portalUser, 'event_designer') && <EventLayoutDesigner language={language} />}
+      {currentTab === 'catering' && canAccess(portalUser, 'catering') && <CateringMenuView language={language} />}
+      {currentTab === 'contracts' && canAccess(portalUser, 'contracts') && <ContractsView bookings={bookings} language={language} />}
+      {currentTab === 'clients' && canAccess(portalUser, 'clients') && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} />}
+      {currentTab === 'services' && canAccess(portalUser, 'services') && <ServicesView services={servicesCatalogue} onAddService={handleAddService} onUpdateService={handleUpdateService} />}
+      {currentTab === 'finance' && canAccess(portalUser, 'finance') && <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} />}
+      {currentTab === 'payments' && canAccess(portalUser, 'payments') && <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} />}
+      {currentTab === 'expenses' && canAccess(portalUser, 'expenses') && <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense} />}
+      {currentTab === 'inventory' && canAccess(portalUser, 'inventory') && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} />}
+      {currentTab === 'staff' && canAccess(portalUser, 'staff') && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
+      {currentTab === 'reports' && canAccess(portalUser, 'reports') && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
     </motion.div></AnimatePresence></main>
     <footer ref={footerRef} className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-[width,margin,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${theme === 'dark' ? 'border-white/10 bg-[#080d17]' : 'border-slate-200 bg-white'} ${isInternalManagementScreen ? `lg:w-[calc(100%-${sidebarVisible ? '16rem' : '0rem'})] ${sidebarVisible ? 'lg:ms-64' : 'lg:ms-0'} lg:px-8` : ''}`}>
       <div className={`mx-auto ${isInternalManagementScreen ? 'w-full max-w-none' : 'max-w-7xl'}`}>
@@ -282,7 +295,7 @@ export default function App() {
           <div className={language === 'ar' ? 'text-right' : 'text-left'}>
             <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">{language === 'ar' ? 'تواصل معنا' : 'Contact'}</h2>
             <div className="mt-4 space-y-3 text-sm text-slate-300">
-              <p className="flex items-start gap-2"><span className="mt-0.5 text-amber-300">⌖</span><span>{language === 'ar' ? 'القاهرة الجديدة · الطريق الدائري' : 'New Cairo · Ring Road'}<br />{language === 'ar' ? 'الكورنيش · الإسكندرية' : 'Corniche · Alexandria'}</span></p>
+              <p className="flex items-start gap-2"><span className="mt-0.5 text-amber-300">⌖</span><span>{language === 'ar' ? 'فندق آركين' : 'Arcane Hotel'}<br />{language === 'ar' ? 'بورتو سعيد' : 'Porto Said'}</span></p>
               <a className="block transition-colors hover:text-amber-300" href={`tel:${companyProfile.phone.replace(/[^+\d]/g, '')}`}>{language === 'ar' ? 'هاتف' : 'Phone'}: {companyProfile.phone}</a>
               <a className="block transition-colors hover:text-amber-300" href={`https://wa.me/${companyProfile.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">WhatsApp: {companyProfile.whatsapp}</a>
             </div>
@@ -291,12 +304,12 @@ export default function App() {
             <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">{language === 'ar' ? 'روابط سريعة' : 'Quick links'}</h2>
             <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
               {isInternalManagementScreen && portalUser ? ([
-                ['dashboard', 'لوحة التحكم', 'Dashboard'], ['bookings', 'الحجوزات', 'Bookings'], ['agenda', 'التقويم', 'Calendar'],
+                ['package_builder', 'تصميم الحفلة', 'Event Planner'], ['price_lists', 'قوائم الأسعار', 'Price Lists'], ['dashboard', 'لوحة التحكم', 'Dashboard'], ['bookings', 'الحجوزات', 'Bookings'], ['agenda', 'التقويم', 'Calendar'],
                 ['photo_library', 'مكتبة الصور', 'Photo Library'], ['inventory', 'المخزون', 'Inventory'], ['company', 'ملف الشركة', 'Company Profile'],
                 ['event_designer', 'مصمم المناسبات', 'Event Designer'], ['services', 'الخدمات', 'Services'], ['finance', 'المالية', 'Finance'],
                 ['catering', 'الضيافة', 'Catering'], ['contracts', 'العقود', 'Contracts'], ['clients', 'العملاء', 'Clients'],
                 ['payments', 'المدفوعات', 'Payments'], ['expenses', 'المصروفات', 'Expenses'], ['staff', 'الموظفون', 'Staff'], ['reports', 'التقارير', 'Reports'],
-              ] as [VenueTab, string, string][]).map(([tab, arLabel, enLabel]) => <button key={tab} type="button" onClick={() => { sound.click(650); setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-current={currentTab === tab ? 'page' : undefined} className={currentTab === tab ? 'text-start font-bold text-amber-500' : 'text-start text-slate-500 transition-colors hover:text-amber-500'}>{language === 'ar' ? arLabel : enLabel}</button>) : <>
+              ] as [VenueTab, string, string][]).filter(([tab]) => canAccess(portalUser, tab)).map(([tab, arLabel, enLabel]) => <button key={tab} type="button" onClick={() => { sound.click(650); setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-current={currentTab === tab ? 'page' : undefined} className={currentTab === tab ? 'text-start font-bold text-amber-500' : 'text-start text-slate-500 transition-colors hover:text-amber-500'}>{language === 'ar' ? arLabel : enLabel}</button>) : <>
                 <button type="button" onClick={() => { sound.click(650); setPortalLoginOpen(true); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-start transition-colors hover:text-amber-500">{language === 'ar' ? 'بوابة إدارة القاعات للموظفين' : 'Staff Portal'}</button>
                 {companyProfile.instagramUrl && <a href={companyProfile.instagramUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-amber-500">Instagram</a>}
                 {companyProfile.tiktokUrl && <a href={companyProfile.tiktokUrl} target="_blank" rel="noreferrer" className="transition-colors hover:text-amber-500">TikTok</a>}
@@ -351,7 +364,7 @@ export default function App() {
         </div>
       </div>
     </footer>
-    <NewBookingModal isOpen={isNewBookingModalOpen} onClose={() => setIsNewBookingModalOpen(false)} halls={halls} servicesCatalogue={servicesCatalogue} existingBookings={bookings} onCreateBooking={handleCreateBooking} preselectedHallId={preselectedHallId} customerMode={currentTab === 'home' || currentTab.startsWith('public_')} />
+    <NewBookingModal isOpen={isNewBookingModalOpen} onClose={() => setIsNewBookingModalOpen(false)} halls={halls} servicesCatalogue={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} preselectedHallId={preselectedHallId} customerMode={currentTab === 'home' || currentTab.startsWith('public_')} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} />
     <EventProfitCalculatorModal isOpen={!!selectedBookingForProfit} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} />
     <InvoicePrintModal isOpen={!!selectedBookingForInvoice} onClose={() => setSelectedBookingForInvoice(null)} booking={selectedBookingForInvoice} />
     <OnboardingFlow isOpen={isOnboardingOpen} language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />

@@ -6,6 +6,9 @@ export type PaymentMethod = 'cash' | 'card' | 'transfer';
 
 export type Language = 'ar' | 'en';
 
+/** The two Al-Saraya locations. Each has its own full price list. */
+export type LocationId = 'arcane' | 'porto';
+
 export type VenueTab =
   | 'home'
   | 'public_events'
@@ -31,7 +34,9 @@ export type VenueTab =
   | 'inventory'
   | 'staff'
   | 'reports'
-  | 'photo_library';
+  | 'photo_library'
+  | 'package_builder'
+  | 'price_lists';
 
 export interface CateringItem {
   id: string;
@@ -113,6 +118,7 @@ export interface Hall {
   addressAr?: string;
   sourceUrl?: string;
   isExternalListing?: boolean;
+  locationId?: LocationId;
   default3D?: Hall3DProfile;
 }
 
@@ -161,7 +167,33 @@ export interface Booking {
   assignedStaff: AssignedStaff[]; // العمال المعينون للمناسبة
   suppliesCost: number; // تكلفة المستلزمات والمستهلكات
   directExpenses: number; // مصروفات مباشرة إضافية للمناسبة
+  locationId?: LocationId;
+  packageId?: string;
+  packageName?: string;
+  /** Type-specific details, e.g. brideName / groomName for weddings, companyName for conferences. */
+  eventDetails?: Record<string, string>;
 }
+
+/** A sellable event package (e.g. Gold wedding package). Prices live in the PriceBook per location. */
+export interface EventPackage {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  eventTypes: EventType[];
+  includesAr: string[];
+  includesEn: string[];
+  minGuests: number;
+}
+
+export interface PriceEntry { price: number; cost: number; }
+
+/** Full price list for one location: hall rental, packages (per guest) and services. */
+export interface LocationPriceList {
+  packages: Record<string, PriceEntry>;
+  services: Record<string, PriceEntry>;
+}
+
+export type PriceBook = Record<LocationId, LocationPriceList>;
 
 export interface PaymentReceipt {
   id: string;

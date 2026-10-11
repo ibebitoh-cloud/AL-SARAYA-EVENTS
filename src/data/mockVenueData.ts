@@ -8,39 +8,19 @@ import {
   Employee,
   ClientProfile,
 } from '../types/venueSystem';
-import { FEATURED_EXTERNAL_HALLS } from './featuredVenueCatalog';
+
+// Al-Saraya's 6 venues across two locations: Arcane Hotel and Porto Said.
+// Capacity and base price are placeholders — update them from the portal (Company Profile) or here.
+const ARCANE = { city: 'Arcane Hotel', cityAr: 'فندق آركين', locationId: 'arcane' as const };
+const PORTO = { city: 'Porto Said', cityAr: 'بورتو سعيد', locationId: 'porto' as const };
 
 export const INITIAL_HALLS: Hall[] = [
-  {
-    id: 'hall-1',
-    name: 'القاعة الملكية الكبرى',
-    capacity: 650,
-    basePrice: 45000,
-    color: '#6366f1',
-  },
-  {
-    id: 'hall-2',
-    name: 'قاعة اللؤلؤة الماسية',
-    capacity: 350,
-    basePrice: 28000,
-    color: '#ec4899',
-  },
-  {
-    id: 'hall-3',
-    name: 'قاعة الملوك الفاخرة',
-    capacity: 250,
-    basePrice: 20000,
-    color: '#eab308',
-  },
-  {
-    id: 'hall-4',
-    name: 'قاعة المؤتمرات الدبلوماسية',
-    nameEn: 'The Diplomat Conference & Summit Hall',
-    capacity: 450,
-    basePrice: 32000,
-    color: '#10b981',
-  },
-  ...FEATURED_EXTERNAL_HALLS,
+  { id: 'arcane-pool', name: 'البول (حمام السباحة)', nameEn: 'Pool', ...ARCANE, capacity: 300, basePrice: 30000, color: '#0ea5e9' },
+  { id: 'arcane-hall', name: 'قاعة آركين', nameEn: 'Arcane Hall', ...ARCANE, capacity: 400, basePrice: 40000, color: '#6366f1' },
+  { id: 'porto-veina', name: 'قاعة فيينا', nameEn: 'Veina Hall', ...PORTO, capacity: 400, basePrice: 40000, color: '#ec4899' },
+  { id: 'porto-roof', name: 'الروف', nameEn: 'Roof', ...PORTO, capacity: 250, basePrice: 30000, color: '#eab308' },
+  { id: 'porto-garden', name: 'الحديقة المفتوحة (أوبن إير)', nameEn: 'Open Air Garden', ...PORTO, capacity: 500, basePrice: 35000, color: '#10b981' },
+  { id: 'porto-seila', name: 'قاعة سيلا', nameEn: 'Seila Hall', ...PORTO, capacity: 300, basePrice: 30000, color: '#f97316' },
 ];
 
 export const INITIAL_SERVICES: ServiceDefinition[] = [
@@ -136,11 +116,13 @@ export const INITIAL_BOOKINGS: Booking[] = [
     clientAddress: 'التجمع الخامس · القاهرة',
     clientNotes: 'العميل يفضل الإضاءة الهادئة الدافئة في الزفة',
     eventType: 'wedding',
+    eventDetails: { brideName: 'منى أحمد', groomName: 'كريم محمود' },
     date: '2026-10-10', // قريب جداً
     startTime: '18:00',
     endTime: '23:30',
-    hallId: 'hall-1',
-    hallName: 'القاعة الملكية الكبرى',
+    hallId: 'arcane-hall',
+    hallName: 'قاعة آركين',
+    locationId: 'arcane',
     guestCount: 450,
     basePrice: 45000,
     services: [
@@ -199,11 +181,13 @@ export const INITIAL_BOOKINGS: Booking[] = [
     clientPhone: '01198765432',
     clientAddress: 'المعادي · القاهرة',
     eventType: 'engagement',
+    eventDetails: { brideName: 'سارة علي', groomName: 'يوسف حسن' },
     date: '2026-10-15',
     startTime: '19:00',
     endTime: '23:00',
-    hallId: 'hall-2',
-    hallName: 'قاعة اللؤلؤة الماسية',
+    hallId: 'porto-veina',
+    hallName: 'قاعة فيينا',
+    locationId: 'porto',
     guestCount: 200,
     basePrice: 28000,
     services: [
@@ -250,11 +234,13 @@ export const INITIAL_BOOKINGS: Booking[] = [
     clientPhone: '01234567890',
     clientAddress: 'القرية الذكية · الجيزة',
     eventType: 'conference',
+    eventDetails: { companyName: 'شركة قناة السويس للحاويات', eventTitle: 'الملتقى السنوي' },
     date: '2026-10-22',
     startTime: '09:00',
     endTime: '17:00',
-    hallId: 'hall-1',
-    hallName: 'القاعة الملكية الكبرى',
+    hallId: 'arcane-hall',
+    hallName: 'قاعة آركين',
+    locationId: 'arcane',
     guestCount: 400,
     basePrice: 45000,
     services: [
@@ -301,11 +287,13 @@ export const INITIAL_BOOKINGS: Booking[] = [
     clientPhone: '01011223344',
     clientAddress: 'الشيخ زايد',
     eventType: 'birthday',
+    eventDetails: { celebrantName: 'ليلى', age: '7' },
     date: '2026-10-09',
     startTime: '17:00',
     endTime: '21:00',
-    hallId: 'hall-3',
-    hallName: 'قاعة الملوك الفاخرة',
+    hallId: 'porto-seila',
+    hallName: 'قاعة سيلا',
+    locationId: 'porto',
     guestCount: 120,
     basePrice: 20000,
     services: [
@@ -340,11 +328,13 @@ export const INITIAL_BOOKINGS: Booking[] = [
     clientName: 'عصام كمال الهواري',
     clientPhone: '01555667788',
     eventType: 'wedding',
+    eventDetails: { brideName: 'نورهان إبراهيم', groomName: 'عمر خالد' },
     date: '2026-10-28',
     startTime: '19:00',
     endTime: '23:30',
-    hallId: 'hall-4',
-    hallName: 'قاعة المؤتمرات الدبلوماسية',
+    hallId: 'porto-roof',
+    hallName: 'الروف',
+    locationId: 'porto',
     guestCount: 300,
     basePrice: 32000,
     services: [],
@@ -409,7 +399,7 @@ export const INITIAL_PAYMENTS: PaymentReceipt[] = [
     date: '2026-09-28',
     method: 'cash',
     type: 'deposit',
-    notes: 'عربون حجز قاعة اللؤلؤة نقداً',
+    notes: 'عربون حجز قاعة فيينا نقداً',
   },
   {
     id: 'rcp-5',
@@ -437,7 +427,7 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     id: 'exp-2',
-    title: 'صيانة دورية لتكييفات القاعة الملكية الكبرى',
+    title: 'صيانة دورية لتكييفات قاعة آركين',
     category: 'maintenance',
     amount: 4500,
     date: '2026-10-03',

@@ -18,6 +18,8 @@ import {
 import { Booking, BookingStatus, EventType } from '../types/venueSystem';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
+import { eventDetailsSummary } from '../data/eventTypes';
+import { locationName } from '../data/locations';
 
 interface BookingsViewProps {
   bookings: Booking[];
@@ -176,6 +178,13 @@ export function BookingsView({
                     <span>·</span>
                     <span>{bk.guestCount} فرد</span>
                   </div>
+                  {(eventDetailsSummary(bk.eventType, bk.eventDetails) || bk.packageName || bk.locationId) && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                      {eventDetailsSummary(bk.eventType, bk.eventDetails) && <span className="text-amber-200">{eventDetailsSummary(bk.eventType, bk.eventDetails)}</span>}
+                      {bk.locationId && <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">{locationName(bk.locationId, true)}</span>}
+                      {bk.packageName && <span className="px-2 py-0.5 rounded-md bg-indigo-950/60 border border-indigo-800/50 text-indigo-300">{bk.packageName}</span>}
+                    </div>
+                  )}
                 </div>
 
                 {/* Right Quick Action Buttons */}

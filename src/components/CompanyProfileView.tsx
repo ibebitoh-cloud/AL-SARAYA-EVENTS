@@ -66,7 +66,7 @@ export function CompanyProfileView({ language, halls, bookings, services, client
           </div>
           <button type="button" onClick={openCompanyEditor} className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-300 flex items-center gap-2"><Pencil className="w-3.5 h-3.5" />{ar ? 'تعديل ملف الشركة' : 'Edit Company Profile'}</button>
         </div>
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">{stats.map(([Icon, label, value]) => <div key={String(label)} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4"><Icon className="w-4 h-4 text-amber-400 mb-2" /><div className="text-[10px] text-slate-500">{label as string}</div><div className="mt-1 text-xl font-black text-white">{value as number}</div></div>)}</div>
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">{stats.map(([StatIcon, label, value]) => { const Icon = StatIcon as React.ElementType; return <div key={String(label)} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4"><Icon className="w-4 h-4 text-amber-400 mb-2" /><div className="text-[10px] text-slate-500">{label as string}</div><div className="mt-1 text-xl font-black text-white">{value as number}</div></div>; })}</div>
       </section>
 
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">

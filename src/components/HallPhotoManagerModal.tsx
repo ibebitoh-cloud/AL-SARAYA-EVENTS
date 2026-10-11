@@ -57,7 +57,7 @@ export function HallPhotoManagerModal({
   const [selectedHallId, setSelectedHallId] = useState<string>(
     targetHallOrPhotoId && halls.some((h) => h.id === targetHallOrPhotoId)
       ? targetHallOrPhotoId
-      : halls[0]?.id || 'hall-1'
+      : halls[0]?.id || ''
   );
 
   const [localPhotos, setLocalPhotos] = useState<VenuePhoto[]>(photos);
@@ -76,7 +76,7 @@ export function HallPhotoManagerModal({
     setLocalHalls(halls);
     setLocalPhotos(photos);
     setActiveTab(initialTab);
-    setSelectedHallId(targetHallOrPhotoId && halls.some((h) => h.id === targetHallOrPhotoId) ? targetHallOrPhotoId : halls[0]?.id || 'hall-1');
+    setSelectedHallId(targetHallOrPhotoId && halls.some((h) => h.id === targetHallOrPhotoId) ? targetHallOrPhotoId : halls[0]?.id || '');
     setSelectedPhotoId(targetHallOrPhotoId && photos.some((p) => p.id === targetHallOrPhotoId) ? targetHallOrPhotoId : photos[0]?.id || '');
     setPhotoCategoryFilter('all');
   }, [isOpen, halls, photos, initialTab, targetHallOrPhotoId]);
@@ -175,9 +175,9 @@ export function HallPhotoManagerModal({
       src: '',
       titleAr: isAr ? 'صورة جديدة للمعرض' : 'New Gallery Photo',
       titleEn: 'New Gallery Photo',
-      hallNameAr: selectedHall?.name || 'القاعة الملكية الكبرى',
-      hallNameEn: selectedHall?.nameEn || 'The Royal Grand Ballroom',
-      hallId: selectedHall?.id || 'hall-1',
+      hallNameAr: selectedHall?.name || '',
+      hallNameEn: selectedHall?.nameEn || '',
+      hallId: selectedHall?.id || '',
       captionAr: 'لقطة حية توثق أدق تفاصيل المناسبة بالسرايا.',
       captionEn: 'Live photo capturing the fine details of celebrations at Saraya.',
       category: 'wedding',
@@ -695,7 +695,7 @@ export function HallPhotoManagerModal({
                           {isAr ? 'القاعة المرتبطة بالصورة:' : 'Assigned Hall:'}
                         </label>
                         <select
-                          value={selectedPhoto.hallId || 'hall-1'}
+                          value={selectedPhoto.hallId || ''}
                           onChange={(e) => {
                             const h = localHalls.find((item) => item.id === e.target.value);
                             handleUpdatePhoto('hallId', e.target.value);

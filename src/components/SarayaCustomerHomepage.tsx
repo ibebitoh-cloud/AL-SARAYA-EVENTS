@@ -37,17 +37,15 @@ export function SarayaCustomerHomepage({
   const isAr = language === 'ar';
   const Arrow = isAr ? ArrowLeft : ArrowRight;
   const sourcePhotos = photos?.length ? photos : ALSARAYA_PHOTOS;
-  const isOutdoorVenue = (value: string) => /garden|terrace|open[ -]?air|outdoor|حديقة|تراس|هواء طلق/i.test(value);
   const normalizePhotoSource = (src: string) => (src || '').trim().replace(/[?#].*$/, '').toLowerCase();
   const seenPhotoSources = new Set<string>();
   const displayPhotos = sourcePhotos.filter(photo => {
-    if ((photo.category as string) === 'garden' || isOutdoorVenue([photo.titleAr, photo.titleEn, photo.hallNameAr, photo.hallNameEn, ...(photo.tags ?? [])].join(' '))) return false;
     const source = normalizePhotoSource(photo.src);
     if (!source || seenPhotoSources.has(source)) return false;
     seenPhotoSources.add(source);
     return true;
   });
-  const availableHalls = halls.filter(hall => !isOutdoorVenue(`${hall.name} ${hall.nameEn || ''}`));
+  const availableHalls = halls;
   // Reserve a different source image for each event category; never recycle a source.
   // This prevents the old index-based fallback from repeating event-card photos.
   const eventPhotoCategories: Record<EventKey, string[]> = {
