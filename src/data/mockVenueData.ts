@@ -15,7 +15,7 @@ const ARCANE = { city: 'Arcane Hotel', cityAr: 'فندق آركين', locationId
 const PORTO = { city: 'Porto Said', cityAr: 'بورتو سعيد', locationId: 'porto' as const };
 
 export const INITIAL_HALLS: Hall[] = [
-  { id: 'arcane-pool', name: 'البول (حمام السباحة)', nameEn: 'Pool', ...ARCANE, capacity: 300, basePrice: 30000, color: '#0ea5e9' },
+  { id: 'arcane-pool', name: 'حمام السباحة', nameEn: 'Pool', ...ARCANE, capacity: 300, basePrice: 30000, color: '#0ea5e9' },
   { id: 'arcane-hall', name: 'قاعة آركين', nameEn: 'Arcane Hall', ...ARCANE, capacity: 400, basePrice: 40000, color: '#6366f1' },
   { id: 'porto-veina', name: 'قاعة فيينا', nameEn: 'Veina Hall', ...PORTO, capacity: 400, basePrice: 40000, color: '#ec4899' },
   { id: 'porto-roof', name: 'الروف', nameEn: 'Roof', ...PORTO, capacity: 250, basePrice: 30000, color: '#eab308' },

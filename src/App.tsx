@@ -132,7 +132,8 @@ export default function App() {
     if (typeof window === 'undefined') return INITIAL_HALLS;
     try {
       const saved = JSON.parse(window.localStorage.getItem('saraya-halls-v2') || 'null');
-      return Array.isArray(saved) && saved.length ? saved : INITIAL_HALLS;
+      // Rename the old "البول" pool label in halls saved before the fix.
+      return Array.isArray(saved) && saved.length ? saved.map((h: Hall) => h.name === 'البول (حمام السباحة)' ? { ...h, name: 'حمام السباحة' } : h) : INITIAL_HALLS;
     } catch { return INITIAL_HALLS; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-halls-v2', JSON.stringify(halls)); }, [halls]);

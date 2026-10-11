@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Calendar, Building2, Sparkles, Ruler, Image as ImageIcon, Cuboid, ArrowRight, ArrowLeft, X } from 'lucide-react';
 import { Hall, Language } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
+import { Customer3DPreview } from './Customer3DPreview';
 
 type Screen = 'events' | 'venues' | 'services' | 'planner' | 'gallery' | '3d-tour';
 
@@ -139,6 +140,9 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
               <Ruler className="mx-auto h-8 w-8 text-amber-300" />
               <h2 className="mt-4 text-xl font-bold">{isAr ? 'التصميم يتم مع فريق السرايا' : 'Design is prepared with the Saraya team'}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">{isAr ? 'خلال المقابلة نراجع توزيع المساحة والعناصر والتجهيزات، ونستخدم أدواتنا الداخلية لعرض المخطط والتصور ثلاثي الأبعاد.' : 'During the interview, we review the space, layout and production requirements and use our internal tools to present the plan and 3D visualization.'}</p>
+            </div>
+            <div className="mx-auto mt-6 max-w-4xl">
+              <Customer3DPreview halls={availableHalls} language={language} />
             </div>
           </div>
         )}
