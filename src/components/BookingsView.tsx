@@ -27,6 +27,8 @@ interface BookingsViewProps {
   onSelectBookingForProfit: (booking: Booking) => void;
   onSelectBookingForInvoice: (booking: Booking) => void;
   onUpdateBookingStatus: (bookingId: string, status: BookingStatus) => void;
+  /** Operations staff: selling price total only (no profit calculator, payments or deposits). */
+  sellingPricesOnly?: boolean;
 }
 
 export function BookingsView({
@@ -35,6 +37,7 @@ export function BookingsView({
   onSelectBookingForProfit,
   onSelectBookingForInvoice,
   onUpdateBookingStatus,
+  sellingPricesOnly = false,
 }: BookingsViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -189,7 +192,7 @@ export function BookingsView({
 
                 {/* Right Quick Action Buttons */}
                 <div className="flex items-center gap-2 self-end lg:self-center">
-                  <button
+                  {!sellingPricesOnly && <button
                     onClick={() => {
                       sound.click(600);
                       onSelectBookingForProfit(bk);
@@ -198,7 +201,7 @@ export function BookingsView({
                   >
                     <Calculator className="w-3.5 h-3.5" />
                     <span>حساب ربح المناسبة</span>
-                  </button>
+                  </button>}
 
                   <button
                     onClick={() => {
@@ -214,7 +217,7 @@ export function BookingsView({
               </div>
 
               {/* Financial & Services Breakdown Row */}
-              <div className="mt-4 pt-1 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+              <div className={`mt-4 pt-1 grid gap-3 text-xs ${sellingPricesOnly ? 'grid-cols-1 sm:max-w-xs' : 'grid-cols-2 sm:grid-cols-5'}`}>
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
                   <span className="text-[10px] text-slate-400 block font-mono">إجمالي الحجز + الخدمات</span>
                   <span className="text-sm font-bold font-mono text-white tabular-nums">
@@ -223,6 +226,7 @@ export function BookingsView({
                   <span className="text-[10px] text-slate-500 block">شامل {bk.services.length} خدمات</span>
                 </div>
 
+                {!sellingPricesOnly && <>
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
                   <span className="text-[10px] text-slate-400 block font-mono">العربون المسدد</span>
                   <span className="text-sm font-bold font-mono text-emerald-400 tabular-nums">
@@ -264,6 +268,7 @@ export function BookingsView({
                     {bk.securityDepositStatus === 'refunded' ? 'تم الرد' : 'محتجز بالخزينة'}
                   </span>
                 </div>
+                </>}
               </div>
 
               {/* Notes Strip */}

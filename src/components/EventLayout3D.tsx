@@ -33,6 +33,9 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
   const engineRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [povLocked, setPovLocked] = useState(false);
+  // The engine boots once per size/language, so it reads items through a ref to see later additions.
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   useEffect(() => {
     let disposed = false;
@@ -248,7 +251,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
             }
           });
         }
-        items.forEach((item) => itemRoot.add(buildTemplate(item)));
+        itemsRef.current.forEach((item) => itemRoot.add(buildTemplate(item)));
       };
       rebuild();
 
@@ -297,7 +300,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         let group = hit.object;
         while (group.parent && !group.userData.itemId) group = group.parent;
         if (!group.userData.itemId) return;
-        const item = items.find((i) => i.id === group.userData.itemId);
+        const item = itemsRef.current.find((i) => i.id === group.userData.itemId);
         if (!item) return;
         const point = new THREE.Vector3();
         if (!raycaster.ray.intersectPlane(floorPlane, point)) return;

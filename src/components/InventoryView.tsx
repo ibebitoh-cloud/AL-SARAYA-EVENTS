@@ -18,6 +18,8 @@ interface InventoryViewProps {
   onUpdateItemQuantity: (itemId: string, newQty: number, damagedQty?: number) => void;
   onAddItem: (newItem: InventoryItem) => void;
   onEditItem: (item: InventoryItem) => void;
+  /** Operations staff: show selling prices only (no purchase cost, stock value or item editing). */
+  sellingPricesOnly?: boolean;
 }
 
 export function InventoryView({
@@ -25,6 +27,7 @@ export function InventoryView({
   onUpdateItemQuantity,
   onAddItem,
   onEditItem,
+  sellingPricesOnly = false,
 }: InventoryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,7 +122,7 @@ export function InventoryView({
           </p>
         </div>
 
-        <button
+        {!sellingPricesOnly && <button
           onClick={() => {
             sound.click(650);
             setIsModalOpen(true);
@@ -128,7 +131,7 @@ export function InventoryView({
         >
           <Plus className="w-3.5 h-3.5" />
           <span>إضافة صنف جديد للمخزون</span>
-        </button>
+        </button>}
       </div>
 
       {/* Category Pills Bar */}
@@ -199,13 +202,13 @@ export function InventoryView({
                   <span className="text-[9px] text-slate-500 font-sans block">للتنبيه</span>
                 </div>
 
-                <div>
+                {!sellingPricesOnly && <div>
                   <span className="text-[10px] text-slate-500 block font-sans">قيمة المخزون</span>
                   <span className="font-bold text-amber-300 tabular-nums text-sm">
                     {(item.quantity * item.costPerUnit).toLocaleString()} ج.م
                   </span>
                   <span className="text-[9px] text-slate-500 font-sans block">بسعر التكلفة</span>
-                </div>
+                </div>}
 
                 <div>
                   <span className="text-[10px] text-slate-500 block font-sans">التالف / كسر</span>
@@ -219,14 +222,14 @@ export function InventoryView({
               {/* Quick Stock Adjustment buttons */}
               <div className="flex items-center justify-between pt-1 text-xs">
                 <span className="text-[11px] text-slate-400 font-mono">
-                  شراء: {item.costPerUnit} ج.م · بيع: {(item.salePrice ?? 0)} ج.م
+                  {!sellingPricesOnly && <>شراء: {item.costPerUnit} ج.م · </>}بيع: {(item.salePrice ?? 0)} ج.م
                 </span>
 
                 <div className="flex items-center gap-1.5">
-                  <button
+                  {!sellingPricesOnly && <button
                     onClick={() => openEdit(item)}
                     className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer"
-                  >تعديل</button>
+                  >تعديل</button>}
                   <button
                     onClick={() => {
                       sound.tick();

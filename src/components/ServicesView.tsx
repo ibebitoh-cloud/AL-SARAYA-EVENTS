@@ -20,9 +20,11 @@ interface ServicesViewProps {
   services: ServiceDefinition[];
   onAddService: (newService: ServiceDefinition) => void;
   onUpdateService: (updatedService: ServiceDefinition) => void;
+  /** Operations staff: show selling prices only (no cost, margin or editing). */
+  sellingPricesOnly?: boolean;
 }
 
-export function ServicesView({ services, onAddService, onUpdateService }: ServicesViewProps) {
+export function ServicesView({ services, onAddService, onUpdateService, sellingPricesOnly = false }: ServicesViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -107,10 +109,10 @@ export function ServicesView({ services, onAddService, onUpdateService }: Servic
             <Utensils className="w-5 h-5 text-indigo-400" />
             <span>دليل الخدمات والإضافات الفندقية</span>
           </h2>
-          <p className="text-xs text-slate-400">تحديد أسعار البيع وتكلفة كل خدمة ومتابعة ربحيتها</p>
+          <p className="text-xs text-slate-400">{sellingPricesOnly ? 'أسعار البيع المعتمدة لكل خدمة' : 'تحديد أسعار البيع وتكلفة كل خدمة ومتابعة ربحيتها'}</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {!sellingPricesOnly && <div className="flex items-center gap-2">
           <button
             onClick={() => {
               sound.click(650);
@@ -121,7 +123,7 @@ export function ServicesView({ services, onAddService, onUpdateService }: Servic
             <Plus className="w-3.5 h-3.5" />
             <span>إضافة خدمة جديدة</span>
           </button>
-        </div>
+        </div>}
       </div>
 
       {/* Category Pills Bar */}
@@ -163,9 +165,9 @@ export function ServicesView({ services, onAddService, onUpdateService }: Servic
                   </span>
                   <h3 className="text-sm font-bold text-white mt-1 leading-snug">{srv.name}</h3>
                 </div>
-                <button type="button" onClick={() => openEditModal(srv)} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20 text-xs font-semibold" aria-label={`تعديل ${srv.name}`}>
+                {!sellingPricesOnly && <button type="button" onClick={() => openEditModal(srv)} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20 text-xs font-semibold" aria-label={`تعديل ${srv.name}`}>
                   <Pencil className="w-3.5 h-3.5" /> تعديل
-                </button>
+                </button>}
               </div>
 
               {srv.description && (
@@ -175,7 +177,7 @@ export function ServicesView({ services, onAddService, onUpdateService }: Servic
               )}
 
               {/* Price, Cost & Profit Tally */}
-              <div className="pt-3 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs font-mono">
+              <div className={`pt-3 border-t border-slate-800/80 grid gap-2 text-center text-xs font-mono ${sellingPricesOnly ? 'grid-cols-1' : 'grid-cols-3'}`}>
                 <div className="p-2 rounded-xl bg-slate-950/70">
                   <span className="text-[10px] text-slate-500 block font-sans">سعر البيع</span>
                   <span className="font-bold text-white tabular-nums">
@@ -184,6 +186,7 @@ export function ServicesView({ services, onAddService, onUpdateService }: Servic
                   <span className="text-[9px] text-slate-500 block font-sans">لكل {srv.unit}</span>
                 </div>
 
+                {!sellingPricesOnly && <>
                 <div className="p-2 rounded-xl bg-slate-950/70">
                   <span className="text-[10px] text-slate-500 block font-sans">التكلفة</span>
                   <span className="font-bold text-rose-300 tabular-nums">
@@ -199,6 +202,7 @@ export function ServicesView({ services, onAddService, onUpdateService }: Servic
                   </span>
                   <span className="text-[9px] text-emerald-500 block font-sans">+{profit.toLocaleString()}</span>
                 </div>
+                </>}
               </div>
             </TiltCard>
           );
