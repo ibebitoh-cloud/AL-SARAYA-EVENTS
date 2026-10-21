@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { RotateCcw, RotateCw } from 'lucide-react';
 
 type LayoutItem = {
   id: string;
@@ -21,15 +22,16 @@ type Props = {
   language: 'ar' | 'en';
   mode: 'overview' | 'pov';
   onSelect: (id: string) => void;
+  selectedId?: string | null;
   onMove: (id: string, x: number, y: number) => void;
-  onRotate?: (id: string) => void;
+  onRotate?: (id: string, delta?: number) => void;
 };
 
 const THREE_URL = 'three';
 const CONTROLS_URL = 'three/addons/controls/OrbitControls.js';
 const POV_URL = 'three/addons/controls/PointerLockControls.js';
 
-export function EventLayout3D({ items, width, depth, language, mode, onSelect, onMove, onRotate }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode, selectedId, onSelect, onMove, onRotate }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -37,6 +39,13 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
   // The engine boots once per size/language, so it reads items through a ref to see later additions.
   const itemsRef = useRef(items);
   itemsRef.current = items;
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
+  const rotateRef = useRef(onRotate);
+  rotateRef.current = onRotate;
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const rotationBarRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -433,6 +442,23 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         } else {
           orbit.update();
         }
+        const rotationBar = rotationBarRef.current;
+        const selectedGroup = selectedIdRef.current && itemRoot.children.find((child: any) => child.userData?.itemId === selectedIdRef.current);
+        if (rotationBar && selectedGroup && modeRef.current === 'overview') {
+          const projected = new THREE.Vector3();
+          selectedGroup.getWorldPosition(projected);
+          projected.y += 2.8;
+          projected.project(camera);
+          const bounds = renderer.domElement.getBoundingClientRect();
+          const screenX = ((projected.x + 1) / 2) * bounds.width;
+          const screenY = ((1 - projected.y) / 2) * bounds.height;
+          const visible = projected.z >= -1 && projected.z <= 1 && screenX >= 0 && screenX <= bounds.width && screenY >= 0 && screenY <= bounds.height;
+          rotationBar.style.display = visible ? 'flex' : 'none';
+          rotationBar.style.left = `${screenX}px`;
+          rotationBar.style.top = `${screenY}px`;
+        } else if (rotationBar) {
+          rotationBar.style.display = 'none';
+        }
         renderer.render(scene, camera);
       };
       raf = requestAnimationFrame(animate);
@@ -482,7 +508,10 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
   return (
     <div className="relative h-full min-h-[520px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
       <div ref={hostRef} className="absolute inset-0" />
-      {mode === 'overview' && onRotate && <div className="pointer-events-none absolute inset-0 overflow-hidden">{items.map((item) => <button key={item.id} type="button" title={language === 'ar' ? `تدوير ${item.labelAr}` : `Rotate ${item.labelEn}`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onSelect(item.id); onRotate(item.id); }} className="pointer-events-auto absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-amber-300/70 bg-slate-950/90 text-amber-200 shadow-lg hover:bg-amber-400 hover:text-slate-950" style={{ left: `${item.x}%`, top: `${item.y}%` }}>↻</button>)}</div>}
+      {mode === 'overview' && selectedId && items.some((item) => item.id === selectedId) && <div ref={rotationBarRef} className="pointer-events-auto absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" style={{ left: '50%', top: '50%' }} onPointerDown={(event) => event.stopPropagation()}>
+        <button type="button" title={language === 'ar' ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={language === 'ar' ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, -15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
+        <button type="button" title={language === 'ar' ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={language === 'ar' ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
+      </div>}
       {!ready && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400 bg-slate-950/90">{language === 'ar' ? 'جاري تحميل المحرك ثلاثي الأبعاد…' : 'Loading 3D engine…'}</div>}
       <div className="absolute left-3 top-3 rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-[10px] text-slate-300">
         {mode === 'pov'

@@ -7,6 +7,7 @@ import {
   ChevronUp,
   Copy,
   Redo2,
+  RotateCcw,
   DoorOpen,
   Monitor,
   Move3d,
@@ -124,7 +125,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const [future, setFuture] = useState<LayoutItem[][]>([]);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>('stage-1');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [clientView, setClientView] = useState(false);
   const [saved, setSaved] = useState(false);
   const [projectName, setProjectName] = useState(() => {
@@ -134,6 +135,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     } catch { return ''; }
   });
   const [autoBuilderOpen, setAutoBuilderOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [autoSelection, setAutoSelection] = useState<Record<string, number>>({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, buffet: 0, registration: 0 });
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number; dx: number; dy: number; rotation: number; canvasWidth: number; canvasHeight: number } | null>(null);
@@ -391,7 +393,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const deleteSavedPlan = (id: string) => { if (!activeHall || !onUpdateHall) return; onUpdateHall({ ...activeHall, savedLayouts: (activeHall.savedLayouts || []).filter((plan) => plan.id !== id) }); if (activePlanId === id) setActivePlanId(null); };
 
   const itemVisual = (item: LayoutItem) => {
-    const common = 'absolute flex items-center justify-center select-none';
+    const common = 'absolute flex items-center justify-center overflow-hidden whitespace-nowrap px-1 text-ellipsis select-none';
     if (item.type === 'table' && item.shape === 'rect') return `${common} w-16 h-8 rounded-md border-2 border-amber-300/70 bg-amber-200/20 text-amber-100`;
     if (item.type === 'table') return `${common} w-14 h-14 rounded-full border-2 border-amber-300/70 bg-amber-200/20 text-amber-100`;
     if (item.type === 'chairs') return `${common} w-7 h-7 rounded-md border border-slate-300/50 bg-slate-300/20 text-slate-200`;
@@ -449,7 +451,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="absolute inset-[7%] border border-white/10 rounded-xl">
                 {items.map((item) => (
                   <div key={item.id} className={itemVisual(item)} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)` }}>
-                    {item.type === 'screen' ? 'LED SCREEN' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? (item.seats || 10) : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.labelEn}
+                    {item.type === 'table' ? (item.seats || 10) : (isAr ? item.labelAr : item.labelEn)}
                   </div>
                 ))}
               </div>
@@ -485,16 +487,6 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             <button type="button" onClick={() => setAutoBuilderOpen(true)} className="mt-3 w-full rounded-lg bg-slate-800 border border-slate-700 py-2.5 text-xs font-bold text-white">{isAr ? 'إنشاء تخطيط تلقائي' : 'Build Auto Layout'}</button>
 
             <div className="mt-5 border-t border-slate-800 pt-3">
-              <div className="text-xs font-bold text-white mb-2">{isAr ? 'إضافة عناصر' : 'Add Items'}</div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {ITEM_LIBRARY.map((item) => {
-                  const Icon = item.icon;
-                  return <button key={item.type} type="button" onClick={() => addItem(item.type)} className="min-h-10 rounded-lg border border-slate-700 bg-slate-950 hover:border-slate-500 text-[10px] text-slate-300 flex items-center gap-1.5 px-2"><Plus className="w-3 h-3 text-amber-400" /><Icon className="w-3.5 h-3.5" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>;
-                })}
-              </div>
-            </div>
-
-            <div className="mt-5 border-t border-slate-800 pt-3">
               <div className="text-xs font-bold text-white">{isAr ? 'طاولات جاهزة بالكراسي' : 'Table Sets'}</div>
               <p className="mt-0.5 mb-2 text-[10px] text-slate-500">{isAr ? 'حدد العدد ثم أضف دفعة واحدة' : 'Set a quantity, then add them in bulk'}</p>
               <div className="space-y-1.5">
@@ -511,9 +503,13 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </aside>
 
           <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-2 sm:p-3 min-w-0">
-            <div className="flex items-center justify-between px-2 py-2">
+            <div className="relative flex items-center justify-between gap-2 px-2 py-2">
               <div className="text-xs font-bold text-white">{activeHall ? `${isAr ? activeHall.name : activeHall.nameEn || activeHall.name} · ` : ''}{eventName} · {width} × {depth}m</div>
-              <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'} · {items.filter((item) => item.type === 'table').reduce((sum, item) => sum + (item.seats || 10), 0)} {isAr ? 'مقعداً' : 'seats'}</div>
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'} · {items.filter((item) => item.type === 'table').reduce((sum, item) => sum + (item.seats || 10), 0)} {isAr ? 'مقعداً' : 'seats'}</div>
+                <button type="button" onClick={() => setQuickAddOpen((open) => !open)} aria-expanded={quickAddOpen} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 text-[10px] font-black text-slate-950 hover:bg-amber-300"><Plus className="h-3.5 w-3.5" />{isAr ? 'إضافة عناصر' : 'Add items'}</button>
+              </div>
+              {quickAddOpen && <div className="absolute end-2 top-full z-50 mt-1 grid w-[min(92vw,360px)] grid-cols-2 gap-1.5 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl sm:grid-cols-3">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; return <button key={item.type} type="button" onClick={() => { addItem(item.type); setQuickAddOpen(false); }} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-800 px-2 text-start text-[10px] text-slate-200 hover:border-amber-400/60 hover:bg-slate-900"><Icon className="h-3.5 w-3.5 shrink-0 text-amber-300" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>; })}</div>}
             </div>
             <div className="relative w-full aspect-[4/3] min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
               {layoutMode === '2d' ? (
@@ -526,6 +522,13 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                       {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{seatDots(item).map((dot, seat) => <span key={seat} className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-200/80" style={{ left: dot.left + '%', top: dot.top + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                     </button>
                   ))}
+                  {selected && <div className="pointer-events-none absolute z-40" style={{ left: `${selected.x}%`, top: `${selected.y}%`, transform: selected.y < 20 ? 'translate(-50%, 40px)' : 'translate(-50%, calc(-100% - 10px))' }}>
+                    <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" onPointerDown={(event) => event.stopPropagation()}>
+                      <button type="button" onClick={() => updateSelected({ rotation: selected.rotation - 15 })} title={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
+                      <span className="min-w-10 text-center text-[10px] font-bold tabular-nums text-white">{((selected.rotation % 360) + 360) % 360}°</span>
+                      <button type="button" onClick={() => updateSelected({ rotation: selected.rotation + 15 })} title={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
+                    </div>
+                  </div>}
                 </div>
               ) : (
                 <EventLayout3D
@@ -534,12 +537,13 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   depth={depth}
                   language={language}
                   mode={layoutMode === 'pov' ? 'pov' : 'overview'}
+                  selectedId={selectedId}
                   onSelect={setSelectedId}
                   onMove={(id, x, y) => {
                     commitItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
                     setSaved(false);
                   }}
-                  onRotate={(id) => commitItems((prev) => prev.map((item) => item.id === id ? { ...item, rotation: item.rotation + 15 } : item))}
+                  onRotate={(id, delta = 15) => commitItems((prev) => prev.map((item) => item.id === id ? { ...item, rotation: item.rotation + delta } : item))}
                 />
               )}            </div>
           </section>
@@ -549,8 +553,13 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             {selected ? (
               <>
                 <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                  <div className="text-sm font-bold text-white">{isAr ? selected.labelAr : selected.labelEn}</div>
-                  {selected.type === 'table' && <div className="text-[10px] text-slate-500 mt-1">{selected.seats || 10} {isAr ? 'مقاعد' : 'seats'}</div>}
+                  <label className="block text-[10px] text-slate-500">{isAr ? 'اسم العنصر' : 'Item name'}<input value={isAr ? selected.labelAr : selected.labelEn} onChange={(event) => updateSelected(isAr ? { labelAr: event.target.value } : { labelEn: event.target.value })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs font-bold text-white outline-none focus:border-amber-400" /></label>
+                  {selected.type === 'table' && <label className="mt-2 block text-[10px] text-slate-500">{isAr ? 'عدد المقاعد' : 'Seats'}<input type="number" min={1} max={40} value={selected.seats || 10} onChange={(event) => updateSelected({ seats: Math.max(1, Math.min(40, Number(event.target.value) || 1)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-white outline-none focus:border-amber-400" /></label>}
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                  <label className="text-[9px] text-slate-500">X %<input type="number" min={5} max={95} value={Math.round(selected.x)} onChange={(event) => updateSelected({ x: Math.max(5, Math.min(95, Number(event.target.value) || 5)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] text-white" /></label>
+                  <label className="text-[9px] text-slate-500">Y %<input type="number" min={5} max={95} value={Math.round(selected.y)} onChange={(event) => updateSelected({ y: Math.max(5, Math.min(95, Number(event.target.value) || 5)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] text-white" /></label>
+                  <label className="text-[9px] text-slate-500">{isAr ? 'الزاوية' : 'Angle'}<input type="number" value={selected.rotation} onChange={(event) => updateSelected({ rotation: Number(event.target.value) || 0 })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] text-white" /></label>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 mt-3">
                   <button type="button" onClick={() => nudge(0, -3)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronUp className="w-4 h-4" /></button>
