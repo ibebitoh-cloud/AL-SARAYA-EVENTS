@@ -18,7 +18,8 @@ interface InventoryViewProps {
   onUpdateItemQuantity: (itemId: string, newQty: number, damagedQty?: number) => void;
   onAddItem: (newItem: InventoryItem) => void;
   onEditItem: (item: InventoryItem) => void;
-  /** Operations staff: show selling prices only (no purchase cost, stock value or item editing). */
+  onDeleteItem: (itemId: string) => void;
+  /** Operations staff: can add/edit/delete items but never see or set the buying price or stock value. */
   sellingPricesOnly?: boolean;
 }
 
@@ -27,6 +28,7 @@ export function InventoryView({
   onUpdateItemQuantity,
   onAddItem,
   onEditItem,
+  onDeleteItem,
   sellingPricesOnly = false,
 }: InventoryViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -81,6 +83,24 @@ export function InventoryView({
     setName('');
   };
 
+  const openCreate = () => {
+    setEditingItem(null);
+    setName('');
+    setCategory('buffet');
+    setQuantity(100);
+    setUnit('قطعة');
+    setMinThreshold(20);
+    setCostPerUnit(sellingPricesOnly ? 0 : 35);
+    setSalePrice(0);
+    setIsModalOpen(true);
+  };
+
+  const deleteItem = (item: InventoryItem) => {
+    if (!window.confirm(`حذف "${item.name}" من المخزون نهائياً؟`)) return;
+    sound.click(400);
+    onDeleteItem(item.id);
+  };
+
   const openEdit = (item: InventoryItem) => {
     setEditingItem(item);
     setName(item.name);
@@ -99,7 +119,9 @@ export function InventoryView({
     const item: InventoryItem = {
       id: editingItem?.id ?? `inv-${Date.now()}`, name: name.trim(), category,
       quantity: Math.max(0, Number(quantity) || 0), unit: unit.trim() || 'قطعة',
-      minThreshold: Math.max(0, Number(minThreshold) || 0), costPerUnit: Math.max(0, Number(costPerUnit) || 0),
+      minThreshold: Math.max(0, Number(minThreshold) || 0),
+      // Selling-price-only staff never touch the buying price: keep the existing one (new items start at 0 for a manager to fill).
+      costPerUnit: sellingPricesOnly ? (editingItem?.costPerUnit ?? 0) : Math.max(0, Number(costPerUnit) || 0),
       salePrice: Math.max(0, Number(salePrice) || 0), damagedQuantity: editingItem?.damagedQuantity ?? 0,
       lastRestockedDate: editingItem?.lastRestockedDate ?? new Date().toISOString().split('T')[0],
     };
@@ -122,16 +144,16 @@ export function InventoryView({
           </p>
         </div>
 
-        {!sellingPricesOnly && <button
+        <button
           onClick={() => {
             sound.click(650);
-            setIsModalOpen(true);
+            openCreate();
           }}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer whitespace-nowrap active:scale-95"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>إضافة صنف جديد للمخزون</span>
-        </button>}
+        </button>
       </div>
 
       {/* Category Pills Bar */}
@@ -226,10 +248,16 @@ export function InventoryView({
                 </span>
 
                 <div className="flex items-center gap-1.5">
-                  {!sellingPricesOnly && <button
+                  <button
                     onClick={() => openEdit(item)}
                     className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer"
-                  >تعديل</button>}
+                  >تعديل</button>
+                  <button
+                    onClick={() => deleteItem(item)}
+                    aria-label={`حذف ${item.name}`}
+                    title="حذف الصنف"
+                    className="p-1.5 rounded-lg border border-red-900/60 text-red-300 hover:bg-red-950/40 cursor-pointer"
+                  ><Trash2 className="w-3.5 h-3.5" /></button>
                   <button
                     onClick={() => {
                       sound.tick();
@@ -303,7 +331,7 @@ export function InventoryView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className={`grid grid-cols-2 gap-3 ${sellingPricesOnly ? 'sm:grid-cols-3' : 'sm:grid-cols-4'}`}>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">الكمية الحالية</label>
                   <input
@@ -324,7 +352,7 @@ export function InventoryView({
                   />
                 </div>
 
-                <div>
+                {!sellingPricesOnly && <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">سعر الشراء</label>
                   <input
                     type="number"
@@ -332,7 +360,7 @@ export function InventoryView({
                     onChange={(e) => setCostPerUnit(Number(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono"
                   />
-                </div>
+                </div>}
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">سعر البيع</label>

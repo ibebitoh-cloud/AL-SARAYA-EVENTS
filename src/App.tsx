@@ -277,6 +277,7 @@ export default function App() {
   const handleUpdateInventoryQty = (itemId: string, newQty: number, damagedQty?: number) => setInventory((prev) => prev.map((item) => item.id === itemId ? { ...item, quantity: newQty, damagedQuantity: damagedQty !== undefined ? damagedQty : item.damagedQuantity } : item));
   const handleAddInventoryItem = (newItem: InventoryItem) => setInventory((prev) => [...prev, newItem]);
   const handleEditInventoryItem = (updatedItem: InventoryItem) => setInventory((prev) => prev.map((item) => item.id === updatedItem.id ? updatedItem : item));
+  const handleDeleteInventoryItem = (itemId: string) => setInventory((prev) => prev.filter((item) => item.id !== itemId));
   const handleAddStaff = (newStaff: Employee) => setStaff((prev) => [...prev, newStaff]);
   const handleUpdateStaffAttendance = (staffId: string, status: Employee['attendanceStatus']) => setStaff((prev) => prev.map((emp) => emp.id === staffId ? { ...emp, attendanceStatus: status } : emp));
   const swipeStartX = useRef<number | null>(null);
@@ -328,7 +329,7 @@ export default function App() {
       {currentTab === 'finance' && canAccess(portalUser, 'finance') && <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} />}
       {currentTab === 'payments' && canAccess(portalUser, 'payments') && <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} />}
       {currentTab === 'expenses' && canAccess(portalUser, 'expenses') && <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense} />}
-      {currentTab === 'inventory' && canAccess(portalUser, 'inventory') && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly || portalUser?.role === 'finance')} />}
+      {currentTab === 'inventory' && canAccess(portalUser, 'inventory') && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} onDeleteItem={handleDeleteInventoryItem} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly || portalUser?.role === 'finance')} />}
       {currentTab === 'staff' && canAccess(portalUser, 'staff') && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
       {currentTab === 'reports' && canAccess(portalUser, 'reports') && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
     </Suspense></motion.div></AnimatePresence></main>
