@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
   ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, Settings2,
-  CalendarDays, Sparkles, Tags, PanelRightClose, PanelRightOpen, X, ChevronRight, Menu, Home, Sun, Moon, Maximize2, Minimize2,
+  CalendarDays, Sparkles, Tags, PanelRightClose, PanelRightOpen, X, ChevronRight, Menu, Home, Sun, Moon, Maximize2, Minimize2, LogOut,
 } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
@@ -18,11 +18,13 @@ interface VenueHeaderNavProps {
   onVisibilityChange: (visible: boolean) => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  onGoToWebsite: () => void;
+  onLogout: () => void;
 }
 
 type NavItem = { id: VenueTab; label: string; icon: typeof LayoutDashboard };
 
-export function VenueHeaderNav({ currentTab, language, user, onTabChange, onToggleLanguage, onOpenTour, onVisibilityChange, theme, onToggleTheme }: VenueHeaderNavProps) {
+export function VenueHeaderNav({ currentTab, language, user, onTabChange, onToggleLanguage, onOpenTour, onVisibilityChange, theme, onToggleTheme, onGoToWebsite, onLogout }: VenueHeaderNavProps) {
   const isAr = language === 'ar';
   const [isHidden, setIsHidden] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -76,6 +78,11 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     setMobileOpen(false);
     setProfileOpen(false);
   };
+  const currentLabel = allNavItems.find((item) => item.id === currentTab)?.label || (isAr ? 'شاشات الإدارة' : 'Management');
+  const accountActions = <div className="grid grid-cols-2 gap-2">
+    <button type="button" onClick={() => { setMobileOpen(false); setProfileOpen(false); onGoToWebsite(); }} className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 px-2 text-[11px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-amber-300"><Home className="h-4 w-4" />{isAr ? 'الموقع' : 'Website'}</button>
+    <button type="button" onClick={() => { setMobileOpen(false); setProfileOpen(false); onLogout(); }} className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-rose-500/30 px-2 text-[11px] font-bold text-rose-300 hover:bg-rose-500/10"><LogOut className="h-4 w-4 rtl:rotate-180" />{isAr ? 'تسجيل الخروج' : 'Log out'}</button>
+  </div>;
   const renderNavItem = (item: NavItem) => {
     const Icon = item.icon;
     const active = currentTab === item.id;
@@ -108,18 +115,20 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
 
     {isHidden && <button type="button" onClick={toggleVisibility} title={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} aria-label={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} className="fixed start-0 top-20 z-[60] hidden rounded-e-xl border border-amber-500/25 bg-slate-950/95 p-3 text-amber-300 shadow-lg lg:block"><PanelRightOpen className="h-4 w-4" /></button>}
 
-    {/* Mobile: controls and screen navigation open from the logical start side. */}
-    <div className={`fixed ${isAr ? 'end-3' : 'start-3'} top-[76px] z-40 lg:hidden`}>
-      <button type="button" onClick={() => setMobileOpen((v) => !v)} aria-expanded={mobileOpen} aria-label={isAr ? 'قائمة الشاشات' : 'Open screen navigation'} className="flex h-10 items-center gap-2 rounded-xl border border-amber-500/30 bg-slate-950/95 px-3 text-xs font-bold text-amber-300 shadow-lg backdrop-blur-xl">
+    {/* Mobile/tablet: a slim sticky bar so the menu button never covers page content. */}
+    <div dir={isAr ? 'rtl' : 'ltr'} className={`sticky top-0 z-40 flex h-14 w-full items-center justify-between gap-3 border-b px-3 backdrop-blur-xl lg:hidden ${theme === 'dark' ? 'border-amber-500/20 bg-slate-950/95' : 'border-slate-200 bg-white/95'}`}>
+      <button type="button" onClick={() => setMobileOpen((v) => !v)} aria-expanded={mobileOpen} aria-label={isAr ? 'قائمة الشاشات' : 'Open screen navigation'} className="flex h-10 shrink-0 items-center gap-2 rounded-xl border border-amber-500/30 bg-slate-950/95 px-3 text-xs font-bold text-amber-300">
         {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}{isAr ? 'الشاشات' : 'Screens'}
       </button>
+      <div className="min-w-0 text-end"><div className="truncate text-sm font-black text-white">{currentLabel}</div><div className="truncate text-[10px] text-slate-500">{displayName}</div></div>
     </div>
     {mobileOpen && <><button type="button" aria-label={isAr ? 'إغلاق القائمة' : 'Close menu'} onClick={() => setMobileOpen(false)} className="fixed inset-0 z-[60] bg-slate-950/50 lg:hidden" />
-      <aside dir={isAr ? 'rtl' : 'ltr'} className="fixed start-0 top-16 z-[65] flex h-[calc(100dvh-4rem)] w-[min(84vw,320px)] flex-col border-e border-amber-500/20 bg-slate-950 shadow-2xl sm:top-[72px] sm:h-[calc(100dvh-72px)] lg:hidden">
+      <aside dir={isAr ? 'rtl' : 'ltr'} className="fixed start-0 top-14 z-[65] flex h-[calc(100dvh-3.5rem)] w-[min(84vw,320px)] flex-col border-e border-amber-500/20 bg-slate-950 shadow-2xl lg:hidden">
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><div><div className="text-xs font-black text-white">{isAr ? 'شاشات الإدارة' : 'Management screens'}</div><div className="mt-1 text-[10px] text-slate-500">{displayName}</div></div><button type="button" onClick={() => setMobileOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X className="h-4 w-4" /></button></div>
         <div className="grid grid-cols-3 gap-2 border-b border-slate-800 p-3"><button type="button" onClick={() => goTo(homeTab)} aria-label={isAr ? 'الانتقال إلى لوحة التحكم' : 'Go to dashboard'} className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-amber-500/25 bg-amber-400/10 px-2 text-[10px] font-bold text-amber-300"><LayoutDashboard className="h-4 w-4" />{isAr ? 'لوحة التحكم' : 'Dashboard'}</button><button type="button" onClick={onToggleTheme} className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-slate-700 px-2 text-[10px] font-bold text-slate-300">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{isAr ? (theme === 'dark' ? 'فاتح' : 'ليلي') : (theme === 'dark' ? 'Light' : 'Night')}</button><button type="button" onClick={toggleFullscreen} className="flex min-h-10 items-center justify-center rounded-lg border border-slate-700 text-slate-300">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button></div><nav className="flex-1 space-y-1 overflow-y-auto p-3">{navItems.map(renderNavItem)}</nav>
         <div className="flex gap-2 border-t border-slate-800 p-3"><button type="button" onClick={onToggleLanguage} className="flex-1 rounded-lg border border-slate-800 px-3 py-2 text-xs font-bold text-slate-300">{isAr ? 'EN · English' : 'العربية'}</button><button type="button" onClick={onOpenTour} className="rounded-lg px-3 py-2 text-xs text-slate-300 hover:bg-slate-800">{isAr ? 'الجولة' : 'Tour'}</button></div>
+        <div className="border-t border-slate-800 p-3">{accountActions}</div>
       </aside></>}
-    {profileOpen && <div dir={isAr ? 'rtl' : 'ltr'} className="fixed end-5 bottom-20 z-[70] w-64 rounded-2xl border border-slate-700 bg-slate-950 p-4 shadow-2xl"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/15 text-sm font-black text-amber-300">{displayName.trim().slice(0,1)}</div><div className="min-w-0"><div className="truncate text-sm font-black text-white">{displayName}</div><div className="mt-1 truncate text-[11px] text-slate-400">{displayRole}</div><div className="mt-1 text-[10px] text-slate-500">@{user.username}</div></div></div></div>}
+    {profileOpen && <div dir={isAr ? 'rtl' : 'ltr'} className="fixed start-4 bottom-16 z-[70] w-64 rounded-2xl border border-slate-700 bg-slate-950 p-4 shadow-2xl"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/15 text-sm font-black text-amber-300">{displayName.trim().slice(0,1)}</div><div className="min-w-0"><div className="truncate text-sm font-black text-white">{displayName}</div><div className="mt-1 truncate text-[11px] text-slate-400">{displayRole}</div><div className="mt-1 text-[10px] text-slate-500">@{user.username}</div></div></div><div className="mt-4">{accountActions}</div></div>}
   </>;
 }
