@@ -24,13 +24,12 @@ import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
 import { ALSARAYA_PHOTOS, VenuePhoto } from './data/venueImages';
-import { CustomerSectionView } from './components/CustomerSectionView';
-import { CompanyShowcaseView } from './components/CompanyShowcaseView';
+const CustomerSectionView = lazy(() => import('./components/CustomerSectionView').then((m) => ({ default: m.CustomerSectionView })));
 import { PortalLogin } from './components/PortalLogin';
 import { SystemUser, canAccess, landingTab } from './data/systemProfiles';
 import { buildInitialPriceBook } from './data/pricing';
-import { NewBookingModal } from './components/NewBookingModal';
-import { OnboardingFlow } from './components/OnboardingFlow';
+const NewBookingModal = lazy(() => import('./components/NewBookingModal').then((m) => ({ default: m.NewBookingModal })));
+const OnboardingFlow = lazy(() => import('./components/OnboardingFlow').then((m) => ({ default: m.OnboardingFlow })));
 // Management screens load on demand so public visitors only download the website.
 const CompanyProfileView = lazy(() => import('./components/CompanyProfileView').then((m) => ({ default: m.CompanyProfileView })));
 const PackageBuilderView = lazy(() => import('./components/PackageBuilderView').then((m) => ({ default: m.PackageBuilderView })));
@@ -178,25 +177,27 @@ export default function App() {
     } catch { return INITIAL_HALLS; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-halls-v2', JSON.stringify(halls)); }, [halls]);
-  const [photos, setPhotos] = useState<VenuePhoto[]>(() => {
-    if (typeof window === 'undefined') return uniqueEventPhotos(ALSARAYA_PHOTOS);
+  const [photos, setPhotos] = useState<VenuePhoto[]>(() => uniqueEventPhotos(ALSARAYA_PHOTOS));
+  const [savedPhotosLoaded, setSavedPhotosLoaded] = useState(false);
+  useEffect(() => {
+    // Uploaded photos may contain large data URLs. Read them after the first screen paints.
     try {
       const saved = JSON.parse(window.localStorage.getItem('alsaraya_custom_photos_v2') || 'null');
-      // Built-in photos always come from code (so corrected names/places reach returning visitors); uploads are kept.
-      const builtIn = new Map(ALSARAYA_PHOTOS.map((p) => [p.id, p]));
-      const list = Array.isArray(saved) && saved.length
-        ? [...saved.map((p: VenuePhoto) => builtIn.get(p.id) ?? p), ...ALSARAYA_PHOTOS.filter((p) => !saved.some((s: VenuePhoto) => s.id === p.id))]
-        : ALSARAYA_PHOTOS;
-      return uniqueEventPhotos(list);
-    } catch {
-      return uniqueEventPhotos(ALSARAYA_PHOTOS);
-    }
-  });
+      if (Array.isArray(saved) && saved.length) {
+        const builtIn = new Map(ALSARAYA_PHOTOS.map((p) => [p.id, p]));
+        const savedIds = new Set(saved.map((p: VenuePhoto) => p.id));
+        const list = [...saved.map((p: VenuePhoto) => builtIn.get(p.id) ?? p), ...ALSARAYA_PHOTOS.filter((p) => !savedIds.has(p.id))];
+        setPhotos(uniqueEventPhotos(list));
+      }
+    } catch { /* Ignore invalid browser-local photo data and use the built-in gallery. */ }
+    setSavedPhotosLoaded(true);
+  }, []);
   useEffect(() => {
+    if (!savedPhotosLoaded) return;
     try { window.localStorage.setItem('alsaraya_custom_photos_v2', JSON.stringify(uniqueEventPhotos(photos))); } catch (error) {
       console.warn('Photo library could not be saved locally:', error);
     }
-  }, [photos]);
+  }, [photos, savedPhotosLoaded]);
   const handleSavePhotos = (updatedPhotos: VenuePhoto[]) => setPhotos(uniqueEventPhotos(updatedPhotos));
   const handleUpdateHall = (updated: Hall) => setHalls((prev) => prev.map((h) => h.id === updated.id ? updated : h));
   const [servicesCatalogue, setServicesCatalogue] = useState<ServiceDefinition[]>(() => {
@@ -416,9 +417,9 @@ export default function App() {
         </div>
       </div>
     </footer>
-    <NewBookingModal isOpen={isNewBookingModalOpen} onClose={() => setIsNewBookingModalOpen(false)} halls={halls} servicesCatalogue={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} preselectedHallId={preselectedHallId} customerMode={currentTab === 'home' || currentTab.startsWith('public_')} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} language={language} />
+    <Suspense fallback={null}>{isNewBookingModalOpen && <NewBookingModal isOpen onClose={() => setIsNewBookingModalOpen(false)} halls={halls} servicesCatalogue={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} preselectedHallId={preselectedHallId} customerMode={currentTab === 'home' || currentTab.startsWith('public_')} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} language={language} />}</Suspense>
     <Suspense fallback={null}>{selectedBookingForProfit && <EventProfitCalculatorModal isOpen={!!selectedBookingForProfit && !portalUser?.sellingPricesOnly && portalUser?.role !== 'finance'} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} />}
     {selectedBookingForInvoice && <InvoicePrintModal isOpen onClose={() => setSelectedBookingForInvoice(null)} booking={selectedBookingForInvoice} />}</Suspense>
-    <OnboardingFlow isOpen={isOnboardingOpen} language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+    <Suspense fallback={null}>{isOnboardingOpen && <OnboardingFlow isOpen language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}</Suspense>
   </div>);
 }
