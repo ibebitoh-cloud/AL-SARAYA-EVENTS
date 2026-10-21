@@ -11,11 +11,13 @@ import {
 import { PreparedOperation } from '../data/preparedOperations';
 import { EventLayout3D } from './EventLayout3D';
 import { sound } from '../utils/soundEffects';
+import { findBookingConflict, uniqueBookingCode } from '../utils/bookingRules';
 
 interface Props {
   op: PreparedOperation;
   hall?: Hall;
   priceBook: PriceBook;
+  existingBookings: Booking[];
   onChange: (op: PreparedOperation) => void;
   onBack: () => void;
   onCreateBooking: (booking: Booking) => void;
@@ -24,7 +26,7 @@ interface Props {
 const money = (n: number) => `${Math.round(n).toLocaleString()} ج.م`;
 
 /** Customer-facing choice session: everything about the operation is prepared, the customer only chooses. */
-export function ChoiceSessionView({ op, hall, priceBook, onChange, onBack, onCreateBooking }: Props) {
+export function ChoiceSessionView({ op, hall, priceBook, existingBookings, onChange, onBack, onCreateBooking }: Props) {
   const typeCfg = eventTypeConfig(op.eventType);
   const pkgs = packagesFor(op.eventType);
   const pkg = pkgs.find((p) => p.id === op.packageId);
@@ -72,6 +74,8 @@ export function ChoiceSessionView({ op, hall, priceBook, onChange, onBack, onCre
   const paidLines = lines.filter((l) => l.total > 0);
   const freeLines = lines.filter((l) => l.total === 0);
   const overBudget = op.budget > 0 && grandTotal > op.budget;
+  // The hall may have been booked after this operation was prepared.
+  const conflict = hall && !op.bookingCode ? findBookingConflict(existingBookings, { hallId: hall.id, date: op.date, startTime: op.startTime, endTime: op.endTime }) : undefined;
 
   const update = (patch: Partial<PreparedOperation>) => onChange({ ...op, ...patch });
 
@@ -112,7 +116,7 @@ export function ChoiceSessionView({ op, hall, priceBook, onChange, onBack, onCre
     : Object.keys(op.selections).some((sel) => findOption(sel)?.category.id === id);
 
   const saveAsBooking = () => {
-    if (!hall || op.bookingCode) return;
+    if (!hall || op.bookingCode || conflict) return;
     sound.success();
     const stamp = Date.now();
     const services: BookingServiceItem[] = [];
@@ -128,7 +132,7 @@ export function ChoiceSessionView({ op, hall, priceBook, onChange, onBack, onCre
       });
     });
     const freeNote = freeLines.map((l) => `${l.category.titleAr}: ${l.option.nameAr}${l.isIncluded ? ' (ضمن الباقة)' : ''}`).join(' · ');
-    const code = `BK-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+    const code = uniqueBookingCode(existingBookings);
     onCreateBooking({
       id: `bk-${stamp}`, code, clientName: op.clientName, clientPhone: op.clientPhone, eventType: op.eventType,
       date: op.date, startTime: op.startTime, endTime: op.endTime, hallId: hall.id, hallName: hall.name, locationId: op.locationId,
@@ -352,7 +356,8 @@ export function ChoiceSessionView({ op, hall, priceBook, onChange, onBack, onCre
             <div className="mt-4 grid gap-2 print:hidden">
               {op.bookingCode
                 ? <p className="rounded-xl bg-emerald-500/10 p-3 text-center text-xs text-emerald-300">تم الحفظ كحجز مبدئي برقم <span className="font-mono">{op.bookingCode}</span></p>
-                : <button type="button" onClick={saveAsBooking} disabled={!hall} className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-300 disabled:opacity-40"><CalendarCheck className="h-4 w-4" /> حفظ كحجز مبدئي</button>}
+                : <button type="button" onClick={saveAsBooking} disabled={!hall || !!conflict} className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 hover:bg-amber-300 disabled:opacity-40"><CalendarCheck className="h-4 w-4" /> حفظ كحجز مبدئي</button>}
+              {conflict && <p className="text-center text-[11px] font-semibold text-rose-300">القاعة أصبحت محجوزة في هذا الموعد ({conflict.startTime} – {conflict.endTime}) باسم {conflict.clientName}. عدّل موعد العملية قبل الحفظ.</p>}
               <button type="button" onClick={() => window.print()} className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-xs text-slate-300 hover:text-white"><Printer className="h-4 w-4" /> طباعة عرض السعر</button>
               <p className="text-center text-[10px] text-slate-500">يتم حفظ الاختيارات تلقائياً — يمكن استكمال الجلسة لاحقاً.</p>
             </div>
