@@ -295,7 +295,7 @@ export function NewBookingModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>{tr('القاعة', 'Hall')}</label>
-                    <select value={hallId} onChange={(e) => { setHallId(e.target.value); const h = halls.find((x) => x.id === e.target.value); if (h) setBasePrice(h.basePrice); }} className={inputCls}>
+                    <select value={hallId} onChange={(e) => { const nextId = e.target.value; setHallId(nextId); const h = halls.find((x) => x.id === nextId); if (h) setBasePrice(h.basePrice); else if (nextId === CUSTOMER_VENUE_ID) setBasePrice(0); }} className={inputCls}>
                       {locationHalls.map((h) => <option key={h.id} value={h.id}>{isAr ? h.name : h.nameEn || h.name} ({tr(`حتى ${h.capacity} فرد`, `up to ${h.capacity} guests`)})</option>)}
                       <option value={CUSTOM_HALL_ID}>{tr('➕ مكان آخر (اكتب الاسم)', '➕ Another venue (type the name)')}</option>
                       <option value={CUSTOMER_VENUE_ID}>{tr('📍 مكان العميل (خارج قاعاتنا)', '📍 Customer’s own venue')}</option>
@@ -310,6 +310,7 @@ export function NewBookingModal({
                     <input type="number" min="1" value={guestCount} onChange={(e) => setGuestCount(Number(e.target.value) || 0)} className={`${inputCls} font-mono`} />
                   </div>
                 </div>
+                {customerMode && isCustomerVenue && <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-3"><label className={labelCls}>{tr('اختر تسعير الخدمات', 'Choose service pricing location')}</label><div className="grid grid-cols-2 gap-2">{LOCATIONS.map((loc) => <button key={loc.id} type="button" onClick={() => setLocationId(loc.id)} className={`rounded-lg border px-3 py-2 text-xs font-bold ${locationId === loc.id ? 'border-amber-300 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-900 text-slate-300'}`}>{isAr ? loc.nameAr : loc.nameEn}</button>)}</div><p className="mt-2 text-[10px] text-slate-400">{tr('ستظهر أسعار الموقع المختار فقط. يمكنك تغيير الاختيار لعرض تسعير الموقع الآخر.', 'Only prices for the selected location are shown. Switch locations to view the other pricing.')}</p></div>}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div><label className={labelCls}>{tr('تاريخ المناسبة', 'Event date')}</label><input type="date" required min={customerMode ? new Date().toISOString().split('T')[0] : undefined} value={date} onChange={(e) => setDate(e.target.value)} className={`${inputCls} font-mono`} /></div>
                   <div><label className={labelCls}>{tr('وقت البداية', 'Start time')}</label><input type="time" required value={startTime} onChange={(e) => setStartTime(e.target.value)} className={`${inputCls} font-mono`} /></div>
@@ -332,7 +333,7 @@ export function NewBookingModal({
                         <button key={pkg.id} type="button" onClick={() => { sound.tick(); setPackageId(pkg.id); }}
                           className={`p-3 rounded-xl border text-xs text-start ${packageId === pkg.id ? 'bg-indigo-600/15 border-indigo-500 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:text-white'}`}>
                           <div className="flex items-center justify-between gap-2"><strong>{isAr ? pkg.nameAr : pkg.nameEn}</strong>
-                            {showLocationPrices && <span className="font-mono text-indigo-300">{egp(p.price)} / {tr('فرد', 'guest')}</span>}</div>
+                          {showLocationPrices && <span className="font-mono text-indigo-300">{egp(p.price)} / {tr('فرد', 'guest')}</span>}</div>
                           <div className="mt-1 text-[10px] text-slate-500 line-clamp-1">{(isAr ? pkg.includesAr : pkg.includesEn).join(' · ')}</div>
                         </button>
                       );
