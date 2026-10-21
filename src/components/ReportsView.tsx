@@ -41,19 +41,21 @@ export function ReportsView({
   const completedCount = bookings.filter((b) => b.status === 'completed').length;
   const cancelledCount = bookings.filter((b) => b.status === 'cancelled').length;
 
-  const totalContractedRevenue = bookings.reduce((acc, b) => acc + b.totalPrice, 0);
+  // Cancelled bookings carry no revenue, receivables or event costs.
+  const activeBookings = bookings.filter((b) => b.status !== 'cancelled');
+  const totalContractedRevenue = activeBookings.reduce((acc, b) => acc + b.totalPrice, 0);
   const totalCollectedCash = payments
     .filter((p) => p.type !== 'security_refund')
     .reduce((acc, p) => acc + p.amount, 0);
-  const totalDebtsReceivables = bookings.reduce((acc, b) => acc + b.remainingAmount, 0);
+  const totalDebtsReceivables = activeBookings.reduce((acc, b) => acc + b.remainingAmount, 0);
   const totalHeldSecurity = bookings
-    .filter((b) => b.securityDepositStatus === 'held')
+    .filter((b) => b.securityDepositStatus === 'held' && b.securityDeposit > 0)
     .reduce((acc, b) => acc + b.securityDeposit, 0);
 
   const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
 
   // Direct events costs
-  const totalEventsDirectCost = bookings.reduce((acc, b) => {
+  const totalEventsDirectCost = activeBookings.reduce((acc, b) => {
     const staffWage = b.assignedStaff.reduce((sAcc, s) => sAcc + s.wage, 0);
     const srvCost = b.services.reduce((sAcc, s) => sAcc + s.totalCost, 0);
     return acc + staffWage + srvCost + b.suppliesCost + b.directExpenses;
@@ -66,7 +68,7 @@ export function ReportsView({
 
   // Most requested services
   const servicePopularity: Record<string, { name: string; count: number; revenue: number }> = {};
-  bookings.forEach((b) => {
+  activeBookings.forEach((b) => {
     b.services.forEach((s) => {
       if (!servicePopularity[s.name]) {
         servicePopularity[s.name] = { name: s.name, count: 0, revenue: 0 };

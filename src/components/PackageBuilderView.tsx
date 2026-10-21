@@ -6,6 +6,7 @@ import { EVENT_TYPES, eventTypeConfig } from '../data/eventTypes';
 import { LOCATIONS, hallLocation, locationName } from '../data/locations';
 import { packagesFor, packagePriceAt, servicePriceAt } from '../data/pricing';
 import { sound } from '../utils/soundEffects';
+import { findBookingConflict, uniqueBookingCode } from '../utils/bookingRules';
 
 interface Props {
   halls: Hall[];
@@ -73,7 +74,9 @@ export function PackageBuilderView({ halls, services, priceBook, existingBooking
   const reset = () => { setPackageId(''); setExtras({}); setDetails({}); setClientName(''); setClientPhone(''); setDate(''); setSavedCode(''); };
 
   const missingRequired = typeCfg.fields.filter((f) => f.required && !details[f.key]?.trim());
-  const canSave = !!hall && !!clientName.trim() && !!clientPhone.trim() && !!date && missingRequired.length === 0;
+  const conflict = hall ? findBookingConflict(existingBookings, { hallId: hall.id, date, startTime: typeCfg.defaultStart, endTime: typeCfg.defaultEnd }) : undefined;
+  // One save per design: "بدء تصميم جديد" clears it for the next customer.
+  const canSave = !!hall && !!clientName.trim() && !!clientPhone.trim() && !!date && missingRequired.length === 0 && !conflict && !savedCode;
 
   const saveAsBooking = () => {
     if (!canSave || !hall) return;
@@ -88,7 +91,7 @@ export function PackageBuilderView({ halls, services, priceBook, existingBooking
       const p = servicePriceAt(priceBook, locationId, srv);
       lines.push({ id: `bs-${stamp}-${srv.id}`, serviceId: srv.id, name: srv.name, quantity: qty, unitPrice: p.price, costPrice: p.cost, totalPrice: p.price * qty, totalCost: p.cost * qty });
     });
-    const code = `BK-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+    const code = uniqueBookingCode(existingBookings);
     onCreateBooking({
       id: `bk-${stamp}`, code, clientName: clientName.trim(), clientPhone: clientPhone.trim(),
       eventType, date, startTime: typeCfg.defaultStart, endTime: typeCfg.defaultEnd,
@@ -274,7 +277,8 @@ export function PackageBuilderView({ halls, services, priceBook, existingBooking
               <button type="button" onClick={() => window.print()} className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-xs text-slate-300 hover:text-white">
                 <Printer className="w-4 h-4" /> طباعة عرض السعر
               </button>
-              {!canSave && !savedCode && (
+              {conflict && !savedCode && <p className="text-[11px] font-semibold text-rose-300 text-center">القاعة محجوزة في هذا اليوم ({conflict.startTime} – {conflict.endTime}) باسم {conflict.clientName}. اختر تاريخاً أو قاعة أخرى.</p>}
+              {!canSave && !savedCode && !conflict && (
                 <p className="text-[11px] text-slate-500 text-center">للحفظ: اختر القاعة والتاريخ واكتب اسم العميل والهاتف{missingRequired.length ? ` و${missingRequired.map((f) => f.labelAr).join(' و')}` : ''}.</p>
               )}
               {savedCode && <p className="text-xs text-emerald-400 text-center">تم الحفظ كحجز مبدئي برقم <span className="font-mono">{savedCode}</span> — بانتظار تأكيد الإدارة والعربون.</p>}

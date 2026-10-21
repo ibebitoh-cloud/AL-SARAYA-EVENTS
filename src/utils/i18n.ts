@@ -71,7 +71,7 @@ export interface Translations {
 
 export const DICTIONARY: Record<Language, Translations> = {
   ar: {
-    appName: 'السرايا للمناسبات | SARAYA EVENT',
+    appName: 'السرايا للمناسبات | SARAYA EVENTS',
     appSub: 'السرايا لتنظيم المناسبات وحفلات الزفاف الفاخرة في مصر',
     erpBadge: 'إصدار السرايا الفندقي',
     langName: 'العربية',
@@ -167,7 +167,7 @@ export const DICTIONARY: Record<Language, Translations> = {
   },
 
   en: {
-    appName: 'SARAYA EVENT | Luxury Weddings & Venues',
+    appName: 'SARAYA EVENTS | Luxury Weddings & Venues',
     appSub: 'Egypt’s Premier Luxury Hall Management & Wedding Production',
     erpBadge: 'Saraya Luxury Edition',
     langName: 'English',

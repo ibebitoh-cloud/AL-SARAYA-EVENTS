@@ -9,6 +9,10 @@ interface Props {
   onBack: () => void;
 }
 
+const ROLE_EN: Record<SystemUser['role'], string> = {
+  ceo: 'Full access', finance: 'Finance & accounts', operation: 'Operations management', operation_agent: 'Operations · selling prices only', customer: 'Customer view',
+};
+
 export function PortalLogin({ language, onLogin, onBack }: Props) {
   const ar = language === 'ar';
   return (
@@ -19,22 +23,22 @@ export function PortalLogin({ language, onLogin, onBack }: Props) {
             <ShieldCheck className="w-6 h-6 text-amber-400" />
           </div>
           <div className="mt-4 text-[10px] uppercase tracking-[0.3em] text-amber-400 font-bold">{ar ? 'البوابة الداخلية' : 'INTERNAL PORTAL'}</div>
-          <h1 className="mt-2 text-2xl sm:text-3xl font-black text-white">{ar ? 'اختر المستخدم للدخول' : 'Choose your profile'}</h1>
-          <p className="mt-2 text-xs text-slate-500">{ar ? 'نسخة تجريبية — بدون كلمة مرور' : 'Trial access — no password required'}</p>
+          <h1 className="mt-2 text-2xl sm:text-3xl font-black text-white">{ar ? 'اختر حسابك للدخول' : 'Choose your account'}</h1>
+          <p className="mt-2 text-xs text-slate-500">{ar ? 'نسخة العرض التجريبي — الدخول بدون كلمة مرور' : 'Demo version — no password needed'}</p>
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
           {SYSTEM_USERS.map((user) => (
-            <button key={user.id} onClick={() => onLogin(user)} className="group text-left rtl:text-right rounded-2xl border border-slate-800 bg-slate-900/70 hover:border-amber-400/40 hover:bg-slate-900 p-5 transition-all">
+            <button key={user.id} type="button" onClick={() => onLogin(user)} className="group text-left rtl:text-right rounded-2xl border border-slate-800 bg-slate-900/70 hover:border-amber-400/40 hover:bg-slate-900 p-5 transition-all">
               <div className="flex items-center justify-between gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center"><UserRound className="w-5 h-5 text-amber-400" /></div>
                 <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-amber-400 transition-colors rtl:rotate-180" />
               </div>
               <div className="mt-4 text-base font-black text-white">{ar ? user.nameAr : user.name}</div>
-              <div className="mt-1 text-[10px] uppercase tracking-wider text-slate-500">{ar ? user.roleAr : user.role}</div>
+              <div className="mt-1 text-[11px] text-slate-500">{ar ? user.roleAr : ROLE_EN[user.role]}</div>
             </button>
           ))}
         </div>
-        <button onClick={onBack} className="block mx-auto mt-6 text-xs text-slate-500 hover:text-amber-400">{ar ? 'العودة للموقع' : 'Back to website'}</button>
+        <button type="button" onClick={onBack} className="block mx-auto mt-6 text-xs text-slate-500 hover:text-amber-400">{ar ? 'العودة للموقع' : 'Back to website'}</button>
       </motion.div>
     </div>
   );
