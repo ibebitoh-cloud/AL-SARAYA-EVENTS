@@ -59,7 +59,7 @@ export const CHOICE_CATEGORIES: ChoiceCategory[] = [
     id: 'kosha', titleAr: 'الكوشة', subtitleAr: 'مكان جلوس العروسين — قلب التصميم', emoji: '👑', mode: 'single', eventTypes: CELEBRATIONS,
     options: [
       { id: 'kosha-classic', nameAr: 'كوشة كلاسيك', descAr: 'أريكة مذهبة وخلفية قماش وإضاءة دافئة', price: 6000, cost: 3500, unit: 'event', emoji: '🛋️' },
-      { id: 'kosha-royal', nameAr: 'كوشة ملكية', descAr: 'خلفية 6 متر بأعمدة وتاج وسجاد ملكي', price: 14000, cost: 8500, unit: 'event', emoji: '👑', tagAr: 'فخامة' },
+      { id: 'kosha-royal', nameAr: 'كوشة ملكية', descAr: 'خلفية 6 متر بأعمدة وتاج وسجاد ملكي', price: 24000, cost: 14500, unit: 'event', emoji: '👑', tagAr: 'فخامة' },
       { id: 'kosha-fresh', nameAr: 'كوشة ورد طبيعي', descAr: 'جدار ورد طبيعي حسب الثيم', price: 18000, cost: 11000, unit: 'event', emoji: '🌹', tagAr: 'الأكثر طلباً' },
       { id: 'kosha-mirror', nameAr: 'كوشة مرايا و LED', descAr: 'تصميم عصري بمرايا وإضاءة متحركة', price: 12000, cost: 7000, unit: 'event', emoji: '✨' },
       { id: 'kosha-boho', nameAr: 'كوشة بوهو', descAr: 'خشب طبيعي وبامباس وورد مجفف', price: 9000, cost: 5200, unit: 'event', emoji: '🌾' },
@@ -288,6 +288,20 @@ export const CHOICE_CATEGORIES: ChoiceCategory[] = [
     ],
   },
 ];
+
+/**
+ * The exact options each package already includes. In the session they are pre-selected and free;
+ * swapping one for another option in the same single-choice category costs only the difference.
+ */
+export const PACKAGE_INCLUDES: Record<string, string[]> = {
+  'pkg-wedding-silver': ['kosha-classic', 'cat-dinner-classic', 'music-dj', 'photo-basic'],
+  'pkg-wedding-gold': ['kosha-fresh', 'cat-dinner-royal', 'music-dj', 'light-moving', 'photo-video', 'zaffa-drums'],
+  'pkg-wedding-platinum': ['kosha-royal', 'cat-dinner-royal', 'cat-live-stations', 'music-dj', 'light-uplights', 'light-moving', 'photo-4k-drone', 'photo-crane', 'zaffa-drums', 'ext-hostess'],
+  'pkg-engagement': ['cat-sweets', 'cp-low-floral', 'music-dj', 'photo-basic'],
+  'pkg-birthday': ['bd-balloons', 'cake-3', 'music-dj', 'cat-sweets'],
+  'pkg-conference-half': ['stg-projector', 'cb-basic'],
+  'pkg-conference-full': ['stg-projector', 'cb-basic', 'cb-lunch'],
+};
 
 export const categoriesFor = (eventType: EventType) => CHOICE_CATEGORIES.filter((c) => c.eventTypes.includes(eventType));
 
