@@ -22,13 +22,14 @@ type Props = {
   mode: 'overview' | 'pov';
   onSelect: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
+  onRotate?: (id: string) => void;
 };
 
 const THREE_URL = 'three';
 const CONTROLS_URL = 'three/addons/controls/OrbitControls.js';
 const POV_URL = 'three/addons/controls/PointerLockControls.js';
 
-export function EventLayout3D({ items, width, depth, language, mode, onSelect, onMove }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode, onSelect, onMove, onRotate }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -227,6 +228,28 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         } else if (item.type === 'buffet') {
           addPart(group, new THREE.BoxGeometry(4.5, 1.0, 0.9), green, [0, 0.5, 0]);
           addPart(group, new THREE.BoxGeometry(4.3, 0.12, 1.05), gold, [0, 1.05, 0]);
+        } else if (item.type === 'entrance' || item.type === 'exit') {
+          const accent = item.type === 'entrance' ? green : pink;
+          addPart(group, new THREE.BoxGeometry(5.5, 0.15, 2), dark, [0, 0.08, 0]);
+          addPart(group, new THREE.BoxGeometry(5.2, 2.7, 0.18), accent, [0, 1.4, -0.9]);
+          addPart(group, new THREE.BoxGeometry(0.18, 2.7, 1.8), accent, [-2.5, 1.4, 0]);
+          addPart(group, new THREE.BoxGeometry(0.18, 2.7, 1.8), accent, [2.5, 1.4, 0]);
+        } else if (item.type === 'bar') {
+          addPart(group, new THREE.BoxGeometry(6, 1.35, 1.5), dark, [0, 0.68, 0]);
+          addPart(group, new THREE.BoxGeometry(6.2, 0.12, 1.65), gold, [0, 1.38, 0]);
+          for (let i = -2; i <= 2; i++) addPart(group, new THREE.CylinderGeometry(0.22, 0.22, 0.75, 16), white, [i * 1.1, 0.38, 1.25]);
+        } else if (item.type === 'lounge') {
+          addPart(group, new THREE.BoxGeometry(6, 0.5, 2.3), pink, [0, 0.28, 0]);
+          addPart(group, new THREE.BoxGeometry(6, 1.1, 0.3), pink, [0, 0.8, -1]);
+          for (const x of [-2.4, 2.4]) addPart(group, new THREE.BoxGeometry(0.3, 0.9, 2.3), gold, [x, 0.65, 0]);
+        } else if (item.type === 'led_wall') {
+          addPart(group, new THREE.BoxGeometry(12, 4.2, 0.3), blue, [0, 2.15, 0]);
+          for (let x = -5; x <= 5; x += 2) addPart(group, new THREE.BoxGeometry(0.04, 3.8, 0.04), white, [x, 2.15, 0.17]);
+          for (let y = 0.5; y <= 3.5; y += 1) addPart(group, new THREE.BoxGeometry(11.8, 0.04, 0.04), white, [0, y, 0.17]);
+        } else if (item.type === 'truss') {
+          addPart(group, new THREE.BoxGeometry(10, 0.18, 0.18), gold, [0, 4, 0]);
+          for (const x of [-4.8, 4.8]) addPart(group, new THREE.BoxGeometry(0.18, 4, 0.18), gold, [x, 2, 0]);
+          for (let x = -4; x <= 4; x += 2) addPart(group, new THREE.CylinderGeometry(0.28, 0.28, 0.4, 16), pink, [x, 3.75, 0]);
         } else {
           addPart(group, new THREE.BoxGeometry(2.6, 0.95, 0.9), blue, [0, 0.48, 0]);
           addPart(group, new THREE.BoxGeometry(2.4, 0.1, 1.0), white, [0, 1.0, 0]);
@@ -459,6 +482,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
   return (
     <div className="relative h-full min-h-[520px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
       <div ref={hostRef} className="absolute inset-0" />
+      {mode === 'overview' && onRotate && <div className="pointer-events-none absolute inset-0 overflow-hidden">{items.map((item) => <button key={item.id} type="button" title={language === 'ar' ? `تدوير ${item.labelAr}` : `Rotate ${item.labelEn}`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onSelect(item.id); onRotate(item.id); }} className="pointer-events-auto absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-amber-300/70 bg-slate-950/90 text-amber-200 shadow-lg hover:bg-amber-400 hover:text-slate-950" style={{ left: `${item.x}%`, top: `${item.y}%` }}>↻</button>)}</div>}
       {!ready && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400 bg-slate-950/90">{language === 'ar' ? 'جاري تحميل المحرك ثلاثي الأبعاد…' : 'Loading 3D engine…'}</div>}
       <div className="absolute left-3 top-3 rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-[10px] text-slate-300">
         {mode === 'pov'

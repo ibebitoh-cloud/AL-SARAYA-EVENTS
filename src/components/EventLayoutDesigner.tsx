@@ -22,6 +22,7 @@ import {
   Sparkles,
   Trash2,
   Undo2,
+  Utensils,
   Users,
   X,
 } from 'lucide-react';
@@ -44,6 +45,12 @@ const ITEM_LIBRARY = [
   { type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', icon: Move3d },
   { type: 'buffet', labelEn: 'Buffet', labelAr: 'بوفيه', icon: Sparkles },
   { type: 'registration', labelEn: 'Registration', labelAr: 'تسجيل', icon: DoorOpen },
+  { type: 'entrance', labelEn: 'Entrance Portal', labelAr: 'بوابة دخول كبيرة', icon: DoorOpen },
+  { type: 'exit', labelEn: 'Exit Portal', labelAr: 'بوابة خروج كبيرة', icon: DoorOpen },
+  { type: 'bar', labelEn: 'Service Bar', labelAr: 'بار ضيافة كبير', icon: Utensils },
+  { type: 'lounge', labelEn: 'Lounge Zone', labelAr: 'منطقة جلوس كبيرة', icon: Users },
+  { type: 'led_wall', labelEn: 'Large LED Wall', labelAr: 'جدار شاشة LED كبير', icon: Monitor },
+  { type: 'truss', labelEn: 'Lighting Truss', labelAr: 'جسر إضاءة كبير', icon: Sparkles },
 ] as const;
 
 // Ready-made table sets (table + chairs) with real sizes, added in bulk from the designer.
@@ -394,6 +401,9 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     if (item.type === 'dance') return `${common} w-28 h-16 rounded-lg border-2 border-amber-200/50 bg-amber-100/10 text-[10px] text-amber-100`;
     if (item.type === 'flowers') return `${common} w-10 h-10 rounded-full border border-pink-200/60 bg-pink-200/15 text-pink-100`;
     if (item.type === 'buffet') return `${common} w-28 h-9 rounded border border-emerald-200/50 bg-emerald-200/10 text-[9px] text-emerald-100`;
+    if (item.type === 'entrance' || item.type === 'exit') return `${common} w-32 h-12 rounded-lg border-2 border-emerald-200/60 bg-emerald-200/15 text-[9px] font-bold text-emerald-100`;
+    if (item.type === 'bar' || item.type === 'lounge') return `${common} w-40 h-16 rounded-xl border-2 border-pink-200/50 bg-pink-200/10 text-[9px] font-bold text-pink-100`;
+    if (item.type === 'led_wall' || item.type === 'truss') return `${common} w-48 h-20 rounded-xl border-2 border-sky-200/60 bg-sky-200/10 text-[9px] font-bold text-sky-100`;
     return `${common} w-24 h-9 rounded border border-slate-300/50 bg-slate-300/10 text-[9px] text-slate-100`;
   };
 
@@ -529,6 +539,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                     commitItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
                     setSaved(false);
                   }}
+                  onRotate={(id) => commitItems((prev) => prev.map((item) => item.id === id ? { ...item, rotation: item.rotation + 15 } : item))}
                 />
               )}            </div>
           </section>

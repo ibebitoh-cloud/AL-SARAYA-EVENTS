@@ -123,6 +123,7 @@ export interface Hall {
   descriptionEn?: string;
   photo?: string;
   photoUrl?: string;
+  galleryPhotos?: string[];
   /** City/address/source metadata for third-party venue directory entries. */
   city?: string;
   cityAr?: string;

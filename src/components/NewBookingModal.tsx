@@ -77,7 +77,7 @@ export function NewBookingModal({
 
   const isCustomHall = hallId === CUSTOM_HALL_ID || hallId === CUSTOMER_VENUE_ID;
   const isCustomerVenue = hallId === CUSTOMER_VENUE_ID;
-  const showLocationPrices = !customerMode || !isCustomerVenue;
+  const showLocationPrices = true;
   const locationHalls = halls.filter((h) => hallLocation(h) === locationId);
   const currentHall = halls.find((h) => h.id === hallId);
   const bookedHallName = isCustomHall ? customHallName.trim() : (currentHall?.name || '');
@@ -99,9 +99,11 @@ export function NewBookingModal({
 
   const chooseLocation = (loc: LocationId) => {
     setLocationId(loc);
+    if (isCustomerVenue) { setHallId(CUSTOM_HALL_ID); setCustomHallName(''); setBasePrice(0); }
     const first = halls.find((h) => hallLocation(h) === loc);
     if (!isCustomHall && first) { setHallId(first.id); setBasePrice(first.basePrice); }
   };
+  const chooseCustomerVenue = () => { setHallId(CUSTOMER_VENUE_ID); setCustomHallName(''); setBasePrice(0); };
 
   const conflictingBooking = findBookingConflict(existingBookings, {
     hallId: isCustomHall ? undefined : hallId, hallName: bookedHallName, date, startTime, endTime,
@@ -284,22 +286,25 @@ export function NewBookingModal({
               {/* 3. Location, hall, date */}
               <div className={sectionCls}>
                 <h4 className="text-xs font-bold text-indigo-400">3. {tr('المكان والقاعة والموعد', 'Venue, hall & date')}</h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {LOCATIONS.map((loc) => (
                     <button key={loc.id} type="button" onClick={() => chooseLocation(loc.id)}
                       className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all ${locationId === loc.id ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white'}`}>
                       <MapPin className="w-3.5 h-3.5" /> {isAr ? loc.nameAr : loc.nameEn}
                     </button>
                   ))}
+                  <button type="button" onClick={chooseCustomerVenue}
+                    className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all ${isCustomerVenue ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white'}`}>
+                    <MapPin className="w-3.5 h-3.5" /> {tr('مكان العميل', 'Customer place')}
+                  </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>{tr('القاعة', 'Hall')}</label>
-                    <select value={hallId} onChange={(e) => { const nextId = e.target.value; setHallId(nextId); const h = halls.find((x) => x.id === nextId); if (h) setBasePrice(h.basePrice); else if (nextId === CUSTOMER_VENUE_ID) setBasePrice(0); }} className={inputCls}>
+                    {isCustomerVenue ? <div className={`${inputCls} flex items-center text-slate-300`}>{tr('مكان العميل خارج قاعاتنا', 'Customer’s own venue')}</div> : <select value={hallId} onChange={(e) => { const nextId = e.target.value; setHallId(nextId); const h = halls.find((x) => x.id === nextId); if (h) setBasePrice(h.basePrice); }} className={inputCls}>
                       {locationHalls.map((h) => <option key={h.id} value={h.id}>{isAr ? h.name : h.nameEn || h.name} ({tr(`حتى ${h.capacity} فرد`, `up to ${h.capacity} guests`)})</option>)}
                       <option value={CUSTOM_HALL_ID}>{tr('➕ مكان آخر (اكتب الاسم)', '➕ Another venue (type the name)')}</option>
-                      <option value={CUSTOMER_VENUE_ID}>{tr('📍 مكان العميل (خارج قاعاتنا)', '📍 Customer’s own venue')}</option>
-                    </select>
+                    </select>}
                     {isCustomHall && (
                       <input type="text" required autoFocus value={customHallName} onChange={(e) => setCustomHallName(e.target.value)}
                         placeholder={isCustomerVenue ? tr('اكتب عنوان / اسم مكان العميل', 'Enter the customer’s venue name or address') : tr('اكتب اسم القاعة / المكان', 'Type the hall / venue name')} className={`mt-2 ${inputCls} border-indigo-500/60`} />
