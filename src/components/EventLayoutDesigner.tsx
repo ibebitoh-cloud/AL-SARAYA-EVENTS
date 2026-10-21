@@ -123,7 +123,9 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   });
   const [history, setHistory] = useState<LayoutItem[][]>([]);
   const [future, setFuture] = useState<LayoutItem[][]>([]);
-  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const snapToGridRef = useRef(snapToGrid);
+  snapToGridRef.current = snapToGrid;
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [clientView, setClientView] = useState(false);
@@ -138,7 +140,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [autoSelection, setAutoSelection] = useState<Record<string, number>>({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, buffet: 0, registration: 0 });
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number; dx: number; dy: number; rotation: number; canvasWidth: number; canvasHeight: number } | null>(null);
+  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number } | null>(null);
 
   useEffect(() => {
     try {
@@ -223,13 +225,14 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     setSaved(false);
   };
 
+  const rotateItem = (id: string, delta: number) => {
+    commitItems((prev) => prev.map((item) => item.id === id ? { ...item, rotation: item.rotation + delta } : item));
+    setSelectedId(null);
+  };
+
   const nudge = (dx: number, dy: number) => {
     if (!selected) return;
     updateSelected({ x: Math.max(5, Math.min(95, selected.x + dx)), y: Math.max(5, Math.min(95, selected.y + dy)) });
-  };
-
-  const applyDragTransform = (drag: NonNullable<typeof dragRef.current>) => {
-    drag.el.style.transform = `translate(-50%, -50%) translate3d(${drag.dx}px, ${drag.dy}px, 0) rotate(${drag.rotation}deg)`;
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, item: LayoutItem) => {
@@ -239,8 +242,6 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-
     setSelectedId(item.id);
     dragRef.current = {
       id: item.id,
@@ -252,11 +253,6 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       startY: item.y,
       x: item.x,
       y: item.y,
-      dx: 0,
-      dy: 0,
-      rotation: item.rotation,
-      canvasWidth: rect.width,
-      canvasHeight: rect.height,
     };
 
     event.currentTarget.style.transition = 'none';
@@ -268,16 +264,19 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
 
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return;
     const dx = clientX - drag.startClientX;
     const dy = clientY - drag.startClientY;
-    drag.dx = dx;
-    drag.dy = dy;
-    const rawX = Math.max(2, Math.min(98, drag.startX + (dx / drag.canvasWidth) * 100));
-    const rawY = Math.max(2, Math.min(98, drag.startY + (dy / drag.canvasHeight) * 100));
-    drag.x = snapToGrid ? Math.max(2, Math.min(98, Math.round(rawX / 2) * 2)) : rawX;
-    drag.y = snapToGrid ? Math.max(2, Math.min(98, Math.round(rawY / 2) * 2)) : rawY;
+    const rawX = Math.max(2, Math.min(98, drag.startX + (dx / rect.width) * 100));
+    const rawY = Math.max(2, Math.min(98, drag.startY + (dy / rect.height) * 100));
+    drag.x = snapToGridRef.current ? Math.max(2, Math.min(98, Math.round(rawX))) : rawX;
+    drag.y = snapToGridRef.current ? Math.max(2, Math.min(98, Math.round(rawY))) : rawY;
 
-    applyDragTransform(drag);
+    // Move the element in the same percentage coordinate system used by the canvas,
+    // so releasing it does not cause a second snap from a pixel transform.
+    drag.el.style.left = `${drag.x}%`;
+    drag.el.style.top = `${drag.y}%`;
   };
 
   const finishDrag = (clientX: number, clientY: number, pointerId: number) => {
@@ -288,15 +287,12 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     const finalX = drag.x;
     const finalY = drag.y;
     const element = drag.el;
-    const originalTransform = `translate(-50%, -50%) rotate(${drag.rotation}deg)`;
-
-    setItems((prev) => prev.map((item) =>
-      item.id === drag.id ? { ...item, x: finalX, y: finalY } : item
-    ));
+    commitItems((prev) => prev.map((item) => item.id === drag.id ? { ...item, x: finalX, y: finalY } : item));
     setSaved(false);
 
     try { element.releasePointerCapture(drag.pointerId); } catch {}
-    element.style.transform = originalTransform;
+    element.style.left = `${finalX}%`;
+    element.style.top = `${finalY}%`;
     element.style.willChange = 'auto';
     dragRef.current = null;
   };
@@ -524,9 +520,9 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   ))}
                   {selected && <div className="pointer-events-none absolute z-40" style={{ left: `${selected.x}%`, top: `${selected.y}%`, transform: selected.y < 20 ? 'translate(-50%, 40px)' : 'translate(-50%, calc(-100% - 10px))' }}>
                     <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" onPointerDown={(event) => event.stopPropagation()}>
-                      <button type="button" onClick={() => updateSelected({ rotation: selected.rotation - 15 })} title={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => rotateItem(selected.id, -15)} title={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
                       <span className="min-w-10 text-center text-[10px] font-bold tabular-nums text-white">{((selected.rotation % 360) + 360) % 360}°</span>
-                      <button type="button" onClick={() => updateSelected({ rotation: selected.rotation + 15 })} title={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => rotateItem(selected.id, 15)} title={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
                     </div>
                   </div>}
                 </div>
@@ -543,7 +539,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                     commitItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
                     setSaved(false);
                   }}
-                  onRotate={(id, delta = 15) => commitItems((prev) => prev.map((item) => item.id === id ? { ...item, rotation: item.rotation + delta } : item))}
+                  onRotate={(id, delta = 15) => rotateItem(id, delta)}
                 />
               )}            </div>
           </section>
@@ -563,7 +559,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 mt-3">
                   <button type="button" onClick={() => nudge(0, -3)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronUp className="w-4 h-4" /></button>
-                  <button type="button" onClick={() => updateSelected({ rotation: selected.rotation + 15 })} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><RotateCw className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => rotateItem(selected.id, 15)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><RotateCw className="w-4 h-4" /></button>
                   <button type="button" onClick={() => nudge(0, 3)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronDown className="w-4 h-4" /></button>
                   <button type="button" onClick={() => nudge(isAr ? 3 : -3, 0)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronLeft className="w-4 h-4" /></button>
                   <button type="button" onClick={() => duplicateSelected()} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><Copy className="w-4 h-4" /></button>
