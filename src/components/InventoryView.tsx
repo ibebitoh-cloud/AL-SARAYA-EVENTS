@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { InventoryItem, Language } from '../types/venueSystem';
 import { makeTr } from '../utils/tr';
+import { RowActions } from './RecordEditor';
 import { sound } from '../utils/soundEffects';
 
 interface InventoryViewProps {
@@ -22,6 +23,7 @@ interface InventoryViewProps {
   /** Operations staff: show selling prices only (no purchase cost, stock value or item editing). */
   sellingPricesOnly?: boolean;
   language?: Language;
+  onDeleteItem?: (itemId: string) => void;
 }
 
 export function InventoryView({
@@ -31,6 +33,7 @@ export function InventoryView({
   onEditItem,
   sellingPricesOnly = false,
   language = 'ar',
+  onDeleteItem,
 }: InventoryViewProps) {
   const { tr, egp } = makeTr(language);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -234,6 +237,7 @@ export function InventoryView({
                     onClick={() => openEdit(item)}
                     className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer"
                   >{tr('تعديل', 'Edit')}</button>}
+                  {!sellingPricesOnly && onDeleteItem && <RowActions language={language} onDelete={() => onDeleteItem(item.id)} />}
                   <button
                     onClick={() => {
                       sound.tick();

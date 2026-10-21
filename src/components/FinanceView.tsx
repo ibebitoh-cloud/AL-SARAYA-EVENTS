@@ -12,9 +12,13 @@ interface FinanceViewProps {
   onRefundSecurityDeposit: (bookingId: string) => void;
   onAddExpense: (expense: Expense) => void;
   language?: Language;
+  onEditPayment?: (payment: PaymentReceipt) => void;
+  onDeletePayment?: (paymentId: string) => void;
+  onEditExpense?: (expense: Expense) => void;
+  onDeleteExpense?: (expenseId: string) => void;
 }
 
-export function FinanceView({ payments, expenses, bookings, onAddPayment, onRefundSecurityDeposit, onAddExpense, language = 'ar' }: FinanceViewProps) {
+export function FinanceView({ payments, expenses, bookings, onAddPayment, onRefundSecurityDeposit, onAddExpense, language = 'ar', onEditPayment, onDeletePayment, onEditExpense, onDeleteExpense }: FinanceViewProps) {
   const { tr, egp: money } = makeTr(language);
   const collected = payments.filter((p) => p.type !== 'security_refund').reduce((sum, p) => sum + p.amount, 0);
   const refunds = payments.filter((p) => p.type === 'security_refund').reduce((sum, p) => sum + p.amount, 0);
@@ -33,8 +37,8 @@ export function FinanceView({ payments, expenses, bookings, onAddPayment, onRefu
           <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4"><div className="flex items-center gap-2 text-xs text-indigo-300"><Receipt className="h-4 w-4" /> {tr('صافي الحركة النقدية', 'Net cash flow')}</div><div className="mt-2 text-xl font-black text-white">{money(collected - refunds - spent)}</div><div className="mt-1 text-[10px] text-slate-500">{tr('بعد خصم التأمينات المردودة', 'After security refunds of')}: {money(refunds)}</div></div>
         </div>
       </div>
-      <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={onAddPayment} onRefundSecurityDeposit={onRefundSecurityDeposit} language={language} />
-      <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={onAddExpense} language={language} />
+      <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={onAddPayment} onRefundSecurityDeposit={onRefundSecurityDeposit} language={language} onEditPayment={onEditPayment} onDeletePayment={onDeletePayment} />
+      <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={onAddExpense} language={language} onEditExpense={onEditExpense} onDeleteExpense={onDeleteExpense} />
     </div>
   );
 }

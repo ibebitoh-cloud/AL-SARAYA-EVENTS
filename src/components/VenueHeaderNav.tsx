@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
   ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, Settings2,
-  CalendarDays, Sparkles, Tags, PanelRightClose, PanelRightOpen, X, ChevronRight, Menu, Home, Sun, Moon, Maximize2, Minimize2, LogOut,
+  CalendarDays, Sparkles, Tags, Globe2, ShieldCheck, PanelRightClose, PanelRightOpen, X, ChevronRight, Menu, Home, Sun, Moon, Maximize2, Minimize2, LogOut,
 } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
@@ -50,6 +50,8 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     { id: 'photo_library', label: isAr ? 'مكتبة الصور' : 'Photo Library', icon: Images },
     { id: 'inventory', label: isAr ? 'المخزون' : 'Inventory', icon: Package },
     { id: 'company', label: isAr ? 'ملف الشركة' : 'Company', icon: Building },
+    { id: 'site_content', label: isAr ? 'محتوى الموقع' : 'Website Content', icon: Globe2 },
+    { id: 'permissions', label: isAr ? 'صلاحيات التعديل' : 'Edit Permissions', icon: ShieldCheck },
     { id: 'event_designer', label: isAr ? 'مصمم المناسبات' : 'Event Designer', icon: Ruler },
     { id: 'services', label: isAr ? 'الخدمات' : 'Services', icon: Utensils },
     { id: 'finance', label: isAr ? 'المالية' : 'Finance', icon: Wallet },
@@ -62,7 +64,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     { id: 'reports', label: isAr ? 'التقارير' : 'Reports', icon: ClipboardList },
   ];
   // Only show the screens this user is allowed to open.
-  const navItems = allNavItems.filter((item) => canAccess(user, item.id));
+  const navItems = allNavItems.filter((item) => item.id === 'permissions' ? user.role === 'ceo' : canAccess(user, item.id));
   const homeTab: VenueTab = canAccess(user, 'dashboard') ? 'dashboard' : (navItems[0]?.id || 'dashboard');
   const displayName = (isAr ? user.nameAr : user.name) || user.username;
   const displayRole = (isAr ? user.roleAr : user.role) || (isAr ? 'مستخدم النظام' : 'System user');

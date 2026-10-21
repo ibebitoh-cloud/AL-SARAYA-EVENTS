@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { PaymentReceipt, Booking, Language } from '../types/venueSystem';
 import { makeTr } from '../utils/tr';
+import { RecordEditorModal, RowActions } from './RecordEditor';
+import { paymentFields } from '../data/recordFields';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
 
@@ -23,6 +25,8 @@ interface PaymentsLedgerViewProps {
   onAddPayment: (newPayment: PaymentReceipt) => void;
   onRefundSecurityDeposit: (bookingId: string) => void;
   language?: Language;
+  onEditPayment?: (payment: PaymentReceipt) => void;
+  onDeletePayment?: (paymentId: string) => void;
 }
 
 export function PaymentsLedgerView({
@@ -31,8 +35,11 @@ export function PaymentsLedgerView({
   onAddPayment,
   onRefundSecurityDeposit,
   language = 'ar',
+  onEditPayment,
+  onDeletePayment,
 }: PaymentsLedgerViewProps) {
   const { tr, egp } = makeTr(language);
+  const [editingPayment, setEditingPayment] = useState<PaymentReceipt | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState(bookings[0]?.id || '');
   const [amount, setAmount] = useState(10000);
@@ -200,6 +207,7 @@ export function PaymentsLedgerView({
                     </span>
                     <span className="text-[10px] text-slate-500">{p.date}</span>
                   </div>
+                  <RowActions language={language} onEdit={onEditPayment ? () => setEditingPayment(p) : undefined} onDelete={onDeletePayment ? () => onDeletePayment(p.id) : undefined} />
                 </div>
               </div>
             );
@@ -298,6 +306,7 @@ export function PaymentsLedgerView({
           </div>
         </div>
       )}
+      {editingPayment && onEditPayment && <RecordEditorModal title={`${tr('تعديل الإيصال', 'Edit receipt')} ${editingPayment.receiptNo}`} fields={paymentFields(bookings)} value={editingPayment} language={language} onClose={() => setEditingPayment(null)} onSave={(p) => { onEditPayment(p); setEditingPayment(null); }} onDelete={onDeletePayment ? () => { onDeletePayment(editingPayment.id); setEditingPayment(null); } : undefined} />}
     </div>
   );
 }

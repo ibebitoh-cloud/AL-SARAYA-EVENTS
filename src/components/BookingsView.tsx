@@ -15,7 +15,9 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import { Booking, BookingStatus, EventType, Language } from '../types/venueSystem';
+import { Booking, BookingStatus, EventType, Hall, Language } from '../types/venueSystem';
+import { RecordEditorModal, RowActions } from './RecordEditor';
+import { bookingFields } from '../data/recordFields';
 import { makeTr, eventTypeLabel } from '../utils/tr';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
@@ -31,6 +33,9 @@ interface BookingsViewProps {
   /** Operations staff: selling price total only (no profit calculator, payments or deposits). */
   sellingPricesOnly?: boolean;
   language?: Language;
+  halls?: Hall[];
+  onEditBooking?: (booking: Booking) => void;
+  onDeleteBooking?: (bookingId: string) => void;
 }
 
 export function BookingsView({
@@ -41,8 +46,12 @@ export function BookingsView({
   onUpdateBookingStatus,
   sellingPricesOnly = false,
   language = 'ar',
+  halls = [],
+  onEditBooking,
+  onDeleteBooking,
 }: BookingsViewProps) {
   const { isAr, tr, egp } = makeTr(language);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
@@ -182,7 +191,8 @@ export function BookingsView({
                 </div>
 
                 {/* Right Quick Action Buttons */}
-                <div className="flex items-center gap-2 self-end lg:self-center">
+                <div className="flex flex-wrap items-center gap-2 self-end lg:self-center">
+                  <RowActions language={language} onEdit={onEditBooking ? () => setEditingBooking(bk) : undefined} onDelete={onDeleteBooking ? () => onDeleteBooking(bk.id) : undefined} />
                   {!sellingPricesOnly && <button
                     onClick={() => {
                       sound.click(600);
@@ -280,6 +290,7 @@ export function BookingsView({
           </div>
         )}
       </div>
+      {editingBooking && onEditBooking && <RecordEditorModal title={`${tr('تعديل الحجز', 'Edit booking')} ${editingBooking.code}`} fields={bookingFields(halls)} value={editingBooking} language={language} onClose={() => setEditingBooking(null)} onSave={(b) => { onEditBooking(b); setEditingBooking(null); }} onDelete={onDeleteBooking ? () => { onDeleteBooking(editingBooking.id); setEditingBooking(null); } : undefined} />}
     </div>
   );
 }

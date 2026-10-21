@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { Expense, Booking, Language } from '../types/venueSystem';
 import { makeTr } from '../utils/tr';
+import { RecordEditorModal, RowActions } from './RecordEditor';
+import { expenseFields } from '../data/recordFields';
 import { sound } from '../utils/soundEffects';
 
 interface ExpensesViewProps {
@@ -26,10 +28,13 @@ interface ExpensesViewProps {
   bookings: Booking[];
   onAddExpense: (newExpense: Expense) => void;
   language?: Language;
+  onEditExpense?: (expense: Expense) => void;
+  onDeleteExpense?: (expenseId: string) => void;
 }
 
-export function ExpensesView({ expenses, bookings, onAddExpense, language = 'ar' }: ExpensesViewProps) {
+export function ExpensesView({ expenses, bookings, onAddExpense, language = 'ar', onEditExpense, onDeleteExpense }: ExpensesViewProps) {
   const { tr, egp } = makeTr(language);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -163,11 +168,14 @@ export function ExpensesView({ expenses, bookings, onAddExpense, language = 'ar'
               </div>
             </div>
 
+            <div className="flex items-center justify-between gap-4 sm:justify-end">
             <div className="text-end font-mono">
               <span className="text-base font-bold text-rose-400 block tabular-nums">
                 {egp(exp.amount)}
               </span>
               <span className="text-[10px] text-slate-500">{exp.date}</span>
+            </div>
+            <RowActions language={language} onEdit={onEditExpense ? () => setEditingExpense(exp) : undefined} onDelete={onDeleteExpense ? () => onDeleteExpense(exp.id) : undefined} />
             </div>
           </div>
         ))}
@@ -283,6 +291,7 @@ export function ExpensesView({ expenses, bookings, onAddExpense, language = 'ar'
           </div>
         </div>
       )}
+      {editingExpense && onEditExpense && <RecordEditorModal title={tr('تعديل المصروف', 'Edit expense')} fields={expenseFields(bookings)} value={{ ...editingExpense, bookingId: editingExpense.bookingId || '' }} language={language} onClose={() => setEditingExpense(null)} onSave={(e) => { const linked = bookings.find((b) => b.id === e.bookingId); onEditExpense({ ...e, bookingId: linked?.id || undefined, bookingCode: linked?.code }); setEditingExpense(null); }} onDelete={onDeleteExpense ? () => { onDeleteExpense(editingExpense.id); setEditingExpense(null); } : undefined} />}
     </div>
   );
 }

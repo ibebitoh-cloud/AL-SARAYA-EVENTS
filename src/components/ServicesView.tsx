@@ -16,6 +16,7 @@ import { ServiceDefinition, Language } from '../types/venueSystem';
 import { makeTr } from '../utils/tr';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
+import { RowActions } from './RecordEditor';
 
 interface ServicesViewProps {
   services: ServiceDefinition[];
@@ -24,9 +25,10 @@ interface ServicesViewProps {
   /** Operations staff: show selling prices only (no cost, margin or editing). */
   sellingPricesOnly?: boolean;
   language?: Language;
+  onDeleteService?: (serviceId: string) => void;
 }
 
-export function ServicesView({ services, onAddService, onUpdateService, sellingPricesOnly = false, language = 'ar' }: ServicesViewProps) {
+export function ServicesView({ services, onAddService, onUpdateService, sellingPricesOnly = false, language = 'ar', onDeleteService }: ServicesViewProps) {
   const { tr, egp } = makeTr(language);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -168,9 +170,10 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                   </span>
                   <h3 className="text-sm font-bold text-white mt-1 leading-snug">{srv.name}</h3>
                 </div>
-                {!sellingPricesOnly && <button type="button" onClick={() => openEditModal(srv)} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20 text-xs font-semibold" aria-label={`${tr(tr('تعديل', 'Edit'), 'Edit')} ${srv.name}`}>
+                {!sellingPricesOnly && <button type="button" onClick={() => openEditModal(srv)} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20 text-xs font-semibold" aria-label={`${tr('تعديل', 'Edit')} ${srv.name}`}>
                   <Pencil className="w-3.5 h-3.5" /> {tr('تعديل', 'Edit')}
                 </button>}
+                {!sellingPricesOnly && onDeleteService && <RowActions language={language} onDelete={() => onDeleteService(srv.id)} />}
               </div>
 
               {srv.description && (

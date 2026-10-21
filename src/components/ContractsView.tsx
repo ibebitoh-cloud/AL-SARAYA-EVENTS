@@ -18,6 +18,8 @@ import { Booking, Language, ContractAgreement } from '../types/venueSystem';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
 import confetti from 'canvas-confetti';
+import { RecordEditorModal, RowActions, type FieldDef } from './RecordEditor';
+import { usePersistentState, isNonEmptyArray } from '../utils/usePersistentState';
 
 interface ContractsViewProps {
   bookings: Booking[];
@@ -94,9 +96,36 @@ const INITIAL_CONTRACTS: ContractAgreement[] = [
   },
 ];
 
+const contractFields: FieldDef[] = [
+  { key: 'contractNumber', ar: 'رقم العقد', en: 'Contract no.', required: true },
+  { key: 'bookingCode', ar: 'كود الحجز', en: 'Booking code' },
+  { key: 'clientName', ar: 'اسم العميل', en: 'Client name', required: true },
+  { key: 'clientPhone', ar: 'هاتف العميل', en: 'Client phone', type: 'tel' },
+  { key: 'clientNationalId', ar: 'الرقم القومي', en: 'National ID' },
+  { key: 'hallName', ar: 'القاعة', en: 'Venue' },
+  { key: 'date', ar: 'التاريخ', en: 'Date', type: 'date' },
+  { key: 'timeSlot', ar: 'الموعد', en: 'Time slot' },
+  { key: 'totalAmount', ar: 'قيمة العقد (ج.م)', en: 'Total value (EGP)', type: 'number', min: 0 },
+  { key: 'depositAmount', ar: 'العربون (ج.م)', en: 'Deposit (EGP)', type: 'number', min: 0 },
+  { key: 'securityDeposit', ar: 'التأمين (ج.م)', en: 'Security deposit (EGP)', type: 'number', min: 0 },
+  { key: 'status', ar: 'الحالة', en: 'Status', type: 'select', options: [
+    { value: 'draft', ar: 'مسودة', en: 'Draft' }, { value: 'signed', ar: 'موقّع', en: 'Signed' },
+    { value: 'completed', ar: 'منتهي', en: 'Completed' }, { value: 'terminated', ar: 'ملغي', en: 'Terminated' },
+  ] },
+  { key: 'signedDate', ar: 'تاريخ التوقيع', en: 'Signed on', type: 'date' },
+  { key: 'termsApproved', ar: 'تمت الموافقة على الشروط', en: 'Terms approved', type: 'checkbox' },
+];
+
 export function ContractsView({ bookings, language }: ContractsViewProps) {
   const isAr = language === 'ar';
-  const [contracts, setContracts] = useState<ContractAgreement[]>(INITIAL_CONTRACTS);
+  const [contracts, setContracts] = usePersistentState<ContractAgreement[]>('saraya-contracts-v1', INITIAL_CONTRACTS, isNonEmptyArray);
+  const [editingContract, setEditingContract] = useState<ContractAgreement | null>(null);
+  const newContract = (): ContractAgreement => {
+    const bk = bookings[0];
+    return { id: `cnt-${Date.now()}`, contractNumber: `CTR-${new Date().getFullYear()}-${100 + contracts.length + 1}`, bookingCode: bk?.code || '', clientName: bk?.clientName || '', clientPhone: bk?.clientPhone || '', clientNationalId: '', hallName: bk?.hallName || '', date: bk?.date || new Date().toISOString().split('T')[0], timeSlot: bk ? `${bk.startTime} – ${bk.endTime}` : '', totalAmount: bk?.totalPrice || 0, depositAmount: bk?.deposit || 0, securityDeposit: bk?.securityDeposit || 0, status: 'draft', termsApproved: false };
+  };
+  const saveContract = (c: ContractAgreement) => setContracts((prev) => prev.some((x) => x.id === c.id) ? prev.map((x) => x.id === c.id ? c : x) : [c, ...prev]);
+  const deleteContract = (id: string) => setContracts((prev) => prev.filter((x) => x.id !== id));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContract, setSelectedContract] = useState<ContractAgreement | null>(null);
 
@@ -146,6 +175,8 @@ export function ContractsView({ bookings, language }: ContractsViewProps) {
           </p>
         </div>
 
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <button type="button" onClick={() => setEditingContract(newContract())} className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 py-2 text-xs font-semibold text-white"><Plus className="h-3.5 w-3.5" />{isAr ? 'عقد جديد' : 'New contract'}</button>
         <div className="relative w-full sm:w-72">
           <Search className={`w-3.5 h-3.5 text-slate-500 absolute top-3 ${isAr ? 'right-3' : 'left-3'}`} />
           <input
@@ -157,6 +188,7 @@ export function ContractsView({ bookings, language }: ContractsViewProps) {
               isAr ? 'pr-9 pl-3' : 'pl-9 pr-3'
             }`}
           />
+        </div>
         </div>
       </div>
 
@@ -209,6 +241,7 @@ export function ContractsView({ bookings, language }: ContractsViewProps) {
               </div>
 
               <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2">
+                <RowActions language={language} onEdit={() => setEditingContract(c)} onDelete={() => deleteContract(c.id)} />
                 <button
                   onClick={() => {
                     sound.click(600);
@@ -330,6 +363,7 @@ export function ContractsView({ bookings, language }: ContractsViewProps) {
           </div>
         )}
       </AnimatePresence>
+      {editingContract && <RecordEditorModal title={contracts.some((c) => c.id === editingContract.id) ? (isAr ? 'تعديل العقد' : 'Edit contract') : (isAr ? 'عقد جديد' : 'New contract')} fields={contractFields} value={editingContract} language={language} onClose={() => setEditingContract(null)} onSave={(c) => { saveContract(c); setEditingContract(null); }} onDelete={contracts.some((c) => c.id === editingContract.id) ? () => { deleteContract(editingContract.id); setEditingContract(null); } : undefined} />}
     </div>
   );
 }

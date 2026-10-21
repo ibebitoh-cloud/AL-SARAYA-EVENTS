@@ -12,9 +12,12 @@ import {
   FileText,
   X,
   Sparkles,
+  Plus,
 } from 'lucide-react';
 import { ClientProfile, Booking, Language } from '../types/venueSystem';
 import { makeTr } from '../utils/tr';
+import { RecordEditorModal, RowActions } from './RecordEditor';
+import { clientFields } from '../data/recordFields';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
 
@@ -23,6 +26,8 @@ interface ClientsViewProps {
   bookings: Booking[];
   onSelectBookingForInvoice: (booking: Booking) => void;
   language?: Language;
+  onSaveClient?: (client: ClientProfile) => void;
+  onDeleteClient?: (clientId: string) => void;
 }
 
 export function ClientsView({
@@ -30,8 +35,12 @@ export function ClientsView({
   bookings,
   onSelectBookingForInvoice,
   language = 'ar',
+  onSaveClient,
+  onDeleteClient,
 }: ClientsViewProps) {
   const { tr, egp } = makeTr(language);
+  const [editingClient, setEditingClient] = useState<ClientProfile | null>(null);
+  const newClient = (): ClientProfile => ({ id: `cl-${Date.now()}`, name: '', phone: '', address: '', totalBookingsCount: 0, totalSpent: 0, currentBalanceDue: 0, heldSecurityDeposit: 0, notes: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClientForStatement, setSelectedClientForStatement] = useState<ClientProfile | null>(null);
 
@@ -63,6 +72,7 @@ export function ClientsView({
             className="w-full ps-10 pe-4 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </div>
+        {onSaveClient && <button type="button" onClick={() => setEditingClient(newClient())} className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 py-2 text-xs font-semibold text-white"><Plus className="h-3.5 w-3.5" />{tr('إضافة عميل', 'Add client')}</button>}
       </div>
 
       {/* Clients Cards Grid */}
@@ -90,6 +100,8 @@ export function ClientsView({
                   </div>
                 </div>
 
+                <div className="flex flex-col items-end gap-2">
+                <RowActions language={language} onEdit={onSaveClient ? () => setEditingClient(client) : undefined} onDelete={onDeleteClient ? () => onDeleteClient(client.id) : undefined} />
                 <button
                   onClick={() => {
                     sound.click(600);
@@ -100,6 +112,7 @@ export function ClientsView({
                   <FileText className="w-3.5 h-3.5" />
                   <span>{tr('كشف الحساب', 'Statement')}</span>
                 </button>
+                </div>
               </div>
 
               {/* Financial Balance Summary */}
@@ -223,6 +236,7 @@ export function ClientsView({
           </div>
         )}
       </AnimatePresence>
+      {editingClient && onSaveClient && <RecordEditorModal title={clients.some((c) => c.id === editingClient.id) ? tr('تعديل بيانات العميل', 'Edit client') : tr('إضافة عميل', 'Add client')} fields={clientFields} value={editingClient} language={language} onClose={() => setEditingClient(null)} onSave={(c) => { onSaveClient(c); setEditingClient(null); }} onDelete={onDeleteClient && clients.some((c) => c.id === editingClient.id) ? () => { onDeleteClient(editingClient.id); setEditingClient(null); } : undefined} />}
     </div>
   );
 }

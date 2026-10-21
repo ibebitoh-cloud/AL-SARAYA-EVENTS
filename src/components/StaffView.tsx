@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Employee, Booking, Language } from '../types/venueSystem';
 import { makeTr } from '../utils/tr';
+import { RecordEditorModal, RowActions } from './RecordEditor';
+import { staffFields } from '../data/recordFields';
 import { sound } from '../utils/soundEffects';
 
 interface StaffViewProps {
@@ -21,6 +23,8 @@ interface StaffViewProps {
   onAddStaff: (newStaff: Employee) => void;
   onUpdateStaffAttendance: (staffId: string, status: Employee['attendanceStatus']) => void;
   language?: Language;
+  onEditStaff?: (employee: Employee) => void;
+  onDeleteStaff?: (staffId: string) => void;
 }
 
 export function StaffView({
@@ -29,8 +33,11 @@ export function StaffView({
   onAddStaff,
   onUpdateStaffAttendance,
   language = 'ar',
+  onEditStaff,
+  onDeleteStaff,
 }: StaffViewProps) {
   const { tr, egp } = makeTr(language);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New staff form state
@@ -110,6 +117,8 @@ export function StaffView({
                   </div>
                 </div>
 
+                <div className="flex flex-col items-end gap-2">
+                <RowActions language={language} onEdit={onEditStaff ? () => setEditingEmployee(emp) : undefined} onDelete={onDeleteStaff ? () => onDeleteStaff(emp.id) : undefined} />
                 {/* Attendance Toggle Pill */}
                 <button
                   onClick={() => {
@@ -127,6 +136,7 @@ export function StaffView({
                 >
                   {isPresent ? tr('حاضر اليوم', 'Present today') : tr('غائب', 'Absent')}
                 </button>
+                </div>
               </div>
 
               {/* Financial Ledger (Wages, Loans, Bonuses) */}
@@ -259,6 +269,7 @@ export function StaffView({
           </div>
         </div>
       )}
+      {editingEmployee && onEditStaff && <RecordEditorModal title={tr('تعديل بيانات الموظف', 'Edit staff member')} fields={staffFields} value={editingEmployee} language={language} onClose={() => setEditingEmployee(null)} onSave={(e) => { onEditStaff(e); setEditingEmployee(null); }} onDelete={onDeleteStaff ? () => { onDeleteStaff(editingEmployee.id); setEditingEmployee(null); } : undefined} />}
     </div>
   );
 }

@@ -36,7 +36,9 @@ export type VenueTab =
   | 'reports'
   | 'photo_library'
   | 'package_builder'
-  | 'price_lists';
+  | 'price_lists'
+  | 'site_content'
+  | 'permissions';
 
 export interface CateringItem {
   id: string;
