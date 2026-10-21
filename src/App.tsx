@@ -143,7 +143,11 @@ export default function App() {
     if (typeof window === 'undefined') return uniqueEventPhotos(ALSARAYA_PHOTOS);
     try {
       const saved = JSON.parse(window.localStorage.getItem('alsaraya_custom_photos_v2') || 'null');
-      const list = Array.isArray(saved) && saved.length ? saved : ALSARAYA_PHOTOS;
+      // Built-in photos always come from code (so corrected names/places reach returning visitors); uploads are kept.
+      const builtIn = new Map(ALSARAYA_PHOTOS.map((p) => [p.id, p]));
+      const list = Array.isArray(saved) && saved.length
+        ? [...saved.map((p: VenuePhoto) => builtIn.get(p.id) ?? p), ...ALSARAYA_PHOTOS.filter((p) => !saved.some((s: VenuePhoto) => s.id === p.id))]
+        : ALSARAYA_PHOTOS;
       return uniqueEventPhotos(list);
     } catch {
       return uniqueEventPhotos(ALSARAYA_PHOTOS);
