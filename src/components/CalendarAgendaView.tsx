@@ -11,7 +11,9 @@ import {
   AlertCircle,
   Eye,
 } from 'lucide-react';
-import { Booking, Hall } from '../types/venueSystem';
+import { Booking, Hall, Language } from '../types/venueSystem';
+import { makeTr } from '../utils/tr';
+import { findBookingConflict } from '../utils/bookingRules';
 import { sound } from '../utils/soundEffects';
 
 interface CalendarAgendaViewProps {
@@ -19,6 +21,7 @@ interface CalendarAgendaViewProps {
   halls: Hall[];
   onSelectBooking: (booking: Booking) => void;
   onOpenNewBooking: () => void;
+  language?: Language;
 }
 
 export function CalendarAgendaView({
@@ -26,7 +29,9 @@ export function CalendarAgendaView({
   halls,
   onSelectBooking,
   onOpenNewBooking,
+  language = 'ar',
 }: CalendarAgendaViewProps) {
+  const { isAr, tr, egp } = makeTr(language);
   const [selectedHallId, setSelectedHallId] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'month' | 'day'>('month');
 
@@ -36,19 +41,13 @@ export function CalendarAgendaView({
     for (let j = i + 1; j < bookings.length; j++) {
       const b1 = bookings[i];
       const b2 = bookings[j];
-      if (
-        b1.hallId === b2.hallId &&
-        b1.date === b2.date &&
-        b1.status !== 'cancelled' &&
-        b2.status !== 'cancelled'
-      ) {
-        if (
-          (b1.startTime >= b2.startTime && b1.startTime < b2.endTime) ||
-          (b1.endTime > b2.startTime && b1.endTime <= b2.endTime)
-        ) {
-          conflicts.push({ b1, b2 });
-        }
-      }
+      if (b2.status === 'cancelled') continue;
+      // Custom venues share one hallId, so compare them by name.
+      const clash = findBookingConflict([b1], {
+        hallId: b2.hallId === 'custom-hall' ? undefined : b2.hallId, hallName: b2.hallName,
+        date: b2.date, startTime: b2.startTime, endTime: b2.endTime,
+      });
+      if (clash) conflicts.push({ b1, b2 });
     }
   }
 
@@ -62,14 +61,14 @@ export function CalendarAgendaView({
   );
 
   return (
-    <div className="w-full space-y-6 pb-20 text-right">
+    <div className="w-full space-y-6 pb-20 text-start">
       {/* Top Controls & Hall Filter */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <CalendarIcon className="w-5 h-5 text-indigo-400" />
           <div>
-            <h2 className="text-base font-bold text-white">أجندة القاعات وجدول المواعيد</h2>
-            <p className="text-xs text-slate-400">متابعة الفترات المحجوزة والمتاحة واكتشاف أي تعارض زمني</p>
+            <h2 className="text-base font-bold text-white">{tr('أجندة القاعات وجدول المواعيد', 'Hall calendar & schedule')}</h2>
+            <p className="text-xs text-slate-400">{tr('متابعة الفترات المحجوزة والمتاحة واكتشاف أي تعارض زمني', 'Track booked and free slots and spot any time clashes')}</p>
           </div>
         </div>
 
@@ -86,7 +85,7 @@ export function CalendarAgendaView({
                 : 'text-slate-400 bg-slate-950 hover:text-white'
             }`}
           >
-            جميع القاعات
+            {tr('جميع القاعات', 'All halls')}
           </button>
           {halls.map((h) => (
             <button
@@ -101,7 +100,7 @@ export function CalendarAgendaView({
                   : 'text-slate-400 bg-slate-950 hover:text-white'
               }`}
             >
-              {h.name}
+              {isAr ? h.name : h.nameEn || h.name}
             </button>
           ))}
         </div>
@@ -113,11 +112,11 @@ export function CalendarAgendaView({
           <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <strong className="text-rose-300 font-bold block text-sm">
-              تحذير تعارض في المواعيد ({conflicts.length} حالات تعارض):
+              {tr(`تعارض في المواعيد (${conflicts.length})`, `Time clashes (${conflicts.length})`)}:
             </strong>
             {conflicts.map((c, idx) => (
               <div key={idx} className="text-rose-300">
-                القاعة: <strong>{c.b1.hallName}</strong> بتأريخ {c.b1.date} بين حجز ({c.b1.clientName} من {c.b1.startTime}-{c.b1.endTime}) وحجز ({c.b2.clientName} من {c.b2.startTime}-{c.b2.endTime}).
+                {tr('القاعة', 'Hall')}: <strong>{c.b1.hallName}</strong> · {c.b1.date} · {c.b1.clientName} ({c.b1.startTime}–{c.b1.endTime}) ↔ {c.b2.clientName} ({c.b2.startTime}–{c.b2.endTime})
               </div>
             ))}
           </div>
@@ -130,10 +129,10 @@ export function CalendarAgendaView({
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
               <AlertCircle className="w-4 h-4 text-amber-400" />
-              <span>تنبيه تحصيل: حجوزات مؤكدة تحتاج تحصيل دفعة متبقية ({pendingCollectionBookings.length})</span>
+              <span>{tr(`حجوزات مؤكدة عليها مبالغ متبقية (${pendingCollectionBookings.length})`, `Confirmed bookings with a balance due (${pendingCollectionBookings.length})`)}</span>
             </span>
             <span className="text-xs font-mono text-amber-400">
-              إجمالي المتأخرات: {pendingCollectionBookings.reduce((acc, b) => acc + b.remainingAmount, 0).toLocaleString()} ج.م
+              {tr('إجمالي المتبقي', 'Total outstanding')}: {egp(pendingCollectionBookings.reduce((acc, b) => acc + b.remainingAmount, 0))}
             </span>
           </div>
 
@@ -147,14 +146,14 @@ export function CalendarAgendaView({
                 <div>
                   <span className="font-bold text-white block">{bk.clientName}</span>
                   <span className="text-[11px] text-slate-400 font-mono">
-                    تاريخ المناسبة: {bk.date}
+                    {tr('تاريخ المناسبة', 'Event date')}: {bk.date}
                   </span>
                 </div>
-                <div className="text-left font-mono">
+                <div className="text-end font-mono">
                   <span className="text-rose-400 font-bold block">
-                    {bk.remainingAmount.toLocaleString()} ج.م
+                    {egp(bk.remainingAmount)}
                   </span>
-                  <span className="text-[10px] text-slate-500">متبقي للتحصيل</span>
+                  <span className="text-[10px] text-slate-500">{tr('متبقي للتحصيل', 'Balance due')}</span>
                 </div>
               </div>
             ))}
@@ -164,7 +163,7 @@ export function CalendarAgendaView({
 
       {/* Visual Timeline & Slots Breakdown */}
       <div className="space-y-4">
-        <h3 className="text-base font-bold text-white">جدول الأيام والمواعيد المحجوزة</h3>
+        <h3 className="text-base font-bold text-white">{tr('المواعيد المحجوزة', 'Booked dates')}</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBookings.map((bk) => (
@@ -184,14 +183,14 @@ export function CalendarAgendaView({
               <div>
                 <h4 className="text-base font-bold text-white">{bk.clientName}</h4>
                 <span className="text-xs text-slate-400 block mt-0.5 font-medium">
-                  {bk.hallName} · {bk.guestCount} فرد
+                  {bk.hallName} · {bk.guestCount} {tr('فرد', 'guests')}
                 </span>
               </div>
 
               <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-[10px] text-slate-500 block">إجمالي القيمة:</span>
-                  <span className="font-mono text-emerald-400 font-bold">{bk.totalPrice.toLocaleString()} ج.م</span>
+                  <span className="text-[10px] text-slate-500 block">{tr('إجمالي القيمة', 'Total')}:</span>
+                  <span className="font-mono text-emerald-400 font-bold">{egp(bk.totalPrice)}</span>
                 </div>
 
                 <button
@@ -199,7 +198,7 @@ export function CalendarAgendaView({
                   className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium cursor-pointer flex items-center gap-1"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>التفاصيل</span>
+                  <span>{tr('التفاصيل', 'Details')}</span>
                 </button>
               </div>
             </div>
