@@ -9,6 +9,7 @@ import { packagesFor, packagePriceAt, servicePriceAt } from '../data/pricing';
 import { findBookingConflict, uniqueBookingCode } from '../utils/bookingRules';
 
 const CUSTOM_HALL_ID = 'custom-hall';
+const CUSTOMER_VENUE_ID = 'customer-venue';
 
 interface NewBookingModalProps {
   isOpen: boolean;
@@ -74,7 +75,9 @@ export function NewBookingModal({
 
   if (!isOpen) return null;
 
-  const isCustomHall = hallId === CUSTOM_HALL_ID;
+  const isCustomHall = hallId === CUSTOM_HALL_ID || hallId === CUSTOMER_VENUE_ID;
+  const isCustomerVenue = hallId === CUSTOMER_VENUE_ID;
+  const showLocationPrices = !customerMode || !isCustomerVenue;
   const locationHalls = halls.filter((h) => hallLocation(h) === locationId);
   const currentHall = halls.find((h) => h.id === hallId);
   const bookedHallName = isCustomHall ? customHallName.trim() : (currentHall?.name || '');
@@ -150,7 +153,7 @@ export function NewBookingModal({
       clientPhone: clientPhone.trim(),
       clientAddress: clientAddress.trim(),
       eventType, date, startTime, endTime,
-      hallId, hallName: bookedHallName, locationId,
+      hallId: isCustomHall ? '' : hallId, hallName: bookedHallName, locationId,
       guestCount: Number(guestCount) || 0,
       basePrice: Number(basePrice) || 0,
       services: lineItems,
@@ -295,10 +298,11 @@ export function NewBookingModal({
                     <select value={hallId} onChange={(e) => { setHallId(e.target.value); const h = halls.find((x) => x.id === e.target.value); if (h) setBasePrice(h.basePrice); }} className={inputCls}>
                       {locationHalls.map((h) => <option key={h.id} value={h.id}>{isAr ? h.name : h.nameEn || h.name} ({tr(`حتى ${h.capacity} فرد`, `up to ${h.capacity} guests`)})</option>)}
                       <option value={CUSTOM_HALL_ID}>{tr('➕ مكان آخر (اكتب الاسم)', '➕ Another venue (type the name)')}</option>
+                      <option value={CUSTOMER_VENUE_ID}>{tr('📍 مكان العميل (خارج قاعاتنا)', '📍 Customer’s own venue')}</option>
                     </select>
                     {isCustomHall && (
                       <input type="text" required autoFocus value={customHallName} onChange={(e) => setCustomHallName(e.target.value)}
-                        placeholder={tr('اكتب اسم القاعة / المكان', 'Type the hall / venue name')} className={`mt-2 ${inputCls} border-indigo-500/60`} />
+                        placeholder={isCustomerVenue ? tr('اكتب عنوان / اسم مكان العميل', 'Enter the customer’s venue name or address') : tr('اكتب اسم القاعة / المكان', 'Type the hall / venue name')} className={`mt-2 ${inputCls} border-indigo-500/60`} />
                     )}
                   </div>
                   <div>
@@ -328,7 +332,7 @@ export function NewBookingModal({
                         <button key={pkg.id} type="button" onClick={() => { sound.tick(); setPackageId(pkg.id); }}
                           className={`p-3 rounded-xl border text-xs text-start ${packageId === pkg.id ? 'bg-indigo-600/15 border-indigo-500 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:text-white'}`}>
                           <div className="flex items-center justify-between gap-2"><strong>{isAr ? pkg.nameAr : pkg.nameEn}</strong>
-                            <span className="font-mono text-indigo-300">{customerMode ? '' : `${egp(p.price)} / ${tr('فرد', 'guest')}`}</span></div>
+                            {showLocationPrices && <span className="font-mono text-indigo-300">{egp(p.price)} / {tr('فرد', 'guest')}</span>}</div>
                           <div className="mt-1 text-[10px] text-slate-500 line-clamp-1">{(isAr ? pkg.includesAr : pkg.includesEn).join(' · ')}</div>
                         </button>
                       );
@@ -359,7 +363,7 @@ export function NewBookingModal({
                           {isChecked && <input type="number" min="1" value={qty} onClick={(e) => e.stopPropagation()}
                             onChange={(e) => setSelectedServices((prev) => ({ ...prev, [srv.id]: Math.max(1, Number(e.target.value) || 1) }))}
                             className="w-14 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-center font-mono text-xs text-white" />}
-                          <span className="font-mono text-indigo-300 font-bold">{customerMode ? tr('متاح', 'Available') : egp(price)}</span>
+                          {showLocationPrices && <span className="font-mono text-indigo-300 font-bold">{egp(price)}</span>}
                         </div>
                       </div>
                     );

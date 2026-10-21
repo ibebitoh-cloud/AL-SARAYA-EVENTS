@@ -103,6 +103,14 @@ export interface Hall3DProfile {
   items: HallLayoutItem[];
 }
 
+export interface SavedHallLayout {
+  id: string;
+  name: string;
+  eventType: string;
+  updatedAt: string;
+  design: Hall3DProfile;
+}
+
 export interface Hall {
   id: string;
   name: string;
@@ -124,6 +132,7 @@ export interface Hall {
   isExternalListing?: boolean;
   locationId?: LocationId;
   default3D?: Hall3DProfile;
+  savedLayouts?: SavedHallLayout[];
 }
 
 export interface BookingServiceItem {

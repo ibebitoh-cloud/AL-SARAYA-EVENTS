@@ -6,21 +6,28 @@ import {
   ChevronRight,
   ChevronUp,
   Copy,
+  Redo2,
   DoorOpen,
   Monitor,
   Move3d,
   Plus,
   RotateCw,
   Save,
+  Grid3X3,
+  FolderOpen,
+  Files,
+  Pencil,
   Presentation,
   ScreenShare,
   Sparkles,
   Trash2,
+  Undo2,
   Users,
   X,
 } from 'lucide-react';
-import { Hall3DProfile, HallLayoutItem, Language } from '../types/venueSystem';
+import { Hall, Hall3DProfile, HallLayoutItem, Language, LocationId, SavedHallLayout } from '../types/venueSystem';
 import { EventLayout3D } from './EventLayout3D';
+import { LOCATIONS, hallLocation } from '../data/locations';
 
 type LayoutMode = '2d' | '3d' | 'pov';
 type EventKind = 'engagement' | 'wedding' | 'conference' | 'summit' | 'birthday' | 'other';
@@ -78,19 +85,25 @@ const INITIAL_ITEMS: LayoutItem[] = [
   { id: 'dance-1', type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', x: 50, y: 58, rotation: 0 },
 ];
 
-interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; }
+interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; halls?: Hall[]; onUpdateHall?: (hall: Hall) => void; }
 
-export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose }: DesignerProps) {
+export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose, halls = [], onUpdateHall }: DesignerProps) {
   const isAr = language === 'ar';
+  const [locationId, setLocationId] = useState<LocationId>(() => halls[0] ? hallLocation(halls[0]) : 'arcane');
+  const locationHalls = halls.filter((hall) => hallLocation(hall) === locationId);
+  const [hallId, setHallId] = useState(() => halls.find((hall) => hallLocation(hall) === 'arcane')?.id || halls[0]?.id || '');
+  const activeHall = halls.find((hall) => hall.id === hallId);
   const [eventKind, setEventKind] = useState<EventKind>('engagement');
   const [locationKind, setLocationKind] = useState<LocationKind>('client');
   const [guests, setGuests] = useState(250);
-  const [width, setWidth] = useState(initialDesign?.width ?? 20);
-  const [depth, setDepth] = useState(initialDesign?.depth ?? 30);
+  const initialHall = halls.find((hall) => hall.id === (halls.find((entry) => hallLocation(entry) === 'arcane')?.id || halls[0]?.id));
+  const [width, setWidth] = useState(initialDesign?.width ?? initialHall?.default3D?.width ?? 20);
+  const [depth, setDepth] = useState(initialDesign?.depth ?? initialHall?.default3D?.depth ?? 30);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('3d');
   const [cameraYaw, setCameraYaw] = useState(0);
   const [items, setItems] = useState<LayoutItem[]>(() => {
     if (initialDesign?.items?.length) return initialDesign.items;
+    if (halls.length) return initialHall?.default3D?.items?.length ? initialHall.default3D.items : INITIAL_ITEMS;
     try {
       const stored = typeof window !== 'undefined' ? window.localStorage.getItem('saraya-event-layout-design-v1') : null;
       if (stored) {
@@ -100,6 +113,10 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     } catch {}
     return INITIAL_ITEMS;
   });
+  const [history, setHistory] = useState<LayoutItem[][]>([]);
+  const [future, setFuture] = useState<LayoutItem[][]>([]);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>('stage-1');
   const [clientView, setClientView] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -124,6 +141,17 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const eventName = EVENT_NAMES[eventKind][isAr ? 1 : 0];
 
   const tableCount = Math.max(1, Math.ceil(guests / 10));
+  const commitItems = (next: LayoutItem[] | ((previous: LayoutItem[]) => LayoutItem[])) => {
+    setItems((previous) => {
+      const resolved = typeof next === 'function' ? next(previous) : next;
+      setHistory((stack) => [...stack.slice(-39), previous]);
+      setFuture([]);
+      return resolved;
+    });
+    setSaved(false);
+  };
+  const undo = () => setHistory((stack) => { if (!stack.length) return stack; const previous = stack[stack.length - 1]; setFuture((redoStack) => [items, ...redoStack]); setItems(previous); setSaved(false); return stack.slice(0, -1); });
+  const redo = () => setFuture((stack) => { if (!stack.length) return stack; const next = stack[0]; setHistory((undoStack) => [...undoStack, items]); setItems(next); setSaved(false); return stack.slice(1); });
 
   const addItem = (type: string) => {
     const source = ITEM_LIBRARY.find((item) => item.type === type);
@@ -138,7 +166,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       rotation: 0,
       seats: type === 'table' ? 10 : undefined,
     };
-    setItems((prev) => [...prev, item]);
+    commitItems((prev) => [...prev, item]);
     setSelectedId(item.id);
     setSaved(false);
   };
@@ -174,7 +202,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
         depthM: set.depthM,
       };
     });
-    setItems((prev) => [...prev, ...added]);
+    commitItems((prev) => [...prev, ...added]);
     setSelectedId(added[0].id);
     setSaved(false);
   };
@@ -182,7 +210,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
   const updateSelected = (patch: Partial<LayoutItem>) => {
     if (!selectedId) return;
-    setItems((prev) => prev.map((item) => item.id === selectedId ? { ...item, ...patch } : item));
+    commitItems((prev) => prev.map((item) => item.id === selectedId ? { ...item, ...patch } : item));
     setSaved(false);
   };
 
@@ -235,8 +263,10 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     const dy = clientY - drag.startClientY;
     drag.dx = dx;
     drag.dy = dy;
-    drag.x = Math.max(2, Math.min(98, drag.startX + (dx / drag.canvasWidth) * 100));
-    drag.y = Math.max(2, Math.min(98, drag.startY + (dy / drag.canvasHeight) * 100));
+    const rawX = Math.max(2, Math.min(98, drag.startX + (dx / drag.canvasWidth) * 100));
+    const rawY = Math.max(2, Math.min(98, drag.startY + (dy / drag.canvasHeight) * 100));
+    drag.x = snapToGrid ? Math.max(2, Math.min(98, Math.round(rawX / 2) * 2)) : rawX;
+    drag.y = snapToGrid ? Math.max(2, Math.min(98, Math.round(rawY / 2) * 2)) : rawY;
 
     applyDragTransform(drag);
   };
@@ -270,6 +300,11 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       if (event.key === 'ArrowDown') { event.preventDefault(); nudge(0, step); }
       if (event.key === 'ArrowLeft') { event.preventDefault(); nudge(-step, 0); }
       if (event.key === 'ArrowRight') { event.preventDefault(); nudge(step, 0); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); }
+      if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelected(); }
+      if (event.key === 'Escape') setSelectedId(null);
     };
 
     const onWindowPointerMove = (event: PointerEvent) => updateDragFromPointer(event.clientX, event.clientY, event.pointerId);
@@ -295,14 +330,14 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const duplicateSelected = () => {
     if (!selected) return;
     const copy: LayoutItem = { ...selected, id: `${selected.type}-${Date.now()}`, x: Math.min(90, selected.x + 8), y: Math.min(90, selected.y + 6) };
-    setItems((prev) => [...prev, copy]);
+    commitItems((prev) => [...prev, copy]);
     setSelectedId(copy.id);
     setSaved(false);
   };
 
   const deleteSelected = () => {
     if (!selected) return;
-    setItems((prev) => prev.filter((item) => item.id !== selected.id));
+    commitItems((prev) => prev.filter((item) => item.id !== selected.id));
     setSelectedId(null);
     setSaved(false);
   };
@@ -321,15 +356,32 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     for (let i = 0; i < tableQty; i++) { const row = Math.floor(i / cols); const col = i % cols; const x = cols === 1 ? 0 : -((cols - 1) * 3.8) / 2 + col * 3.8; add('table', i + 1, x, -depth / 2 + margin + 4 + row * 3.8); }
     const simple = ['stage','screen','podium','dance','buffet','registration'];
     simple.forEach((type) => { const qty = autoSelection[type] || 0; for (let i = 0; i < qty; i++) { const x = (i - (qty - 1) / 2) * (type === 'stage' || type === 'screen' ? 8 : 2.5); const y = type === 'dance' ? depth / 2 - margin - 2.5 : -depth / 2 + margin + (type === 'screen' ? 1 : type === 'stage' ? 2 : 5); add(type, i + 1, x, y); } });
-    setItems(next); setSelectedId(next[0]?.id ?? null); setSaved(false); setAutoBuilderOpen(false);
+    commitItems(next); setSelectedId(next[0]?.id ?? null); setAutoBuilderOpen(false);
   };
 
   const saveDesign = () => {
     try { window.localStorage.setItem('saraya-event-layout-design-v1', JSON.stringify({ width, depth, items, projectName })); } catch {}
-    onSaveDesign?.({ width, depth, items });
+    const design = { width, depth, items };
+    onSaveDesign?.(design);
+    if (activeHall && onUpdateHall) {
+      if (activePlanId) {
+        const savedLayouts = (activeHall.savedLayouts || []).map((plan) => plan.id === activePlanId ? { ...plan, name: projectName.trim() || plan.name, eventType: eventKind, updatedAt: new Date().toISOString(), design } : plan);
+        onUpdateHall({ ...activeHall, savedLayouts });
+      } else onUpdateHall({ ...activeHall, default3D: design });
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
   };
+
+  const saveAsPlan = () => {
+    if (!activeHall || !onUpdateHall) { saveDesign(); return; }
+    const plan: SavedHallLayout = { id: `layout-${Date.now()}`, name: projectName.trim() || (isAr ? `مخطط ${eventName}` : `${eventName} layout`), eventType: eventKind, updatedAt: new Date().toISOString(), design: { width, depth, items } };
+    onUpdateHall({ ...activeHall, savedLayouts: [...(activeHall.savedLayouts || []), plan] });
+    setActivePlanId(plan.id); setProjectName(plan.name); setSaved(true); setTimeout(() => setSaved(false), 2200);
+  };
+  const openSavedPlan = (plan: SavedHallLayout) => { setActivePlanId(plan.id); setProjectName(plan.name); setEventKind((EVENT_NAMES[plan.eventType as EventKind] ? plan.eventType : 'other') as EventKind); setWidth(plan.design.width); setDepth(plan.design.depth); setItems(plan.design.items); setHistory([]); setFuture([]); setSelectedId(null); setSaved(true); };
+  const duplicateSavedPlan = (plan: SavedHallLayout) => { if (!activeHall || !onUpdateHall) return; const copy = { ...plan, id: `layout-${Date.now()}`, name: `${plan.name} ${isAr ? 'نسخة' : 'copy'}`, updatedAt: new Date().toISOString(), design: { ...plan.design, items: plan.design.items.map((item) => ({ ...item, id: `${item.id}-${Date.now()}` })) } }; onUpdateHall({ ...activeHall, savedLayouts: [...(activeHall.savedLayouts || []), copy] }); };
+  const deleteSavedPlan = (id: string) => { if (!activeHall || !onUpdateHall) return; onUpdateHall({ ...activeHall, savedLayouts: (activeHall.savedLayouts || []).filter((plan) => plan.id !== id) }); if (activePlanId === id) setActivePlanId(null); };
 
   const itemVisual = (item: LayoutItem) => {
     const common = 'absolute flex items-center justify-center select-none';
@@ -363,11 +415,14 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <button type="button" onClick={() => setLayoutMode('3d')} className={`px-3 py-2 rounded-lg text-xs font-bold border ${layoutMode === '3d' ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-950 text-slate-300 border-slate-700'}`}>{isAr ? 'منظور 3D' : '3D View'}</button>
               <button type="button" onClick={() => setLayoutMode('pov')} className={`px-3 py-2 rounded-lg text-xs font-bold border ${layoutMode === 'pov' ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-950 text-slate-300 border-slate-700'}`}>{isAr ? 'منظور الشخص' : 'Inside POV'}</button>
               <button type="button" onClick={() => setClientView(true)} className="px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-white">{isAr ? 'عرض العميل' : 'Client View'}</button>
-              <button type="button" onClick={saveDesign} className="px-3 py-2 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5"><Save className="w-3.5 h-3.5" />{saved ? (isAr ? 'تم الحفظ' : 'Saved') : (isAr ? 'حفظ التصميم' : 'Save Design')}</button>
+              {activeHall && <button type="button" onClick={saveAsPlan} className="px-3 py-2 rounded-lg border border-amber-400/40 bg-amber-400/10 text-amber-200 text-xs font-bold flex items-center gap-1.5"><Files className="w-3.5 h-3.5" />{isAr ? 'حفظ كخطة' : 'Save as Plan'}</button>}
+              <button type="button" onClick={saveDesign} className="px-3 py-2 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5"><Save className="w-3.5 h-3.5" />{saved ? (isAr ? 'تم الحفظ' : 'Saved') : (isAr ? (activePlanId ? 'تحديث الخطة' : 'حفظ الافتراضي') : (activePlanId ? 'Update Plan' : 'Save Default'))}</button>
             </div>
           </div>
         </div>
       )}
+
+      {!clientView && halls.length > 0 && <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-amber-400/40 bg-slate-950/95 p-3 shadow-xl backdrop-blur"><span className="text-[10px] font-black uppercase tracking-widest text-amber-300">{isAr ? 'الموقع الجاري تعديله' : 'EDITING LOCATION'}</span><select value={locationId} onChange={(e) => { const loc = e.target.value as LocationId; setLocationId(loc); const next = halls.find((hall) => hallLocation(hall) === loc); if (next) { setHallId(next.id); setActivePlanId(null); setProjectName(''); setWidth(next.default3D?.width ?? 20); setDepth(next.default3D?.depth ?? 30); setItems(next.default3D?.items?.length ? next.default3D.items : INITIAL_ITEMS); setHistory([]); setFuture([]); } }} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white">{LOCATIONS.map((location) => <option key={location.id} value={location.id}>{isAr ? location.nameAr : location.nameEn}</option>)}</select><select value={hallId} onChange={(e) => { const hall = halls.find((entry) => entry.id === e.target.value); setHallId(e.target.value); setActivePlanId(null); setProjectName(''); if (hall) { setWidth(hall.default3D?.width ?? 20); setDepth(hall.default3D?.depth ?? 30); setItems(hall.default3D?.items?.length ? hall.default3D.items : INITIAL_ITEMS); setHistory([]); setFuture([]); } }} className="min-w-40 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white">{locationHalls.map((hall) => <option key={hall.id} value={hall.id}>{isAr ? hall.name : hall.nameEn || hall.name}</option>)}</select><select value={activePlanId || ''} onChange={(e) => { const plan = activeHall?.savedLayouts?.find((entry) => entry.id === e.target.value); if (plan) openSavedPlan(plan); else { setActivePlanId(null); setProjectName(''); if (activeHall?.default3D) { setWidth(activeHall.default3D.width); setDepth(activeHall.default3D.depth); setItems(activeHall.default3D.items); } } }} className="min-w-36 rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option value="">{isAr ? 'التصميم الافتراضي' : 'Default layout'}</option>{(activeHall?.savedLayouts || []).map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select><span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">{activeHall ? (isAr ? activeHall.name : activeHall.nameEn || activeHall.name) : ''}</span><button type="button" disabled={!history.length} onClick={undo} title="Ctrl+Z" className="rounded-lg border border-slate-700 p-2 text-slate-300 disabled:opacity-40"><Undo2 className="h-4 w-4" /></button><button type="button" disabled={!future.length} onClick={redo} title="Ctrl+Y" className="rounded-lg border border-slate-700 p-2 text-slate-300 disabled:opacity-40"><Redo2 className="h-4 w-4" /></button></div>}
 
       {clientView ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
@@ -397,6 +452,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             <div className="text-xs font-bold text-white mb-3">{isAr ? 'بيانات المناسبة' : 'Event Setup'}</div>
             <label className="block text-[11px] text-slate-400 mb-1">{isAr ? 'اسم التصميم' : 'Design Name'}</label>
             <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder={isAr ? 'مثال: خطوبة أحمد وسارة' : 'e.g. Ahmed & Sara Engagement'} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-amber-400" />
+            {activeHall && (activeHall.savedLayouts || []).length > 0 && <div className="mt-3 space-y-1.5"><div className="text-[10px] font-bold text-slate-400">{isAr ? 'الخطط المحفوظة لهذه القاعة' : 'Saved plans for this hall'}</div>{activeHall.savedLayouts?.map((plan) => <div key={plan.id} className="flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-950 p-1.5"><button type="button" onClick={() => openSavedPlan(plan)} title={isAr ? 'فتح الخطة' : 'Open plan'} className="min-w-0 flex-1 truncate text-start text-[10px] font-semibold text-slate-200"><FolderOpen className="me-1 inline h-3 w-3 text-amber-300" />{plan.name}</button><button type="button" onClick={() => duplicateSavedPlan(plan)} title={isAr ? 'نسخ' : 'Duplicate'} className="rounded p-1 text-slate-400 hover:text-white"><Copy className="h-3 w-3" /></button><button type="button" onClick={() => { const name = window.prompt(isAr ? 'اسم الخطة الجديد' : 'New plan name', plan.name); if (name?.trim() && activeHall && onUpdateHall) onUpdateHall({ ...activeHall, savedLayouts: (activeHall.savedLayouts || []).map((entry) => entry.id === plan.id ? { ...entry, name: name.trim() } : entry) }); }} title={isAr ? 'إعادة تسمية' : 'Rename'} className="rounded p-1 text-slate-400 hover:text-white"><Pencil className="h-3 w-3" /></button><button type="button" onClick={() => deleteSavedPlan(plan.id)} title={isAr ? 'حذف' : 'Delete'} className="rounded p-1 text-rose-400 hover:text-rose-300"><Trash2 className="h-3 w-3" /></button></div>)}</div>}
 
             <label className="block text-[11px] text-slate-400 mt-3 mb-1">{isAr ? 'نوع المناسبة' : 'Event Type'}</label>
             <select value={eventKind} onChange={(e) => setEventKind(e.target.value as EventKind)} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white">
@@ -446,13 +502,14 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
           <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-2 sm:p-3 min-w-0">
             <div className="flex items-center justify-between px-2 py-2">
-              <div className="text-xs font-bold text-white">{isAr ? eventName : eventName} · {width} × {depth}m</div>
-              <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'}</div>
+              <div className="text-xs font-bold text-white">{activeHall ? `${isAr ? activeHall.name : activeHall.nameEn || activeHall.name} · ` : ''}{eventName} · {width} × {depth}m</div>
+              <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'} · {items.filter((item) => item.type === 'table').reduce((sum, item) => sum + (item.seats || 10), 0)} {isAr ? 'مقعداً' : 'seats'}</div>
             </div>
             <div className="relative w-full aspect-[4/3] min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
               {layoutMode === '2d' ? (
                 <div ref={canvasRef} className="absolute inset-[7%] rounded-lg border-2 border-slate-500/80 bg-slate-900 overflow-hidden" style={{ touchAction: 'none' }}>
-                  <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)', backgroundSize: '8% 10%' }} />
+                  <div className={`absolute inset-0 ${snapToGrid ? 'opacity-45' : 'opacity-20'}`} style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.3) 1px, transparent 1px)', backgroundSize: '4% 4%' }} />
+                  <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-cyan-300/20" /><div className="pointer-events-none absolute inset-y-0 start-1/2 border-s border-dashed border-cyan-300/20" />
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
                   {items.map((item) => (
                     <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
@@ -469,7 +526,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   mode={layoutMode === 'pov' ? 'pov' : 'overview'}
                   onSelect={setSelectedId}
                   onMove={(id, x, y) => {
-                    setItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
+                    commitItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
                     setSaved(false);
                   }}
                 />
@@ -498,6 +555,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="text-xs text-slate-500">{isAr ? 'اختر عنصراً من المخطط.' : 'Select an item on the plan.'}</div>
             )}
             <div className="mt-5 border-t border-slate-800 pt-3">
+              <button type="button" onClick={() => setSnapToGrid((value) => !value)} className={`mb-3 flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-[10px] font-bold ${snapToGrid ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200' : 'border-slate-700 bg-slate-950 text-slate-400'}`}><span className="flex items-center gap-2"><Grid3X3 className="h-3.5 w-3.5" />{isAr ? 'محاذاة للشبكة' : 'Snap to grid'}</span><span>{snapToGrid ? 'ON' : 'OFF'}</span></button>
               <div className="text-[10px] text-slate-500">{isAr ? 'ملخص' : 'Summary'}</div>
               <div className="mt-2 text-xs text-slate-300">{guests} {isAr ? 'ضيف' : 'guests'}</div>
               <div className="text-xs text-slate-300">{tableCount} {isAr ? 'طاولة تقريباً' : 'tables approx.'}</div>

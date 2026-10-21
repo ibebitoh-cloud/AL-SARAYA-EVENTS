@@ -28,7 +28,9 @@ export function CalendarAgendaView({
   onOpenNewBooking,
 }: CalendarAgendaViewProps) {
   const [selectedHallId, setSelectedHallId] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'month' | 'day'>('month');
+  const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const isAr = true;
 
   // Conflict detector
   const conflicts: { b1: Booking; b2: Booking }[] = [];
@@ -60,6 +62,15 @@ export function CalendarAgendaView({
   const filteredBookings = bookings.filter(
     (b) => selectedHallId === 'all' || b.hallId === selectedHallId
   );
+  const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(1 - ((monthStart.getDay() + 6) % 7));
+  const days = Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(gridStart); d.setDate(gridStart.getDate() + i); return d;
+  });
+  const monthLabel = month.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+  const dayNames = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+  const dayBookings = (key: string) => filteredBookings.filter((b) => b.date === key);
 
   return (
     <div className="w-full space-y-6 pb-20 text-right">
@@ -162,49 +173,11 @@ export function CalendarAgendaView({
         </div>
       )}
 
-      {/* Visual Timeline & Slots Breakdown */}
+      {/* Monthly calendar */}
       <div className="space-y-4">
-        <h3 className="text-base font-bold text-white">جدول الأيام والمواعيد المحجوزة</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredBookings.map((bk) => (
-            <div
-              key={bk.id}
-              className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 transition-all space-y-3 shadow-md"
-            >
-              <div className="flex items-center justify-between">
-                <span className="px-2.5 py-1 rounded-lg bg-indigo-950 text-indigo-300 font-mono text-xs font-bold">
-                  {bk.date}
-                </span>
-                <span className="text-xs text-slate-400 font-mono">
-                  {bk.startTime} - {bk.endTime}
-                </span>
-              </div>
-
-              <div>
-                <h4 className="text-base font-bold text-white">{bk.clientName}</h4>
-                <span className="text-xs text-slate-400 block mt-0.5 font-medium">
-                  {bk.hallName} · {bk.guestCount} فرد
-                </span>
-              </div>
-
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-[10px] text-slate-500 block">إجمالي القيمة:</span>
-                  <span className="font-mono text-emerald-400 font-bold">{bk.totalPrice.toLocaleString()} ج.م</span>
-                </div>
-
-                <button
-                  onClick={() => onSelectBooking(bk)}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium cursor-pointer flex items-center gap-1"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>التفاصيل</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="flex items-center justify-between gap-3"><div><h3 className="text-base font-bold text-white">التقويم الشهري</h3><p className="text-xs text-slate-400">مرر المؤشر فوق المناسبة لعرض التفاصيل الكاملة</p></div><div className="flex items-center gap-2"><button aria-label="الشهر السابق" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="rounded-lg bg-slate-900 p-2 text-slate-300 hover:text-white"><ChevronRight className="h-4 w-4" /></button><strong className="min-w-32 text-center text-sm text-white">{monthLabel}</strong><button aria-label="الشهر التالي" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="rounded-lg bg-slate-900 p-2 text-slate-300 hover:text-white"><ChevronLeft className="h-4 w-4" /></button></div></div>
+        <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60"><div className="min-w-[760px]"><div className="grid grid-cols-7 border-b border-slate-800">{dayNames.map((d) => <div key={d} className="p-3 text-center text-xs font-bold text-slate-400">{d}</div>)}</div><div className="grid grid-cols-7">{days.map((d) => { const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; const events = dayBookings(key); return <div key={key} onClick={() => setSelectedDay(key)} className={`group relative min-h-28 border-b border-e border-slate-800 p-2 ${d.getMonth() === month.getMonth() ? '' : 'bg-slate-950/40'} ${selectedDay === key ? 'ring-1 ring-inset ring-indigo-400' : ''}`}><button className={`mb-1 text-xs ${d.getMonth() === month.getMonth() ? 'text-slate-200' : 'text-slate-600'}`} onClick={() => setSelectedDay(key)}>{d.getDate()}</button><div className="space-y-1">{events.slice(0,3).map((bk) => <div key={bk.id} className="relative"><button onClick={(e) => { e.stopPropagation(); onSelectBooking(bk); }} className="w-full truncate rounded bg-indigo-500/20 px-1.5 py-1 text-start text-[10px] font-semibold text-indigo-200 hover:bg-indigo-500/40">{bk.startTime} · {bk.clientName}</button><div role="tooltip" className="pointer-events-none absolute start-0 top-full z-30 hidden w-64 rounded-xl border border-indigo-400/40 bg-slate-950 p-3 text-start text-xs text-slate-200 shadow-xl group-hover:block"><strong className="block text-sm text-white">{bk.clientName} · {bk.code}</strong><span className="mt-1 block">{bk.eventType} · {bk.hallName}</span><span className="block">{bk.date} · {bk.startTime}–{bk.endTime}</span><span className="block">{bk.guestCount} ضيف · {bk.status}</span><span className="block">الإجمالي: {bk.totalPrice.toLocaleString()} ج.م</span><span className="block">الهاتف: {bk.clientPhone}</span><span className="mt-1 block text-indigo-300">انقر لفتح تفاصيل الحجز</span></div></div>)}{events.length > 3 && <span className="text-[10px] text-slate-500">+{events.length - 3} أخرى</span>}</div></div>})}</div></div></div>
+        {selectedDay && <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-3 text-xs text-slate-300"><strong>{selectedDay}</strong> · {dayBookings(selectedDay).length} مناسبة</div>}
       </div>
     </div>
   );
