@@ -8,6 +8,7 @@ import {
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 import { Customer3DPreview } from './Customer3DPreview';
+import { WeddingHeroScene } from './WeddingHeroScene';
 
 interface SarayaCustomerHomepageProps {
   halls: Hall[];
@@ -105,12 +106,13 @@ export function SarayaCustomerHomepage({
           alt=""
           style={reduceMotion ? undefined : { scale: heroImageScale }}
           initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 0.55 }}
+          animate={{ opacity: 0.4 }}
           transition={{ duration: 1.6, ease: 'easeOut' }}
           className="absolute inset-0 h-full w-full object-cover"
           referrerPolicy="no-referrer"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-slate-950/10" />
+        <WeddingHeroScene reduceMotion={Boolean(reduceMotion)} />
         <motion.div
           style={reduceMotion ? undefined : { opacity: heroTextOpacity, y: heroTextY }}
           className="relative z-10 mx-auto flex min-h-[calc(100svh-8.5rem)] max-w-5xl flex-col items-center justify-center px-5 py-16 text-center sm:min-h-[calc(100svh-7rem)] sm:px-8"
