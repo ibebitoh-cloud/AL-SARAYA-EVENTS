@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Calendar, Building2, Sparkles, Ruler, Image as ImageIcon, Cuboid, ArrowRight, ArrowLeft, X } from 'lucide-react';
 import { Hall, Language } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
-import { Customer3DPreview } from './Customer3DPreview';
 
 type Screen = 'events' | 'venues' | 'services' | 'planner' | 'gallery' | '3d-tour';
 
@@ -141,9 +140,7 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
               <h2 className="mt-4 text-xl font-bold">{isAr ? 'التصميم يتم مع فريق السرايا' : 'Design is prepared with the Saraya team'}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">{isAr ? 'خلال المقابلة نراجع توزيع المساحة والعناصر والتجهيزات، ونستخدم أدواتنا الداخلية لعرض المخطط والتصور ثلاثي الأبعاد.' : 'During the interview, we review the space, layout and production requirements and use our internal tools to present the plan and 3D visualization.'}</p>
             </div>
-            <div className="mx-auto mt-6 max-w-4xl">
-              <Customer3DPreview halls={availableHalls} language={language} />
-            </div>
+            <div className="mx-auto mt-6 max-w-4xl rounded-2xl border border-slate-800 bg-slate-950 p-6"><h3 className="font-bold text-white">{isAr ? 'صور وأفكار للتجهيز' : 'Event setup photos and ideas'}</h3><p className="mt-2 text-sm leading-6 text-slate-400">{isAr ? 'تصفح صور المناسبات والخدمات المتاحة، وسيساعدك فريقنا في اختيار التجهيز المناسب لموقعك.' : 'Browse event and service photos. Our team can help choose the right setup for your venue.'}</p></div>
           </div>
         )}
 

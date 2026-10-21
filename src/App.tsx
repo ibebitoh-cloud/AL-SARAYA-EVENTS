@@ -199,6 +199,10 @@ export default function App() {
       return saved?.arcane && saved?.porto ? saved : buildInitialPriceBook(INITIAL_SERVICES);
     } catch { return buildInitialPriceBook(INITIAL_SERVICES); }
   });
+  const [pendingFinancePriceBook, setPendingFinancePriceBook] = useState<PriceBook | null>(() => {
+    try { return JSON.parse(window.localStorage.getItem('saraya-pending-finance-prices') || 'null') as PriceBook | null; } catch { return null; }
+  });
+  useEffect(() => { if (pendingFinancePriceBook) window.localStorage.setItem('saraya-pending-finance-prices', JSON.stringify(pendingFinancePriceBook)); else window.localStorage.removeItem('saraya-pending-finance-prices'); }, [pendingFinancePriceBook]);
   useEffect(() => { window.localStorage.setItem('saraya-price-book-v1', JSON.stringify(priceBook)); }, [priceBook]);
   useEffect(() => { window.localStorage.setItem('saraya-payments', JSON.stringify(payments)); }, [payments]);
   useEffect(() => { window.localStorage.setItem('saraya-expenses', JSON.stringify(expenses)); }, [expenses]);
@@ -289,7 +293,7 @@ export default function App() {
       {currentTab === 'company' && canAccess(portalUser, 'company') && <CompanyProfileView language={language} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} companyProfile={companyProfile} onUpdateCompanyProfile={setCompanyProfile} onUpdateHall={handleUpdateHall} />}
       {currentTab === 'photo_library' && canAccess(portalUser, 'photo_library') && <PhotoLibraryPage language={language} photos={photos} bookings={bookings} onSavePhotos={handleSavePhotos} />}
       {currentTab === 'package_builder' && canAccess(portalUser, 'package_builder') && <PackageBuilderView halls={halls} services={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} />}
-      {currentTab === 'price_lists' && canAccess(portalUser, 'price_lists') && <PriceListsView halls={halls} services={servicesCatalogue} priceBook={priceBook} onUpdatePriceBook={setPriceBook} onUpdateHall={handleUpdateHall} />}
+      {currentTab === 'price_lists' && canAccess(portalUser, 'price_lists') && <PriceListsView halls={halls} services={servicesCatalogue} priceBook={priceBook} onUpdatePriceBook={setPriceBook} onUpdateHall={handleUpdateHall} isCEO={portalUser?.role === 'ceo'} pendingPriceBook={pendingFinancePriceBook} onSubmitApproval={setPendingFinancePriceBook} onApprovePending={() => { if (portalUser?.role === 'ceo' && pendingFinancePriceBook) { setPriceBook(pendingFinancePriceBook); setPendingFinancePriceBook(null); } }} onRejectPending={() => { if (portalUser?.role === 'ceo') setPendingFinancePriceBook(null); }} />}
       {portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && !portalLoginOpen && !canAccess(portalUser, currentTab) && <div className="mx-auto max-w-md py-20 text-center text-sm text-slate-400">{language === 'ar' ? 'هذه الشاشة غير متاحة لحسابك.' : 'This screen is not available for your account.'}</div>}
       {currentTab === 'dashboard' && canAccess(portalUser, 'dashboard') && <DashboardView bookings={bookings} halls={halls} language={language} onNavigateTab={(tab) => setCurrentTab(tab)} />}
       {currentTab === 'bookings' && canAccess(portalUser, 'bookings') && <BookingsView bookings={bookings} onOpenNewBooking={() => setIsNewBookingModalOpen(true)} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={handleUpdateBookingStatus} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)} />}
@@ -302,7 +306,7 @@ export default function App() {
       {currentTab === 'finance' && canAccess(portalUser, 'finance') && <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} />}
       {currentTab === 'payments' && canAccess(portalUser, 'payments') && <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} />}
       {currentTab === 'expenses' && canAccess(portalUser, 'expenses') && <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense} />}
-      {currentTab === 'inventory' && canAccess(portalUser, 'inventory') && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)} />}
+      {currentTab === 'inventory' && canAccess(portalUser, 'inventory') && <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly || portalUser?.role === 'finance')} />}
       {currentTab === 'staff' && canAccess(portalUser, 'staff') && <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance} />}
       {currentTab === 'reports' && canAccess(portalUser, 'reports') && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff} />}
     </Suspense></motion.div></AnimatePresence></main>
@@ -392,7 +396,7 @@ export default function App() {
       </div>
     </footer>
     <NewBookingModal isOpen={isNewBookingModalOpen} onClose={() => setIsNewBookingModalOpen(false)} halls={halls} servicesCatalogue={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} preselectedHallId={preselectedHallId} customerMode={currentTab === 'home' || currentTab.startsWith('public_')} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} language={language} />
-    <Suspense fallback={null}>{selectedBookingForProfit && <EventProfitCalculatorModal isOpen={!!selectedBookingForProfit && !portalUser?.sellingPricesOnly} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} />}
+    <Suspense fallback={null}>{selectedBookingForProfit && <EventProfitCalculatorModal isOpen={!!selectedBookingForProfit && !portalUser?.sellingPricesOnly && portalUser?.role !== 'finance'} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} />}
     {selectedBookingForInvoice && <InvoicePrintModal isOpen onClose={() => setSelectedBookingForInvoice(null)} booking={selectedBookingForInvoice} />}</Suspense>
     <OnboardingFlow isOpen={isOnboardingOpen} language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
   </div>);

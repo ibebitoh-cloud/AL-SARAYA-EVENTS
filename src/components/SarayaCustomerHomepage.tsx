@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
-import { Customer3DPreview } from './Customer3DPreview';
 import { WeddingHeroScene } from './WeddingHeroScene';
 
 interface SarayaCustomerHomepageProps {
@@ -266,7 +265,7 @@ export function SarayaCustomerHomepage({
             </div>
             <div className="mt-7 inline-flex items-center rounded-xl border border-amber-400/30 bg-amber-400/5 px-5 py-3 text-sm font-semibold text-amber-300">{isAr ? 'التخطيط التفصيلي متاح خلال جلسة استشارة مع فريق السرايا' : 'Detailed event planning is available during a consultation with the Saraya team'}</div>
             <div className="mt-7">
-              <Customer3DPreview halls={availableHalls} language={language} />
+              <div className="rounded-2xl border border-slate-700 bg-slate-950/70 p-5"><div className="text-sm font-bold text-white">{isAr ? 'تصميم وتجهيز حسب مناسبتكم' : 'Planning tailored to your event'}</div><p className="mt-2 text-xs leading-6 text-slate-400">{isAr ? 'نراجع المساحة والتجهيزات معكم ونشارك صوراً وأمثلة مناسبة قبل التنفيذ.' : 'We review the space and setup with you, and share relevant photos and examples before the event.'}</p></div>
             </div>
           </div>
 
