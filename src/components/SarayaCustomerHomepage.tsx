@@ -106,7 +106,7 @@ export function SarayaCustomerHomepage({
           alt=""
           style={reduceMotion ? undefined : { scale: heroImageScale }}
           initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 0.4 }}
+          animate={{ opacity: 0.5 }}
           transition={{ duration: 1.6, ease: 'easeOut' }}
           className="absolute inset-0 h-full w-full object-cover"
           referrerPolicy="no-referrer"
