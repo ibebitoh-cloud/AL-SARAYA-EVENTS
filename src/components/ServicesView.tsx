@@ -12,7 +12,8 @@ import {
   Check,
   Pencil,
 } from 'lucide-react';
-import { ServiceDefinition } from '../types/venueSystem';
+import { ServiceDefinition, Language } from '../types/venueSystem';
+import { makeTr } from '../utils/tr';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
 
@@ -22,9 +23,11 @@ interface ServicesViewProps {
   onUpdateService: (updatedService: ServiceDefinition) => void;
   /** Operations staff: show selling prices only (no cost, margin or editing). */
   sellingPricesOnly?: boolean;
+  language?: Language;
 }
 
-export function ServicesView({ services, onAddService, onUpdateService, sellingPricesOnly = false }: ServicesViewProps) {
+export function ServicesView({ services, onAddService, onUpdateService, sellingPricesOnly = false, language = 'ar' }: ServicesViewProps) {
+  const { tr, egp } = makeTr(language);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,16 +42,16 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
   const [description, setDescription] = useState('');
 
   const categories = [
-    { id: 'all', label: 'جميع الخدمات' },
-    { id: 'buffet', label: 'بوفيه وضيافة' },
-    { id: 'kosha', label: 'كوشة العروس' },
-    { id: 'decor', label: 'ديكور وزهور' },
-    { id: 'lighting', label: 'إضاءة وليزر' },
-    { id: 'sound_dj', label: 'صوتيات ودي جي' },
-    { id: 'photography', label: 'تصوير وفيديو' },
-    { id: 'screen', label: 'شاشات عرض' },
-    { id: 'hospitality', label: 'خدمة تنظيم' },
-    { id: 'tables_chairs', label: 'طاولات وكراسي' },
+    { id: 'all', label: tr('جميع الخدمات', 'All services') },
+    { id: 'buffet', label: tr('بوفيه وضيافة', 'Buffet & catering') },
+    { id: 'kosha', label: tr('كوشة العروس', 'Bridal kosha') },
+    { id: 'decor', label: tr('ديكور وزهور', 'Decor & flowers') },
+    { id: 'lighting', label: tr('إضاءة وليزر', 'Lighting & lasers') },
+    { id: 'sound_dj', label: tr('صوتيات ودي جي', 'Sound & DJ') },
+    { id: 'photography', label: tr('تصوير وفيديو', 'Photo & video') },
+    { id: 'screen', label: tr('شاشات عرض', 'Screens') },
+    { id: 'hospitality', label: tr('خدمة تنظيم', 'Event staff') },
+    { id: 'tables_chairs', label: tr('طاولات وكراسي', 'Tables & chairs') },
   ];
 
   const filteredServices = services.filter((s) => {
@@ -101,15 +104,15 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
   };
 
   return (
-    <div className="w-full space-y-6 pb-20 text-right">
+    <div className="w-full space-y-6 pb-20 text-start">
       {/* Top Filter and Search Bar */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <Utensils className="w-5 h-5 text-indigo-400" />
-            <span>دليل الخدمات والإضافات الفندقية</span>
+            <span>{tr('دليل الخدمات والإضافات الفندقية', 'Services & add-ons')}</span>
           </h2>
-          <p className="text-xs text-slate-400">{sellingPricesOnly ? 'أسعار البيع المعتمدة لكل خدمة' : 'تحديد أسعار البيع وتكلفة كل خدمة ومتابعة ربحيتها'}</p>
+          <p className="text-xs text-slate-400">{sellingPricesOnly ? tr('أسعار البيع المعتمدة لكل خدمة', 'Approved selling price for each service') : tr('تحديد أسعار البيع وتكلفة كل خدمة ومتابعة ربحيتها', 'Set selling price and cost for each service and track margins')}</p>
         </div>
 
         {!sellingPricesOnly && <div className="flex items-center gap-2">
@@ -121,7 +124,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md transition-all cursor-pointer whitespace-nowrap active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>إضافة خدمة جديدة</span>
+            <span>{tr('إضافة خدمة جديدة', 'Add service')}</span>
           </button>
         </div>}
       </div>
@@ -165,8 +168,8 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                   </span>
                   <h3 className="text-sm font-bold text-white mt-1 leading-snug">{srv.name}</h3>
                 </div>
-                {!sellingPricesOnly && <button type="button" onClick={() => openEditModal(srv)} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20 text-xs font-semibold" aria-label={`تعديل ${srv.name}`}>
-                  <Pencil className="w-3.5 h-3.5" /> تعديل
+                {!sellingPricesOnly && <button type="button" onClick={() => openEditModal(srv)} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20 text-xs font-semibold" aria-label={`${tr(tr('تعديل', 'Edit'), 'Edit')} ${srv.name}`}>
+                  <Pencil className="w-3.5 h-3.5" /> {tr('تعديل', 'Edit')}
                 </button>}
               </div>
 
@@ -179,24 +182,24 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
               {/* Price, Cost & Profit Tally */}
               <div className={`pt-3 border-t border-slate-800/80 grid gap-2 text-center text-xs font-mono ${sellingPricesOnly ? 'grid-cols-1' : 'grid-cols-3'}`}>
                 <div className="p-2 rounded-xl bg-slate-950/70">
-                  <span className="text-[10px] text-slate-500 block font-sans">سعر البيع</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('سعر البيع', 'Selling price')}</span>
                   <span className="font-bold text-white tabular-nums">
-                    {srv.defaultPrice.toLocaleString()} ج.م
+                    {egp(srv.defaultPrice)}
                   </span>
-                  <span className="text-[9px] text-slate-500 block font-sans">لكل {srv.unit}</span>
+                  <span className="text-[9px] text-slate-500 block font-sans">{tr('لكل', 'per')} {srv.unit}</span>
                 </div>
 
                 {!sellingPricesOnly && <>
                 <div className="p-2 rounded-xl bg-slate-950/70">
-                  <span className="text-[10px] text-slate-500 block font-sans">التكلفة</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('التكلفة', 'Cost')}</span>
                   <span className="font-bold text-rose-300 tabular-nums">
-                    {srv.defaultCost.toLocaleString()} ج.م
+                    {egp(srv.defaultCost)}
                   </span>
-                  <span className="text-[9px] text-slate-500 block font-sans">تكلفة تقديرية</span>
+                  <span className="text-[9px] text-slate-500 block font-sans">{tr('تكلفة تقديرية', 'estimated')}</span>
                 </div>
 
                 <div className="p-2 rounded-xl bg-slate-950/70">
-                  <span className="text-[10px] text-slate-500 block font-sans">هامش الربح</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('هامش الربح', 'Margin')}</span>
                   <span className="font-bold text-emerald-400 tabular-nums">
                     {margin}%
                   </span>
@@ -212,16 +215,16 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
       {/* Add New Service Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-right">
-            <h3 className="text-base font-bold text-white mb-4">{editingService ? 'تعديل الخدمة الحالية' : 'إضافة خدمة أو باقة جديدة'}</h3>
+          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-start">
+            <h3 className="text-base font-bold text-white mb-4">{editingService ? tr('تعديل الخدمة الحالية', 'Edit service') : tr('إضافة خدمة أو باقة جديدة', 'Add service or package')}</h3>
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">اسم الخدمة</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('اسم الخدمة', 'Service name')}</label>
                 <input
                   type="text"
                   required
-                  placeholder="مثال: عربة آيس كريم وفشار"
+                  placeholder={tr('مثال: عربة آيس كريم وفشار', 'e.g. Ice cream & popcorn cart')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white"
@@ -230,25 +233,25 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">القسم</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('القسم', 'Category')}</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as ServiceDefinition['category'])}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white"
                   >
-                    <option value="buffet">بوفيه</option>
-                    <option value="kosha">كوشة</option>
-                    <option value="decor">ديكور</option>
-                    <option value="lighting">إضاءة</option>
-                    <option value="sound_dj">صوتيات ودي جي</option>
-                    <option value="photography">تصوير</option>
-                    <option value="screen">شاشات</option>
-                    <option value="hospitality">تنظيم وضيافة</option>
+                    <option value="buffet">{tr('بوفيه', 'Buffet')}</option>
+                    <option value="kosha">{tr('كوشة', 'Kosha')}</option>
+                    <option value="decor">{tr('ديكور', 'Decor')}</option>
+                    <option value="lighting">{tr('إضاءة', 'Lighting')}</option>
+                    <option value="sound_dj">{tr('صوتيات ودي جي', 'Sound & DJ')}</option>
+                    <option value="photography">{tr('تصوير', 'Photography')}</option>
+                    <option value="screen">{tr('شاشات', 'Screens')}</option>
+                    <option value="hospitality">{tr('تنظيم وضيافة', 'Event staff & hospitality')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">الوحدة</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('الوحدة', 'Unit')}</label>
                   <input
                     type="text"
                     value={unit}
@@ -260,7 +263,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">سعر البيع للعميل</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('سعر البيع للعميل', 'Client price')}</label>
                   <input
                     type="number"
                     value={defaultPrice}
@@ -270,7 +273,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">تكلفة الخدمة</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('تكلفة الخدمة', 'Service cost')}</label>
                   <input
                     type="number"
                     value={defaultCost}
@@ -281,7 +284,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">الوصف والتفاصيل</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('الوصف والتفاصيل', 'Description')}</label>
                 <textarea
                   rows={2}
                   value={description}
@@ -296,13 +299,13 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
                 >
-                  إلغاء
+                  {tr('إلغاء', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white"
                 >
-                  {editingService ? 'حفظ التعديلات' : 'حفظ الخدمة'}
+                  {editingService ? tr('حفظ التعديلات', 'Save changes') : tr('حفظ الخدمة', 'Save service')}
                 </button>
               </div>
             </form>
