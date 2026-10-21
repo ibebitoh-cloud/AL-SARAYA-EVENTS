@@ -21,8 +21,9 @@ type Props = {
   depth: number;
   language: 'ar' | 'en';
   mode: 'overview' | 'pov';
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
   selectedId?: string | null;
+  rotationMode?: boolean;
   onMove: (id: string, x: number, y: number) => void;
   onRotate?: (id: string, delta?: number) => void;
 };
@@ -31,7 +32,7 @@ const THREE_URL = 'three';
 const CONTROLS_URL = 'three/addons/controls/OrbitControls.js';
 const POV_URL = 'three/addons/controls/PointerLockControls.js';
 
-export function EventLayout3D({ items, width, depth, language, mode, selectedId, onSelect, onMove, onRotate }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode, selectedId, rotationMode = false, onSelect, onMove, onRotate }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -41,6 +42,8 @@ export function EventLayout3D({ items, width, depth, language, mode, selectedId,
   itemsRef.current = items;
   const selectedIdRef = useRef(selectedId);
   selectedIdRef.current = selectedId;
+  const rotationModeRef = useRef(rotationMode);
+  rotationModeRef.current = rotationMode;
   const rotateRef = useRef(onRotate);
   rotateRef.current = onRotate;
   const modeRef = useRef(mode);
@@ -312,7 +315,7 @@ export function EventLayout3D({ items, width, depth, language, mode, selectedId,
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
       const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-      let dragging: { id: string; group: any; offset: any; pointerId: number } | null = null;
+      let dragging: { id: string; group: any; offset: any; pointerId: number; mode: 'move' | 'rotate'; startClientX: number; startRotation: number } | null = null;
       let dragRaf = 0;
       let pendingPointer: PointerEvent | null = null;
 
@@ -328,16 +331,20 @@ export function EventLayout3D({ items, width, depth, language, mode, selectedId,
         raycaster.setFromCamera(mouse, camera);
         const hits = raycaster.intersectObjects(itemRoot.children, true);
         const hit = hits.find((h: any) => h.object.parent?.userData?.itemId || h.object.parent?.parent?.userData?.itemId);
-        if (!hit) return;
+        if (!hit) { onSelect(null); return; }
         let group = hit.object;
         while (group.parent && !group.userData.itemId) group = group.parent;
         if (!group.userData.itemId) return;
         const item = itemsRef.current.find((i) => i.id === group.userData.itemId);
         if (!item) return;
-        const point = new THREE.Vector3();
-        if (!raycaster.ray.intersectPlane(floorPlane, point)) return;
-        dragging = { id: item.id, group, offset: group.position.clone().sub(point), pointerId: e.pointerId };
         onSelect(item.id);
+        if (rotationModeRef.current) {
+          dragging = { id: item.id, group, offset: null, pointerId: e.pointerId, mode: 'rotate', startClientX: e.clientX, startRotation: group.rotation.y };
+        } else {
+          const point = new THREE.Vector3();
+          if (!raycaster.ray.intersectPlane(floorPlane, point)) return;
+          dragging = { id: item.id, group, offset: group.position.clone().sub(point), pointerId: e.pointerId, mode: 'move', startClientX: e.clientX, startRotation: group.rotation.y };
+        }
         orbit.enabled = false;
         renderer.domElement.style.cursor = 'grabbing';
         try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
@@ -349,6 +356,11 @@ export function EventLayout3D({ items, width, depth, language, mode, selectedId,
         if (!dragging || !pendingPointer) return;
         const e = pendingPointer;
         pendingPointer = null;
+        if (dragging.mode === 'rotate') {
+          const delta = (e.clientX - dragging.startClientX) * 0.6;
+          dragging.group.rotation.y = dragging.startRotation + (delta * Math.PI) / 180;
+          return;
+        }
         pointer(e);
         raycaster.setFromCamera(mouse, camera);
         const point = new THREE.Vector3();
@@ -370,10 +382,15 @@ export function EventLayout3D({ items, width, depth, language, mode, selectedId,
         if (!dragging) return;
         const id = dragging.id;
         if (pendingPointer) applyPendingDrag();
-        const position = dragging.group.position.clone();
-        const x = ((position.x / width) * 100) + 50;
-        const y = ((position.z / depth) * 100) + 50;
-        onMove(id, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
+        if (dragging.mode === 'rotate') {
+          const delta = ((dragging.group.rotation.y - dragging.startRotation) * 180) / Math.PI;
+          if (Math.abs(delta) >= 3) onRotate?.(id, delta);
+        } else {
+          const position = dragging.group.position.clone();
+          const x = ((position.x / width) * 100) + 50;
+          const y = ((position.z / depth) * 100) + 50;
+          onMove(id, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
+        }
         dragging = null;
         pendingPointer = null;
         if (dragRaf) { cancelAnimationFrame(dragRaf); dragRaf = 0; }
@@ -507,8 +524,8 @@ export function EventLayout3D({ items, width, depth, language, mode, selectedId,
 
   return (
     <div className="relative h-full min-h-[520px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
-      <div ref={hostRef} className="absolute inset-0" />
-      {mode === 'overview' && selectedId && items.some((item) => item.id === selectedId) && <div ref={rotationBarRef} className="pointer-events-auto absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" style={{ left: '50%', top: '50%' }} onPointerDown={(event) => event.stopPropagation()}>
+      <div ref={hostRef} data-rotation-ui className="absolute inset-0" />
+      {mode === 'overview' && rotationMode && selectedId && items.some((item) => item.id === selectedId) && <div ref={rotationBarRef} data-rotation-ui className="pointer-events-auto absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" style={{ left: '50%', top: '50%' }} onPointerDown={(event) => event.stopPropagation()}>
         <button type="button" title={language === 'ar' ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={language === 'ar' ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, -15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
         <button type="button" title={language === 'ar' ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={language === 'ar' ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
       </div>}

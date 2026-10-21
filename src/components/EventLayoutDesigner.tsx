@@ -128,6 +128,9 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   snapToGridRef.current = snapToGrid;
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [rotationMode, setRotationMode] = useState(false);
+  const rotationModeRef = useRef(rotationMode);
+  rotationModeRef.current = rotationMode;
   const [clientView, setClientView] = useState(false);
   const [saved, setSaved] = useState(false);
   const [projectName, setProjectName] = useState(() => {
@@ -141,6 +144,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const [autoSelection, setAutoSelection] = useState<Record<string, number>>({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, buffet: 0, registration: 0 });
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number } | null>(null);
+  const rotationDragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; centerX: number; centerY: number; startAngle: number; startRotation: number; rotation: number } | null>(null);
 
   useEffect(() => {
     try {
@@ -228,6 +232,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const rotateItem = (id: string, delta: number) => {
     commitItems((prev) => prev.map((item) => item.id === id ? { ...item, rotation: item.rotation + delta } : item));
     setSelectedId(null);
+    setRotationMode(false);
   };
 
   const nudge = (dx: number, dy: number) => {
@@ -243,6 +248,22 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     const canvas = canvasRef.current;
     if (!canvas) return;
     setSelectedId(item.id);
+    if (rotationModeRef.current) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      rotationDragRef.current = {
+        id: item.id,
+        el: event.currentTarget,
+        pointerId: event.pointerId,
+        centerX: rect.left + rect.width / 2,
+        centerY: rect.top + rect.height / 2,
+        startAngle: Math.atan2(event.clientY - (rect.top + rect.height / 2), event.clientX - (rect.left + rect.width / 2)),
+        startRotation: item.rotation,
+        rotation: item.rotation,
+      };
+      event.currentTarget.style.willChange = 'transform';
+      try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+      return;
+    }
     dragRef.current = {
       id: item.id,
       el: event.currentTarget,
@@ -261,6 +282,16 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   const updateDragFromPointer = (clientX: number, clientY: number, pointerId: number) => {
+    const rotating = rotationDragRef.current;
+    if (rotating && rotating.pointerId === pointerId) {
+      const angle = Math.atan2(clientY - rotating.centerY, clientX - rotating.centerX);
+      let delta = angle - rotating.startAngle;
+      if (delta > Math.PI) delta -= Math.PI * 2;
+      if (delta < -Math.PI) delta += Math.PI * 2;
+      rotating.rotation = rotating.startRotation + delta * (180 / Math.PI);
+      rotating.el.style.transform = `translate(-50%, -50%) rotate(${rotating.rotation}deg)`;
+      return;
+    }
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
 
@@ -280,6 +311,17 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   const finishDrag = (clientX: number, clientY: number, pointerId: number) => {
+    const rotating = rotationDragRef.current;
+    if (rotating && rotating.pointerId === pointerId) {
+      updateDragFromPointer(clientX, clientY, pointerId);
+      const rotation = rotating.rotation;
+      try { rotating.el.releasePointerCapture(rotating.pointerId); } catch {}
+      rotating.el.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+      rotating.el.style.willChange = 'auto';
+      rotationDragRef.current = null;
+      if (Math.abs(rotation - rotating.startRotation) >= 3) rotateItem(rotating.id, rotation - rotating.startRotation);
+      return;
+    }
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
 
@@ -309,22 +351,31 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); }
       if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelected(); }
-      if (event.key === 'Escape') setSelectedId(null);
+      if (event.key === 'Escape') { setSelectedId(null); setRotationMode(false); }
     };
 
     const onWindowPointerMove = (event: PointerEvent) => updateDragFromPointer(event.clientX, event.clientY, event.pointerId);
     const onWindowPointerUp = (event: PointerEvent) => finishDrag(event.clientX, event.clientY, event.pointerId);
+    const onDocumentPointerDown = (event: PointerEvent) => {
+      if (!rotationModeRef.current) return;
+      const target = event.target as Element | null;
+      if (target?.closest('[data-rotation-ui]')) return;
+      setRotationMode(false);
+      setSelectedId(null);
+    };
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('pointermove', onWindowPointerMove);
     window.addEventListener('pointerup', onWindowPointerUp);
     window.addEventListener('pointercancel', onWindowPointerUp);
+    document.addEventListener('pointerdown', onDocumentPointerDown);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('pointermove', onWindowPointerMove);
       window.removeEventListener('pointerup', onWindowPointerUp);
       window.removeEventListener('pointercancel', onWindowPointerUp);
+      document.removeEventListener('pointerdown', onDocumentPointerDown);
     };
   }, []);
 
@@ -503,6 +554,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="text-xs font-bold text-white">{activeHall ? `${isAr ? activeHall.name : activeHall.nameEn || activeHall.name} · ` : ''}{eventName} · {width} × {depth}m</div>
               <div className="flex shrink-0 items-center gap-2">
                 <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'} · {items.filter((item) => item.type === 'table').reduce((sum, item) => sum + (item.seats || 10), 0)} {isAr ? 'مقعداً' : 'seats'}</div>
+                <button type="button" data-rotation-ui onClick={() => { setRotationMode((active) => !active); setSelectedId(null); }} aria-pressed={rotationMode} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-black ${rotationMode ? 'border-amber-300 bg-amber-300 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-amber-300/60'}`}><RotateCw className="h-3.5 w-3.5" />{isAr ? (rotationMode ? 'وضع التدوير' : 'تدوير') : (rotationMode ? 'Rotate mode on' : 'Rotate')}</button>
                 <button type="button" onClick={() => setQuickAddOpen((open) => !open)} aria-expanded={quickAddOpen} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 text-[10px] font-black text-slate-950 hover:bg-amber-300"><Plus className="h-3.5 w-3.5" />{isAr ? 'إضافة عناصر' : 'Add items'}</button>
               </div>
               {quickAddOpen && <div className="absolute end-2 top-full z-50 mt-1 grid w-[min(92vw,360px)] grid-cols-2 gap-1.5 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl sm:grid-cols-3">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; return <button key={item.type} type="button" onClick={() => { addItem(item.type); setQuickAddOpen(false); }} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-800 px-2 text-start text-[10px] text-slate-200 hover:border-amber-400/60 hover:bg-slate-900"><Icon className="h-3.5 w-3.5 shrink-0 text-amber-300" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>; })}</div>}
@@ -514,11 +566,11 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-cyan-300/20" /><div className="pointer-events-none absolute inset-y-0 start-1/2 border-s border-dashed border-cyan-300/20" />
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
                   {items.map((item) => (
-                    <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
+                    <button key={item.id} type="button" data-rotation-ui onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} ${rotationMode ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'} touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
                       {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{seatDots(item).map((dot, seat) => <span key={seat} className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-200/80" style={{ left: dot.left + '%', top: dot.top + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                     </button>
                   ))}
-                  {selected && <div className="pointer-events-none absolute z-40" style={{ left: `${selected.x}%`, top: `${selected.y}%`, transform: selected.y < 20 ? 'translate(-50%, 40px)' : 'translate(-50%, calc(-100% - 10px))' }}>
+                  {rotationMode && selected && <div data-rotation-ui className="pointer-events-none absolute z-40" style={{ left: `${selected.x}%`, top: `${selected.y}%`, transform: selected.y < 20 ? 'translate(-50%, 40px)' : 'translate(-50%, calc(-100% - 10px))' }}>
                     <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" onPointerDown={(event) => event.stopPropagation()}>
                       <button type="button" onClick={() => rotateItem(selected.id, -15)} title={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
                       <span className="min-w-10 text-center text-[10px] font-bold tabular-nums text-white">{((selected.rotation % 360) + 360) % 360}°</span>
@@ -534,7 +586,8 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   language={language}
                   mode={layoutMode === 'pov' ? 'pov' : 'overview'}
                   selectedId={selectedId}
-                  onSelect={setSelectedId}
+                  rotationMode={rotationMode}
+                  onSelect={(id) => { setSelectedId(id); if (!id) setRotationMode(false); }}
                   onMove={(id, x, y) => {
                     commitItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
                     setSaved(false);
