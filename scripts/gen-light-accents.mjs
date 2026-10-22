@@ -1,5 +1,7 @@
 // Writes src/light-accents.css. Run: node scripts/gen-light-accents.mjs > src/light-accents.css
 const P = 'html[data-theme="light"]';
+// Anything inside .theme-keep keeps its designed colors (e.g. the Dali Studio credit).
+const KEEP = ':not(.theme-keep, .theme-keep *)';
 // [700 text, 50 tint, 200 border]
 const hues = {
   red:['#b91c1c','#fef2f2','#fecaca'], orange:['#c2410c','#fff7ed','#fed7aa'], amber:['#b45309','#fffbeb','#fde68a'],
@@ -16,6 +18,7 @@ let out = [];
 out.push(`/* LIGHT THEME ACCENT CONTRAST
    Accent shades picked for dark screens (text-*-50..500, dark tinted
    panels and borders) are swapped for readable light-mode shades.
+   Add .theme-keep to an element to opt it and its children out.
    Generated per hue; add a hue here instead of patching single classes. */`);
 for (const [h, [txt, tint, border]] of Object.entries(hues)) {
   const t = [];
@@ -24,16 +27,16 @@ for (const [h, [txt, tint, border]] of Object.entries(hues)) {
     t.push(sel(`hover:text-${h}-${s}${o}`, ':hover'));
     t.push(`.group:hover .${esc(`group-hover:text-${h}-${s}${o}`)}`);
   }
-  out.push(`${P} :is(${t.join(', ')}) { color: ${txt} !important; }`);
+  out.push(`${P} :is(${t.join(', ')})${KEEP} { color: ${txt} !important; }`);
   const b = [];
   for (const s of [800,900,950]) for (const o of ['', '/30', '/40', '/50', '/60', '/70', '/80']) {
     b.push(sel(`bg-${h}-${s}${o}`));
     b.push(sel(`hover:bg-${h}-${s}${o}`, ':hover'));
   }
-  out.push(`${P} :is(${b.join(', ')}) { background-color: ${tint} !important; }`);
+  out.push(`${P} :is(${b.join(', ')})${KEEP} { background-color: ${tint} !important; }`);
   const br = [];
   for (const s of [700,800,900,950]) for (const o of ['', '/40', '/50', '/60', '/80']) br.push(sel(`border-${h}-${s}${o}`));
-  out.push(`${P} :is(${br.join(', ')}) { border-color: ${border} !important; }`);
+  out.push(`${P} :is(${br.join(', ')})${KEEP} { border-color: ${border} !important; }`);
 }
 // White text stays white on solid accent buttons/badges.
 const w = [];
