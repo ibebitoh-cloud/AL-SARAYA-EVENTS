@@ -204,6 +204,7 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
             </div>
           </div>
         </motion.div>
+        </div>
       </div>
     </AnimatePresence>
   );

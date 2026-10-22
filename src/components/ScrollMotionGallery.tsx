@@ -260,7 +260,7 @@ export function ScrollMotionGallery({
       {/* 3. FULLSCREEN LIGHTBOX MODAL */}
       <AnimatePresence>
         {selectedPhoto && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
