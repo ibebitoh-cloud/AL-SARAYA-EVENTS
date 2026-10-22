@@ -20,6 +20,8 @@ const inputClass = 'mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 
 /**
  * Reads an image file as a data URL so uploaded photos survive in local storage.
  * Phone photos are scaled down to at most 1200px so many of them fit in the browser's storage.
+ * PNG and WebP files may have a transparent background, so they are re-encoded as WebP
+ * (or PNG where the browser can't write WebP) instead of JPEG, which would fill it in.
  */
 export const readImageFile = (file: File, onDone: (dataUrl: string) => void) => {
   if (!file.type.startsWith('image/')) return;
@@ -37,6 +39,11 @@ export const readImageFile = (file: File, onDone: (dataUrl: string) => void) => 
       const ctx = canvas.getContext('2d');
       if (!ctx) { onDone(original); return; }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (file.type === 'image/png' || file.type === 'image/webp') {
+        const webp = canvas.toDataURL('image/webp', 0.9);
+        onDone(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png'));
+        return;
+      }
       onDone(canvas.toDataURL('image/jpeg', 0.82));
     };
     img.onerror = () => onDone(original);
