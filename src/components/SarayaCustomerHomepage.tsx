@@ -8,6 +8,7 @@ import {
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 import { WeddingHeroScene } from './WeddingHeroScene';
+import { RevealText } from './ui/reveal-text';
 import { SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
 
 interface SarayaCustomerHomepageProps {
@@ -93,6 +94,15 @@ export function SarayaCustomerHomepage({
   const [gallery, setGallery] = useState<VenuePhoto | null>(null);
 
   const reduceMotion = useReducedMotion();
+  // Wedding and party photos that fill the hero letters: two wedding shots, then a party shot.
+  const weddingPhotos = displayPhotos.filter((p) => ['wedding', 'kosha', 'ballroom', 'engagement', 'dining'].includes(p.category)).map((p) => p.src);
+  const partyPhotos = displayPhotos.filter((p) => ['birthday', 'party'].includes(p.category)).map((p) => p.src);
+  const letterPhotos: string[] = [];
+  for (let w = 0, pa = 0; w < weddingPhotos.length || pa < partyPhotos.length;) {
+    if (w < weddingPhotos.length) letterPhotos.push(weddingPhotos[w++]);
+    if (w < weddingPhotos.length) letterPhotos.push(weddingPhotos[w++]);
+    if (pa < partyPhotos.length) letterPhotos.push(partyPhotos[pa++]);
+  }
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress: heroProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const heroImageScale = useTransform(heroProgress, [0, 1], [1, 1.15]);
@@ -121,13 +131,23 @@ export function SarayaCustomerHomepage({
           style={reduceMotion ? undefined : { opacity: heroTextOpacity, y: heroTextY }}
           className="relative z-10 mx-auto flex min-h-[calc(100svh-8.5rem)] max-w-5xl flex-col items-center justify-center px-5 py-16 text-center sm:min-h-[calc(100svh-7rem)] sm:px-8"
         >
-          <motion.div initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-amber-300">
+          <motion.div initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-amber-300 sm:mb-6">
             {t('hero.kicker')}
           </motion.div>
-          <motion.h1 initial={reduceMotion ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.35, ease: [0.16, 1, 0.3, 1] }} className="text-4xl font-serif font-bold leading-tight text-white sm:text-6xl lg:text-7xl">
-            {t('hero.title1')}<br /><span className="text-amber-300">{t('hero.title2')}</span>
-          </motion.h1>
-          <motion.div initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="mt-10">
+          <h1 aria-label={t('hero.word')}>
+            <RevealText
+              text={t('hero.word')}
+              textColor="text-white"
+              overlayColor="text-amber-300"
+              fontSize="text-[clamp(2.6rem,13vw,9rem)]"
+              letterImages={letterPhotos}
+              className="drop-shadow-[0_6px_30px_rgba(0,0,0,0.45)]"
+            />
+          </h1>
+          <motion.p initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 1.6 }} className="mt-6 text-lg font-serif leading-snug text-slate-200 sm:mt-8 sm:text-2xl">
+            {t('hero.title1')} <span className="text-amber-300">{t('hero.title2')}</span>
+          </motion.p>
+          <motion.div initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 1.8 }} className="mt-8 sm:mt-10">
             <button type="button" onClick={() => openBooking()} className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-8 py-4 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-300">
               <Calendar className="h-4 w-4" />{t('hero.button')}
             </button>

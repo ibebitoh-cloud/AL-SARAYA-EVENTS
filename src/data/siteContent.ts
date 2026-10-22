@@ -28,7 +28,8 @@ export const SITE_SECTIONS: SiteSection[] = [
   {
     id: 'hero', titleAr: 'الواجهة الرئيسية', titleEn: 'Hero (first screen)',
     texts: [
-      f('hero.kicker', 'السطر الصغير فوق العنوان', 'Small line above the headline', 'السرايا للمناسبات', 'SARAYA EVENTS'),
+      f('hero.word', 'الكلمة الكبيرة (تظهر حرفاً حرفاً)', 'Big animated word', 'ELSARAYA EVENTS', 'ELSARAYA EVENTS'),
+      f('hero.kicker', 'السطر الصغير فوق العنوان', 'Small line above the big word', 'السرايا للمناسبات', 'SARAYA EVENTS'),
       f('hero.title1', 'العنوان - السطر الأول', 'Headline, line 1', 'نخطط مناسبتك.', 'Plan the event.'),
       f('hero.title2', 'العنوان - السطر الثاني (ذهبي)', 'Headline, line 2 (gold)', 'ونحوّلها إلى واقع.', 'Then bring it to life.'),
       f('hero.button', 'زر الحجز', 'Booking button', 'ابدأ الحجز', 'Start a Booking'),
