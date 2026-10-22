@@ -18,7 +18,7 @@ export interface StaffNotification {
   readBy: string[];
 }
 
-export const NOTIFICATIONS_KEY = 'saraya-staff-notifications-v1';
+export const NOTIFICATIONS_KEY = 'saraya-staff-notifications-v2';
 
 export const notificationFor = (booking: Booking): StaffNotification => ({
   id: `ntf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
