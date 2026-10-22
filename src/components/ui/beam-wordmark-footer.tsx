@@ -91,12 +91,12 @@ export type FooterCredit = { lead?: string; label: string; href?: string; tail?:
 
 export type BeamWordmarkFooterProps = {
   brand?: string
-  /** The brand's logo, shown above the copyright line. */
-  logo?: React.ReactNode
   /** Centred at the very bottom, under the wordmark, e.g. a "Powered by" credit. */
   bottom?: React.ReactNode
   /** What the giant wordmark spells. Defaults to `brand`. */
   wordmark?: string
+  /** A logo image to show in place of the giant wordmark (for example a transparent white PNG). */
+  logoSrc?: string
   /** Copyright holder; defaults to `brand`. */
   company?: string
   year?: number
@@ -220,7 +220,7 @@ const CSS =
   // Layout.
   ".bwf-inner{position:relative;z-index:2;box-sizing:border-box;max-width:1120px;margin:0 auto;padding:clamp(48px,8.5cqw,104px) clamp(20px,6cqw,88px) 0;display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,.86fr) minmax(0,.86fr);column-gap:clamp(24px,4cqw,48px);row-gap:44px}" +
   ".bwf-bottom{position:relative;z-index:2;display:flex;justify-content:center;padding:18px 16px 22px;border-top:1px solid rgba(var(--bwf-acc),.18)}" +
-  ".bwf-logo{margin-bottom:22px}.bwf-logo img{display:block;height:84px;width:auto}" +
+  "" +
   ".bwf-label{font-size:12px;line-height:1;letter-spacing:.01em;color:rgb(var(--bwf-acc));padding-bottom:13px;position:relative;display:block}" +
   ".bwf-label::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,rgba(var(--bwf-acc),.55),rgba(var(--bwf-acc),.28));transform-origin:0 50%;transform:scaleX(var(--bwf-line,1));transition:transform 1.1s cubic-bezier(.2,.7,.1,1) var(--bwf-d,0ms)}" +
   ".bwf[dir='rtl'] .bwf-label::after{transform-origin:100% 50%;background:linear-gradient(270deg,rgba(var(--bwf-acc),.55),rgba(var(--bwf-acc),.28))}" +
@@ -258,6 +258,8 @@ const CSS =
   // The wordmark. Each letter paints the section-sized background, shifted
   // back by its own offset, so beam and glow line up with the backdrop.
   ".bwf-word{position:relative;z-index:1;overflow:hidden;margin-top:clamp(28px,7cqw,96px)}" +
+  ".bwf-logo{overflow:visible;padding:0 0 clamp(20px,4cqw,40px)}" +
+  ".bwf-logo-img{display:block;margin:0 auto;width:min(340px,62%);height:auto;opacity:.92}" +
   ".bwf-word-box{padding:0 clamp(20px,6cqw,88px);max-width:1120px;margin:0 auto;box-sizing:border-box}" +
   ".bwf-word-in{display:inline-flex;white-space:nowrap;font-weight:var(--bwf-ww);line-height:1;letter-spacing:-.045em;user-select:none;-webkit-user-select:none}" +
   ".bwf-lw{display:inline-block;translate:0 0;transition:translate 1.25s cubic-bezier(.16,.84,.2,1) var(--bwf-d,0ms)}" +
@@ -283,7 +285,7 @@ const Arrow = () => (
 
 export default function BeamWordmarkFooter({
   brand = "ELSARAYA EVENTS",
-  logo,
+  logoSrc,
   bottom,
   wordmark,
   company,
@@ -523,11 +525,6 @@ export default function BeamWordmarkFooter({
 
       <div className="bwf-inner">
         <div className="bwf-col">
-          {logo && (
-            <div className="bwf-logo bwf-fade" style={delay()}>
-              {logo}
-            </div>
-          )}
           <p className="bwf-label" style={delay()}>
             © {year} {label}
           </p>
@@ -585,6 +582,11 @@ export default function BeamWordmarkFooter({
         ))}
       </div>
 
+      {logoSrc ? (
+        <div className="bwf-word bwf-logo">
+          <img src={logoSrc} alt={word} className="bwf-logo-img" />
+        </div>
+      ) : (
       <div
         ref={wordRef}
         dir="ltr"
@@ -605,6 +607,7 @@ export default function BeamWordmarkFooter({
         </div>
         <div className="bwf-foot" aria-hidden="true" />
       </div>
+      )}
       {bottom && <div className="bwf-bottom">{bottom}</div>}
     </footer>
   )
