@@ -305,7 +305,7 @@ export function ContractsView({ bookings, language }: ContractsViewProps) {
               <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
                 <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
                   <div className="font-bold text-white text-sm">
-                    {isAr ? 'الطرف الأول: السرايا للمناسبات (SARAYA EVENTS)' : 'First party: SARAYA EVENTS (السرايا للمناسبات)'}
+                    {isAr ? 'الطرف الأول: السرايا للمناسبات (ELSARAYA EVENTS)' : 'First party: ELSARAYA EVENTS (السرايا للمناسبات)'}
                   </div>
                   <div className="text-slate-400">
                     {isAr

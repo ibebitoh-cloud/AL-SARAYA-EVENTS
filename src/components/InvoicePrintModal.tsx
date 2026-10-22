@@ -64,11 +64,11 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-indigo-500 print:bg-black" />
                   <h1 className="text-2xl font-black text-white print:text-black">
-                    {isAr ? 'السرايا للمناسبات' : 'SARAYA EVENTS'}
+                    {isAr ? 'السرايا للمناسبات' : 'ELSARAYA EVENTS'}
                   </h1>
                 </div>
                 <p className="text-xs text-slate-400 print:text-gray-600 mt-1">
-                  {isAr ? 'SARAYA EVENTS · قاعات أفراح ومناسبات وإدارة فعاليات' : 'Wedding halls, events & event management'}
+                  {isAr ? 'ELSARAYA EVENTS · قاعات أفراح ومناسبات وإدارة فعاليات' : 'Wedding halls, events & event management'}
                 </p>
                 <p className="text-xs text-slate-500 print:text-gray-500 mt-0.5">
                   {(isAr ? company?.locationsAr : company?.locationsEn) || ''}{company?.phone ? ` · ${tr('هاتف', 'Phone')}: ${company.phone}` : ''}

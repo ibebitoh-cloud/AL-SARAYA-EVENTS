@@ -179,7 +179,7 @@ export function ChoiceSessionView({ op, hall, priceBook, existingBookings, onCha
       <div className="rounded-3xl border border-amber-400/25 bg-gradient-to-l from-slate-900 to-slate-950 p-5 sm:p-6 print:hidden">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="text-[10px] font-bold tracking-[0.3em] text-amber-400">SARAYA EVENTS · جلسة اختيار</div>
+            <div className="text-[10px] font-bold tracking-[0.3em] text-amber-400">ELSARAYA EVENTS · جلسة اختيار</div>
             <h2 className="mt-2 text-2xl font-black text-white">{typeCfg.emoji} {typeCfg.ar}{op.details.brideName && op.details.groomName ? ` — ${op.details.brideName} و${op.details.groomName}` : op.details.companyName ? ` — ${op.details.companyName}` : op.details.celebrantName ? ` — ${op.details.celebrantName}` : ''}</h2>
             <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-300">
               <span className="flex items-center gap-1 rounded-full border border-slate-700 px-2.5 py-1"><MapPin className="h-3 w-3" />{locationName(op.locationId, true)} · {hall?.name || '—'}</span>
@@ -319,7 +319,7 @@ export function ChoiceSessionView({ op, hall, priceBook, existingBookings, onCha
         {/* Live quote — selling prices only */}
         <aside className="h-fit lg:sticky lg:top-6">
           <div className="rounded-3xl border border-amber-400/30 bg-gradient-to-b from-slate-900 to-slate-950 p-5 shadow-2xl shadow-amber-500/5 print:border-slate-300 print:bg-white print:text-black">
-            <div className="text-[10px] font-bold tracking-[0.3em] text-amber-400">SARAYA EVENTS · عرض سعر</div>
+            <div className="text-[10px] font-bold tracking-[0.3em] text-amber-400">ELSARAYA EVENTS · عرض سعر</div>
             <div className="mt-1 text-sm font-bold text-white print:text-black">{op.clientName} · {typeCfg.ar}</div>
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between gap-3 text-slate-300 print:text-black"><span>إيجار {hall?.name || 'القاعة'}</span><span className="font-mono">{money(hallRent)}</span></div>
