@@ -887,5 +887,5 @@ html[data-theme="light"] textarea::placeholder {
   body:has(.invoice-print-root) * { visibility: hidden; }
   body:has(.invoice-print-root) .invoice-print-root,
   body:has(.invoice-print-root) .invoice-print-root * { visibility: visible; }
-  .invoice-print-root { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: #fff; backdrop-filter: none; }
+  .invoice-print-root { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: #fff !important; backdrop-filter: none; }
 }
