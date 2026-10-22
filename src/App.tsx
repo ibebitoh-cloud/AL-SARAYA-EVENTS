@@ -177,7 +177,7 @@ export default function App() {
   const [bookings, setBookings] = useState<Booking[]>(() => {
     if (typeof window === 'undefined') return dedupeBookings(INITIAL_BOOKINGS);
     try {
-      const saved = JSON.parse(window.localStorage.getItem('saraya-bookings-v2') || 'null');
+      const saved = JSON.parse(window.localStorage.getItem('saraya-bookings-v3') || 'null');
       return dedupeBookings(Array.isArray(saved) ? saved : INITIAL_BOOKINGS);
     } catch {
       return dedupeBookings(INITIAL_BOOKINGS);
@@ -185,7 +185,7 @@ export default function App() {
   });
   useEffect(() => {
     try {
-      window.localStorage.setItem('saraya-bookings-v2', JSON.stringify(dedupeBookings(bookings)));
+      window.localStorage.setItem('saraya-bookings-v3', JSON.stringify(dedupeBookings(bookings)));
     } catch (error) {
       console.warn('Bookings could not be saved locally:', error);
     }
@@ -197,7 +197,7 @@ export default function App() {
     const onStorage = (event: StorageEvent) => {
       if (!event.newValue) return;
       try {
-        if (event.key === 'saraya-bookings-v2') { const next = JSON.parse(event.newValue); if (Array.isArray(next)) setBookings(dedupeBookings(next)); }
+        if (event.key === 'saraya-bookings-v3') { const next = JSON.parse(event.newValue); if (Array.isArray(next)) setBookings(dedupeBookings(next)); }
         if (event.key === NOTIFICATIONS_KEY) { const next = JSON.parse(event.newValue); if (Array.isArray(next)) setNotifications(next); }
       } catch { /* Ignore malformed data from another tab. */ }
     };
@@ -243,11 +243,11 @@ export default function App() {
   });
   const [payments, setPayments] = useState<PaymentReceipt[]>(() => {
     if (typeof window === 'undefined') return INITIAL_PAYMENTS;
-    try { return JSON.parse(window.localStorage.getItem('saraya-payments') || '') || INITIAL_PAYMENTS; } catch { return INITIAL_PAYMENTS; }
+    try { return JSON.parse(window.localStorage.getItem('saraya-payments-v2') || '') || INITIAL_PAYMENTS; } catch { return INITIAL_PAYMENTS; }
   });
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     if (typeof window === 'undefined') return INITIAL_EXPENSES;
-    try { return JSON.parse(window.localStorage.getItem('saraya-expenses') || '') || INITIAL_EXPENSES; } catch { return INITIAL_EXPENSES; }
+    try { return JSON.parse(window.localStorage.getItem('saraya-expenses-v2') || '') || INITIAL_EXPENSES; } catch { return INITIAL_EXPENSES; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-services', JSON.stringify(servicesCatalogue)); }, [servicesCatalogue]);
   // Separate full price list per location (Arcane / Porto), edited by the manager in "قوائم الأسعار".
@@ -263,8 +263,8 @@ export default function App() {
   });
   useEffect(() => { if (pendingFinancePriceBook) window.localStorage.setItem('saraya-pending-finance-prices', JSON.stringify(pendingFinancePriceBook)); else window.localStorage.removeItem('saraya-pending-finance-prices'); }, [pendingFinancePriceBook]);
   useEffect(() => { window.localStorage.setItem('saraya-price-book-v1', JSON.stringify(priceBook)); }, [priceBook]);
-  useEffect(() => { window.localStorage.setItem('saraya-payments', JSON.stringify(payments)); }, [payments]);
-  useEffect(() => { window.localStorage.setItem('saraya-expenses', JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { window.localStorage.setItem('saraya-payments-v2', JSON.stringify(payments)); }, [payments]);
+  useEffect(() => { window.localStorage.setItem('saraya-expenses-v2', JSON.stringify(expenses)); }, [expenses]);
   const [inventory, setInventory] = useState<InventoryItem[]>(() => {
     if (typeof window === 'undefined') return INITIAL_INVENTORY;
     try { return JSON.parse(window.localStorage.getItem('saraya-inventory') || '') || INITIAL_INVENTORY; } catch { return INITIAL_INVENTORY; }
