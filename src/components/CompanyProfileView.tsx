@@ -5,8 +5,7 @@ import { SYSTEM_USERS } from '../data/systemProfiles';
 import { ALSARAYA_PHOTOS } from '../data/venueImages';
 import { EventLayoutDesigner } from './EventLayoutDesigner';
 import { Hall3DProfile } from '../types/venueSystem';
-import blackLogo from '../assets/images/logo/Company LOGO - black versoin.png';
-import whiteLogo from '../assets/images/logo/Company LOGO - white version.png';
+import { BRAND_LOGOS } from './BrandLogo';
 import { RecordEditorModal, RowActions } from './RecordEditor';
 import { hallFields } from '../data/recordFields';
 
@@ -63,13 +62,13 @@ export function CompanyProfileView({ language, halls, bookings, services, client
       .then((newPhotos) => setDraftHall((current) => current ? { ...current, galleryPhotos: [...(current.galleryPhotos || []), ...newPhotos], ...(!current.photoUrl && !current.photo ? { photoUrl: newPhotos[0], photo: newPhotos[0] } : {}) } : current))
       .catch(() => undefined);
   };
-  const logoSrc = companyProfile.logo === 'white' ? whiteLogo : blackLogo;
+  const logoSrc = BRAND_LOGOS.full[companyProfile.logo === 'white' ? 'white' : 'dark'];
   return (
     <div className="w-full space-y-5 pb-20">
       <section className="rounded-3xl border border-amber-500/20 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-white p-3"><img src={logoSrc} alt="ELSARAYA EVENTS logo" className="h-16 w-32 object-contain" /></div>
+            <div className={`rounded-2xl p-3 ${companyProfile.logo === 'white' ? 'bg-slate-950 ring-1 ring-white/10' : 'bg-white'}`}><img src={logoSrc} alt="ELSARAYA EVENTS logo" className="h-16 w-32 object-contain" /></div>
             <div><div className="flex items-center gap-2 text-amber-400 text-[10px] font-black uppercase tracking-[0.25em]"><ShieldCheck className="w-4 h-4" /> {ar ? 'الملف الرسمي للشركة' : 'Official Company Profile'}</div><h1 className="mt-2 text-3xl font-black text-white">{ar ? companyProfile.nameAr : companyProfile.nameEn}</h1><p className="mt-1 text-sm text-slate-400">{ar ? companyProfile.taglineAr : companyProfile.taglineEn}</p></div>
           </div>
           {!readOnly && <button type="button" onClick={openCompanyEditor} className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-300 flex items-center gap-2"><Pencil className="w-3.5 h-3.5" />{ar ? 'تعديل ملف الشركة' : 'Edit Company Profile'}</button>}
