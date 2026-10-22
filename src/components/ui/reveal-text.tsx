@@ -76,7 +76,7 @@ export function RevealText({
                 onPointerEnter={() => setHoveredIndex(i)}
                 onPointerLeave={() => setHoveredIndex(null)}
                 onPointerDown={() => setHoveredIndex((current) => (current === i ? null : i))}
-                className={`${fontSize} relative cursor-pointer select-none font-black tracking-tight`}
+                className={`${fontSize} relative cursor-pointer select-none font-black tracking-tighter`}
                 initial={reduceMotion ? false : { scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: i * letterDelay, type: 'spring', damping: 12, stiffness: 200, mass: 0.8 }}

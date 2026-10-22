@@ -40,7 +40,7 @@ export const SITE_SECTIONS: SiteSection[] = [
   {
     id: 'intro', titleAr: 'المقدمة', titleEn: 'Introduction',
     texts: [
-      f('intro.text', 'فقرة المقدمة', 'Intro paragraph', 'السرايا تنسّق مناسبتك من البداية للنهاية؛ نوفر القاعات المناسبة، ونؤجر المعدات، وننسّق الخدمات والموردين، داخل القاعات المتاحة أو في موقعك الخاص.', 'Saraya coordinates your event from start to finish: arranging suitable venues, renting equipment, and coordinating services and suppliers at available venues or your own location.', true),
+      f('intro.text', 'فقرة المقدمة', 'Intro paragraph', 'السرايا تنسّق مناسبتك من البداية للنهاية؛ نوفر القاعات المناسبة، ونؤجر المعدات، وننسّق الخدمات والموردين، داخل القاعات المتاحة أو في موقعك الخاص.', 'ElSaraya coordinates your event from start to finish: arranging suitable venues, renting equipment, and coordinating services and suppliers at available venues or your own location.', true),
       f('intro.stat1', 'المؤشر 1 (عدد القاعات)', 'Highlight 1 (venue count)', 'قاعات ومواقع متاحة', 'Venues Arranged'),
       f('intro.stat2', 'المؤشر 2', 'Highlight 2', 'أفراح وخطوبات', 'Weddings & Engagements'),
       f('intro.stat3', 'المؤشر 3', 'Highlight 3', 'مؤتمرات وقمم', 'Conferences & Summits'),
@@ -105,7 +105,7 @@ export const SITE_SECTIONS: SiteSection[] = [
       f('planner.title', 'عنوان القسم', 'Section title', 'نخطط لمناسبتك معك قبل التنفيذ', 'We plan your event with you before execution'),
       f('planner.text', 'وصف القسم', 'Section text', 'نستخدم أدوات التخطيط والتصميم لعرض توزيع الطاولات والكراسي والمنصة والشاشة والزهور ومراجعة التفاصيل معك قبل التنفيذ.', 'Our team uses planning and design tools to review tables, chairs, stages, screens, flowers and the full event setup with you before execution.', true),
       f('planner.tags', 'الوسوم (افصل بينها بفاصلة)', 'Tags (comma separated)', 'تخطيط 2D، تصور 3D، مراجعة داخلية، موقع العميل', '2D Planning, 3D Visualization, Inside Review, Client Location'),
-      f('planner.note', 'الملاحظة المميزة', 'Highlighted note', 'التخطيط التفصيلي متاح خلال جلسة استشارة مع فريق السرايا', 'Detailed event planning is available during a consultation with the Saraya team'),
+      f('planner.note', 'الملاحظة المميزة', 'Highlighted note', 'التخطيط التفصيلي متاح خلال جلسة استشارة مع فريق السرايا', 'Detailed event planning is available during a consultation with the ElSaraya team'),
     ],
   },
   {
@@ -118,9 +118,9 @@ export const SITE_SECTIONS: SiteSection[] = [
   {
     id: 'about', titleAr: 'عن السرايا', titleEn: 'About',
     texts: [
-      f('about.kicker', 'عنوان القسم الصغير', 'Section label', 'عن السرايا', 'ABOUT SARAYA'),
+      f('about.kicker', 'عنوان القسم الصغير', 'Section label', 'عن السرايا', 'ABOUT ELSARAYA'),
       f('about.title', 'عنوان القسم', 'Section title', 'كل خدمات مناسبتك من خلال فريق واحد', 'Your event, coordinated through one team'),
-      f('about.text', 'نص التعريف', 'About text', 'تنسّق السرايا بين حجز القاعات، وتأجير المعدات، والخدمات، والموردين، وتجهيزات يوم المناسبة. نساعدك على ترتيب التفاصيل من خلال نقطة تواصل واحدة، سواء أقيمت المناسبة في قاعة متاحة أو في موقعك الخاص.', 'Saraya coordinates venue bookings, equipment rental, event services, suppliers and event-day setup. We help bring the details together through one point of contact, whether your event is held at an arranged venue or at your own location.', true),
+      f('about.text', 'نص التعريف', 'About text', 'تنسّق السرايا بين حجز القاعات، وتأجير المعدات، والخدمات، والموردين، وتجهيزات يوم المناسبة. نساعدك على ترتيب التفاصيل من خلال نقطة تواصل واحدة، سواء أقيمت المناسبة في قاعة متاحة أو في موقعك الخاص.', 'ElSaraya coordinates venue bookings, equipment rental, event services, suppliers and event-day setup. We help bring the details together through one point of contact, whether your event is held at an arranged venue or at your own location.', true),
       f('about.button', 'نص الزر', 'Button', 'ناقش مناسبتك معنا', 'Discuss Your Event'),
     ],
   },
