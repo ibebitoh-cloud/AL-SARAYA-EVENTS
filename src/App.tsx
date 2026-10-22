@@ -28,6 +28,7 @@ import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import BeamWordmarkFooter from './components/ui/beam-wordmark-footer';
 import { DaliCredit } from './components/DaliCredit';
+import { BrandLogo } from './components/BrandLogo';
 import { HoneyEmberBackground } from './components/ui/honey-ember-background';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
 import { ALSARAYA_PHOTOS, VenuePhoto } from './data/venueImages';
@@ -436,6 +437,7 @@ export default function App() {
       className="mt-12 w-full"
       dir={isAr ? 'rtl' : 'ltr'}
       brand={companyProfile.nameEn}
+      logo={<BrandLogo variant="full" />}
       company={isAr ? companyProfile.nameAr : companyProfile.nameEn}
       socials={[
         { label: 'WhatsApp', href: `https://wa.me/${companyProfile.whatsapp.replace(/\D/g, '')}`, icon: 'whatsapp' as const },
@@ -469,7 +471,7 @@ export default function App() {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-400/10 text-lg font-black tracking-tight text-amber-300">S</div>
+              <BrandLogo variant="mark" tone={theme === 'dark' ? 'white' : 'dark'} className="h-9 w-auto" />
               <div>
                 <div className="text-sm font-bold tracking-[0.16em] text-white">{companyProfile.nameEn}</div>
                 <div className="mt-1 text-xs text-slate-400">{language === 'ar' ? companyProfile.nameAr : companyProfile.taglineEn}</div>

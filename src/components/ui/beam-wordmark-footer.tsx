@@ -91,6 +91,8 @@ export type FooterCredit = { lead?: string; label: string; href?: string; tail?:
 
 export type BeamWordmarkFooterProps = {
   brand?: string
+  /** The brand's logo, shown above the copyright line. */
+  logo?: React.ReactNode
   /** What the giant wordmark spells. Defaults to `brand`. */
   wordmark?: string
   /** Copyright holder; defaults to `brand`. */
@@ -215,6 +217,7 @@ const CSS =
   ".bwf-grain{position:absolute;inset:0;opacity:.14;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")}" +
   // Layout.
   ".bwf-inner{position:relative;z-index:2;box-sizing:border-box;max-width:1120px;margin:0 auto;padding:clamp(48px,8.5cqw,104px) clamp(20px,6cqw,88px) 0;display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,.86fr) minmax(0,.86fr);column-gap:clamp(24px,4cqw,48px);row-gap:44px}" +
+  ".bwf-logo{margin-bottom:22px}.bwf-logo img{display:block;height:84px;width:auto}" +
   ".bwf-label{font-size:12px;line-height:1;letter-spacing:.01em;color:rgb(var(--bwf-acc));padding-bottom:13px;position:relative;display:block}" +
   ".bwf-label::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,rgba(var(--bwf-acc),.55),rgba(var(--bwf-acc),.28));transform-origin:0 50%;transform:scaleX(var(--bwf-line,1));transition:transform 1.1s cubic-bezier(.2,.7,.1,1) var(--bwf-d,0ms)}" +
   ".bwf[dir='rtl'] .bwf-label::after{transform-origin:100% 50%;background:linear-gradient(270deg,rgba(var(--bwf-acc),.55),rgba(var(--bwf-acc),.28))}" +
@@ -277,6 +280,7 @@ const Arrow = () => (
 
 export default function BeamWordmarkFooter({
   brand = "ELSARAYA EVENTS",
+  logo,
   wordmark,
   company,
   year = new Date().getFullYear(),
@@ -515,6 +519,11 @@ export default function BeamWordmarkFooter({
 
       <div className="bwf-inner">
         <div className="bwf-col">
+          {logo && (
+            <div className="bwf-logo bwf-fade" style={delay()}>
+              {logo}
+            </div>
+          )}
           <p className="bwf-label" style={delay()}>
             © {year} {label}
           </p>

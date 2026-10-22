@@ -30,6 +30,7 @@ import {
 import { Hall, Hall3DProfile, HallLayoutItem, Language, LocationId, SavedHallLayout } from '../types/venueSystem';
 import { EventLayout3D } from './EventLayout3D';
 import { LOCATIONS, hallLocation } from '../data/locations';
+import { BrandLogo } from './BrandLogo';
 
 type LayoutMode = '2d' | '3d' | 'pov';
 type EventKind = 'engagement' | 'wedding' | 'conference' | 'summit' | 'birthday' | 'other';
@@ -465,7 +466,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
         <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 sm:p-5">
           <div className="flex flex-col lg:flex-row lg:items-end gap-4">
             <div className="flex-1">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400">ELSARAYA EVENTS</div>
+              <BrandLogo className="h-6 w-auto" />
               <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-white">{title}</h1>
               <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
             </div>
@@ -487,7 +488,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
         <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
           <div className="p-5 sm:p-7 border-b border-slate-800 flex items-center justify-between gap-3">
             <div>
-              <div className="text-[10px] tracking-wider text-amber-400 font-bold">ELSARAYA EVENTS</div>
+              <BrandLogo className="mb-1 h-6 w-auto" />
               <h2 className="text-xl sm:text-2xl font-bold text-white">{projectName || eventName}</h2>
               <p className="text-sm text-slate-400 mt-1">{guests} {isAr ? 'ضيف' : 'guests'} · {locationKind === 'client' ? (isAr ? 'موقع العميل' : 'Client Location') : (isAr ? 'قاعة السرايا' : 'Saraya Venue')}</p>
             </div>

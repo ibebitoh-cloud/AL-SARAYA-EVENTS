@@ -4,6 +4,7 @@ import { Booking, Language } from '../types/venueSystem';
 import { makeTr, eventTypeLabel } from '../utils/tr';
 import { bookingTotals } from '../data/recordFields';
 import { sound } from '../utils/soundEffects';
+import { BrandLogo } from './BrandLogo';
 
 interface InvoicePrintModalProps {
   isOpen: boolean;
@@ -61,13 +62,9 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
             {/* Header Lockup */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 print:border-gray-300 pb-6 mb-6">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-indigo-500 print:bg-black" />
-                  <h1 className="text-2xl font-black text-white print:text-black">
-                    {isAr ? 'السرايا للمناسبات' : 'ELSARAYA EVENTS'}
-                  </h1>
-                </div>
-                <p className="text-xs text-slate-400 print:text-gray-600 mt-1">
+                <BrandLogo variant="full" printDark className="h-20 w-auto" />
+                <h1 className="sr-only">{isAr ? 'السرايا للمناسبات' : 'ELSARAYA EVENTS'}</h1>
+                <p className="text-xs text-slate-400 print:text-gray-600 mt-3">
                   {isAr ? 'ELSARAYA EVENTS · قاعات أفراح ومناسبات وإدارة فعاليات' : 'Wedding halls, events & event management'}
                 </p>
                 <p className="text-xs text-slate-500 print:text-gray-500 mt-0.5">
