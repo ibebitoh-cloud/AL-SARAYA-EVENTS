@@ -27,13 +27,13 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[90] flex justify-center p-2 sm:p-6 backdrop-blur-sm overflow-y-auto" style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)' }} onClick={onClose}>
+      <div className="invoice-print-root fixed inset-0 z-[90] flex justify-center p-2 sm:p-6 print:p-0 backdrop-blur-sm overflow-y-auto" style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)' }} onClick={onClose}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-3xl h-fit rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-3 sm:p-6 text-start my-auto"
+          className="relative w-full max-w-3xl h-fit rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-3 sm:p-6 text-start my-auto print:my-0 print:max-w-none print:rounded-none print:border-none print:bg-white print:p-0 print:shadow-none"
         >
           {/* Top Actions Bar (Hidden on print) */}
           <div className="print:hidden flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
@@ -201,7 +201,6 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
             </div>
           </div>
         </motion.div>
-        </div>
       </div>
     </AnimatePresence>
   );
