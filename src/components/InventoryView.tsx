@@ -9,10 +9,13 @@ import {
   Trash2,
   TrendingDown,
   Layers,
+  ImageOff,
+  Globe2,
 } from 'lucide-react';
 import { InventoryItem, Language } from '../types/venueSystem';
+import { isCustomerItem } from '../data/inventoryDisplay';
 import { makeTr } from '../utils/tr';
-import { RowActions } from './RecordEditor';
+import { RowActions, ImageField } from './RecordEditor';
 import { sound } from '../utils/soundEffects';
 
 interface InventoryViewProps {
@@ -49,6 +52,15 @@ export function InventoryView({
   const [minThreshold, setMinThreshold] = useState(20);
   const [costPerUnit, setCostPerUnit] = useState(35);
   const [salePrice, setSalePrice] = useState(0);
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [showOnWebsite, setShowOnWebsite] = useState(true);
+  const customerItems = inventory.filter(isCustomerItem);
+  const missingPhotos = customerItems.filter((i) => !i.photoUrl?.trim()).length;
+  const openCreate = () => {
+    setEditingItem(null); setName(''); setCategory('buffet'); setQuantity(100); setUnit('قطعة');
+    setMinThreshold(20); setCostPerUnit(35); setSalePrice(0); setPhotoUrl(''); setShowOnWebsite(true);
+    setIsModalOpen(true);
+  };
 
   const categories = [
     { id: 'all', label: tr('جميع المستلزمات', 'All items') },
@@ -97,6 +109,8 @@ export function InventoryView({
     setMinThreshold(item.minThreshold);
     setCostPerUnit(item.costPerUnit);
     setSalePrice(item.salePrice ?? 0);
+    setPhotoUrl(item.photoUrl || '');
+    setShowOnWebsite(isCustomerItem(item));
     setIsModalOpen(true);
   };
 
@@ -109,6 +123,8 @@ export function InventoryView({
       minThreshold: Math.max(0, Number(minThreshold) || 0), costPerUnit: Math.max(0, Number(costPerUnit) || 0),
       salePrice: Math.max(0, Number(salePrice) || 0), damagedQuantity: editingItem?.damagedQuantity ?? 0,
       lastRestockedDate: editingItem?.lastRestockedDate ?? new Date().toISOString().split('T')[0],
+      photoUrl: photoUrl.trim() || undefined,
+      showOnWebsite,
     };
     sound.success();
     if (editingItem) onEditItem(item); else onAddItem(item);
@@ -132,7 +148,7 @@ export function InventoryView({
         {!sellingPricesOnly && <button
           onClick={() => {
             sound.click(650);
-            setIsModalOpen(true);
+            openCreate();
           }}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer whitespace-nowrap active:scale-95"
         >
@@ -161,6 +177,13 @@ export function InventoryView({
         ))}
       </div>
 
+      {!sellingPricesOnly && missingPhotos > 0 && (
+        <div role="note" className="flex items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-xs font-semibold text-amber-200">
+          <ImageOff className="h-4 w-4 shrink-0" />
+          {tr(`${missingPhotos} صنف معروض للعملاء بدون صورة. أضف صورة من زر التعديل.`, `${missingPhotos} item(s) shown to customers have no photo. Add one with the edit button.`)}
+        </div>
+      )}
+
       {/* Inventory Items Table */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredItems.map((item) => {
@@ -175,6 +198,10 @@ export function InventoryView({
                   : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'
               }`}
             >
+              <div className="relative -mx-5 -mt-5 mb-1 h-32 overflow-hidden rounded-t-2xl bg-slate-950">
+                {item.photoUrl ? <img src={item.photoUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-1 text-[11px] text-slate-500"><ImageOff className="h-5 w-5" />{tr('لا توجد صورة', 'No photo yet')}</div>}
+                {isCustomerItem(item) && <span className="absolute end-2 top-2 flex items-center gap-1 rounded-full bg-slate-950/80 px-2 py-0.5 text-[10px] font-semibold text-emerald-300"><Globe2 className="h-3 w-3" />{tr('ظاهر للعملاء', 'On website')}</span>}
+              </div>
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="text-sm font-bold text-white leading-snug">{item.name}</h3>
@@ -268,7 +295,7 @@ export function InventoryView({
       {/* Add New Inventory Item Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-start">
+          <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-start">
             <h3 className="text-base font-bold text-white mb-4">{editingItem ? tr('تعديل الصنف', 'Edit item') : tr('إضافة مستلزم / صنف جديد', 'Add item')}</h3>
 
             <form onSubmit={handleSave} className="space-y-4">
@@ -347,6 +374,12 @@ export function InventoryView({
                   <input type="number" min="0" value={salePrice} onChange={(e) => setSalePrice(Number(e.target.value) || 0)} className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono" />
                 </div>
               </div>
+
+              <ImageField label={tr('صورة الصنف (تظهر للعملاء)', 'Item photo (shown to customers)')} value={photoUrl} onChange={setPhotoUrl} language={language} />
+              <label className="flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" checked={showOnWebsite} onChange={(e) => setShowOnWebsite(e.target.checked)} className="h-4 w-4 accent-amber-400" />
+                {tr('اعرض هذا الصنف للعملاء في الموقع (بدون سعر)', 'Show this item to customers on the website (no price)')}
+              </label>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                 <button

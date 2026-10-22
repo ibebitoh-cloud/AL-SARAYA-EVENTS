@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Calendar, Building2, Sparkles, Ruler, Image as ImageIcon, Cuboid, ArrowRight, ArrowLeft, X } from 'lucide-react';
-import { Hall, Language } from '../types/venueSystem';
+import { Hall, Language, ServiceDefinition, InventoryItem } from '../types/venueSystem';
+import { isCustomerItem } from '../data/inventoryDisplay';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 import { SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
 
@@ -15,6 +16,9 @@ interface Props {
   onGoHome: () => void;
   /** Editable service texts and photos from Website Content. */
   content?: SiteContent;
+  /** Service catalogue and rental stock, shown with photos and without prices. */
+  services?: ServiceDefinition[];
+  inventory?: InventoryItem[];
 }
 
 const copy = {
@@ -26,7 +30,7 @@ const copy = {
   '3d-tour': { en: ['3D Tour', 'Explore the space with our team.', '3D venue visualization is presented by the Saraya team as part of the planning and interview process.'], ar: ['جولة 3D', 'استكشف المساحة مع فريق السرايا.', 'يقدم فريق السرايا التصور ثلاثي الأبعاد ضمن عملية التخطيط والمقابلة.'] },
 } as const;
 
-export function CustomerSectionView({ screen, halls, photos: libraryPhotos, language, onOpenBooking, onGoHome, content }: Props) {
+export function CustomerSectionView({ screen, halls, photos: libraryPhotos, language, onOpenBooking, onGoHome, content, services = [], inventory = [] }: Props) {
   const isAr = language === 'ar';
   const [selectedVenuePhoto, setSelectedVenuePhoto] = useState<VenuePhoto | null>(null);
   const [venueAlbumSlides, setVenueAlbumSlides] = useState<Record<string, number>>({});
@@ -139,6 +143,30 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
                 </article>
               );
             })}
+          </div>
+        )}
+        {screen === 'services' && (services.length > 0 || inventory.some(isCustomerItem)) && (
+          <div className="space-y-10 border-t border-slate-800 p-6">
+            {[
+              { id: 'catalogue', title: isAr ? 'خدماتنا بالتفصيل' : 'Our services in detail', items: services.map((s) => ({ id: s.id, name: s.name, text: s.description, photo: s.photoUrl })) },
+              { id: 'rental', title: isAr ? 'معدات وأدوات للإيجار' : 'Equipment & items for rent', items: inventory.filter(isCustomerItem).map((i) => ({ id: i.id, name: i.name, text: '', photo: i.photoUrl })) },
+            ].filter((group) => group.items.length).map((group) => (
+              <section key={group.id}>
+                <h2 className="mb-4 font-serif text-2xl font-bold text-white">{group.title}</h2>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {group.items.map((item) => (
+                    <article key={item.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+                      {item.photo ? <img src={item.photo} alt={item.name} loading="lazy" className="h-32 w-full object-cover sm:h-40" /> : <div className="flex h-32 items-center justify-center bg-slate-900 sm:h-40"><Sparkles className="h-6 w-6 text-amber-300/60" /></div>}
+                      <div className="p-3"><h3 dir="auto" className="text-sm font-bold leading-snug">{item.name}</h3>{item.text && <p dir="auto" className="mt-1 line-clamp-2 text-[11px] leading-5 text-slate-400">{item.text}</p>}</div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
+            <div className="text-center">
+              <p className="text-xs text-slate-400">{isAr ? 'الأسعار حسب المناسبة. اطلب الحجز وسيتواصل معك فريقنا بالتفاصيل والتكلفة.' : 'Pricing depends on your event. Send a booking request and our team will contact you with details and the cost.'}</p>
+              <button type="button" onClick={() => onOpenBooking()} className="mt-4 rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-950">{isAr ? 'ابدأ الحجز' : 'Start a Booking'}</button>
+            </div>
           </div>
         )}
 

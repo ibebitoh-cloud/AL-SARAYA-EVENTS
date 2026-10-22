@@ -17,11 +17,31 @@ export interface FieldDef {
 
 const inputClass = 'mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none';
 
-/** Reads an image file as a data URL so uploaded photos survive in local storage. */
+/**
+ * Reads an image file as a data URL so uploaded photos survive in local storage.
+ * Phone photos are scaled down to at most 1200px so many of them fit in the browser's storage.
+ */
 export const readImageFile = (file: File, onDone: (dataUrl: string) => void) => {
   if (!file.type.startsWith('image/')) return;
   const reader = new FileReader();
-  reader.onload = () => onDone(String(reader.result));
+  reader.onload = () => {
+    const original = String(reader.result);
+    if (file.type === 'image/svg+xml' || file.type === 'image/gif') { onDone(original); return; }
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
+      if (scale === 1 && file.size < 400_000) { onDone(original); return; }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { onDone(original); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      onDone(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => onDone(original);
+    img.src = original;
+  };
   reader.readAsDataURL(file);
 };
 

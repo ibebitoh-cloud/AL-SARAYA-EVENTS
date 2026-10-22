@@ -376,6 +376,7 @@ export function NewBookingModal({
                         className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 text-xs ${isChecked ? 'bg-indigo-600/15 border-indigo-500 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'}`}>
                         <div className="flex items-center gap-2">
                           <div className={`w-4 h-4 rounded-md flex items-center justify-center border ${isChecked ? 'bg-indigo-600 border-indigo-400 text-white' : 'border-slate-600'}`}>{isChecked && <Check className="w-3 h-3" />}</div>
+                          {customerMode && (srv.photoUrl ? <img src={srv.photoUrl} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-lg object-cover" /> : <span className="h-9 w-9 shrink-0 rounded-lg bg-slate-800" />)}
                           <span className="font-medium line-clamp-1">{srv.name}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">

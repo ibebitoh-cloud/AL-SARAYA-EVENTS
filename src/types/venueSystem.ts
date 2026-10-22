@@ -234,6 +234,8 @@ export interface ServiceDefinition {
   defaultCost: number;
   unit: string;
   description?: string;
+  /** Photo shown to customers on the website and in the booking form. */
+  photoUrl?: string;
 }
 
 export interface Expense {
@@ -271,6 +273,10 @@ export interface InventoryItem {
   salePrice?: number; // سعر بيع/احتساب الوحدة
   damagedQuantity: number; // التالف
   lastRestockedDate: string;
+  /** Photo shown to customers on the website's rental items list. */
+  photoUrl?: string;
+  /** Show this item to customers. When unset, everything except cleaning and operations supplies is shown. */
+  showOnWebsite?: boolean;
 }
 
 export interface Employee {

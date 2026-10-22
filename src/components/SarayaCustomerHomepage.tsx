@@ -21,6 +21,8 @@ interface SarayaCustomerHomepageProps {
   onOpenEditManager?: (tab?: 'halls' | 'photos', targetId?: string) => void;
   /** Editable website copy and photos from the portal's Website Content screen. */
   content?: SiteContent;
+  /** Opens the Services page with the full service catalogue and rental items. */
+  onOpenServicesPage?: () => void;
 }
 
 type EventKey = 'wedding' | 'engagement' | 'birthday' | 'corporate';
@@ -52,7 +54,7 @@ function Reveal({ children, delay = 0, className }: { children: ReactNode; delay
 
 export function SarayaCustomerHomepage({
   halls, photos, language, onOpenBookingModal, onCreateBooking,
-  onOpenEventDesigner, onOpenEditManager, content
+  onOpenEventDesigner, onOpenEditManager, content, onOpenServicesPage
 }: SarayaCustomerHomepageProps) {
   const isAr = language === 'ar';
   const t = (key: string) => siteText(content, key, isAr);
@@ -219,6 +221,7 @@ export function SarayaCustomerHomepage({
             </Reveal>
           ))}
         </div>
+        {onOpenServicesPage && <div className="flex justify-center"><button type="button" onClick={onOpenServicesPage} className="flex items-center gap-2 rounded-xl border border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-200 hover:border-amber-400">{isAr ? 'كل الخدمات والمعدات بالصور' : 'All services & rental items'}<Arrow className="h-4 w-4" /></button></div>}
       </section>
 
       {/* VENUES */}
