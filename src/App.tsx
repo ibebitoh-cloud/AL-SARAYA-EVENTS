@@ -27,7 +27,7 @@ import { DEFAULT_EDIT_PERMISSIONS, EditArea, EditPermissions, canEdit } from './
 import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import BeamWordmarkFooter from './components/ui/beam-wordmark-footer';
-import { DaliCredit } from './components/DaliCredit';
+import { DaliCredit, DaliOverlayCredit } from './components/DaliCredit';
 import { BrandLogo } from './components/BrandLogo';
 import { HoneyEmberBackground } from './components/ui/honey-ember-background';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
@@ -124,23 +124,7 @@ export default function App() {
   const [portalLoginOpen, setPortalLoginOpen] = useState(false);
   const [portalWelcome, setPortalWelcome] = useState<SystemUser | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
-  const [footerCreditVisible, setFooterCreditVisible] = useState(false);
   const footerRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    const footer = footerRef.current;
-    if (!footer || typeof IntersectionObserver === 'undefined') {
-      setFooterCreditVisible(true);
-      return;
-    }
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setFooterCreditVisible(true);
-        observer.disconnect();
-      }
-    }, { threshold: 0.18 });
-    observer.observe(footer);
-    return () => observer.disconnect();
-  }, []);
   useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; window.localStorage.setItem('saraya-theme', theme); }, [theme]);
   useEffect(() => { document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = language; }, [language]);
   const toggleLanguage = () => setLanguage((prev) => (prev === 'ar' ? 'en' : 'ar'));
@@ -438,6 +422,7 @@ export default function App() {
       dir={isAr ? 'rtl' : 'ltr'}
       brand={companyProfile.nameEn}
       logo={<BrandLogo variant="full" />}
+      bottom={<a href="tel:+201146475759" aria-label="Powered by DALI STUDIO"><DaliCredit contact /></a>}
       company={isAr ? companyProfile.nameAr : companyProfile.nameEn}
       socials={[
         { label: 'WhatsApp', href: `https://wa.me/${companyProfile.whatsapp.replace(/\D/g, '')}`, icon: 'whatsapp' as const },
@@ -447,7 +432,6 @@ export default function App() {
       ]}
       credits={[
         { lead: siteText(siteContent, 'footer.text', isAr), label: '' },
-        { lead: 'Powered by ', label: 'DALI STUDIO', node: <DaliCredit isAr={isAr} />, href: 'tel:+201146475759', tail: ' · Mohamed Alaa' },
       ]}
       columns={[
         { title: siteText(siteContent, 'footer.contactTitle', isAr), links: [
@@ -506,49 +490,8 @@ export default function App() {
             </div>
           </div>
         </div>
-        <style>{`
-          @keyframes saraya-credit-main {
-            0% { opacity: 0; transform: translateX(-10px) skewX(-12deg); filter: blur(3px); letter-spacing: .34em; }
-            12% { opacity: 1; transform: translateX(5px) skewX(8deg); filter: blur(0); text-shadow: -5px 0 #22d3ee, 5px 0 #fb7185; clip-path: inset(0 0 52% 0); }
-            24% { transform: translateX(-4px) skewX(-4deg); text-shadow: 5px 0 #22d3ee, -5px 0 #fb7185; clip-path: inset(42% 0 12% 0); }
-            38% { transform: translateX(3px); text-shadow: -3px 0 #22d3ee, 3px 0 #fb7185; clip-path: inset(0); letter-spacing: .22em; }
-            52% { transform: translateX(-1px); text-shadow: 2px 0 #22d3ee, -2px 0 #fb7185; }
-            68%, 100% { opacity: 1; transform: translateX(0) skewX(0); filter: none; text-shadow: 0 0 22px rgba(245, 185, 66, .18); clip-path: inset(0); letter-spacing: .18em; }
-          }
-          @keyframes saraya-credit-cyan {
-            0%, 100% { opacity: 0; transform: translate(-8px, 2px); }
-            14%, 32% { opacity: .95; transform: translate(5px, -1px); }
-            46% { opacity: .5; transform: translate(-3px, 1px); }
-            60% { opacity: 0; transform: translate(0); }
-          }
-          @keyframes saraya-credit-pink {
-            0%, 100% { opacity: 0; transform: translate(7px, -2px); }
-            18%, 36% { opacity: .9; transform: translate(-5px, 1px); }
-            48% { opacity: .4; transform: translate(3px, -1px); }
-            62% { opacity: 0; transform: translate(0); }
-          }
-          @keyframes saraya-credit-scan {
-            0% { opacity: 0; transform: translateX(-120%) scaleX(.35); }
-            16% { opacity: 1; transform: translateX(0) scaleX(1); }
-            42% { opacity: .9; transform: translateX(12%) scaleX(.85); }
-            100% { opacity: 0; transform: translateX(120%) scaleX(.3); }
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .saraya-credit-main, .saraya-credit-layer, .saraya-credit-scan { animation: none !important; }
-          }
-        `}</style>
         <div className="mt-6 flex flex-col items-center gap-2 border-t border-white/10 pt-4 text-center">
-          <div dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'isolate' }} className="flex w-full flex-col items-center justify-center gap-0 text-center leading-tight">
-            <div className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-500">Powered by</div>
-            <span className="relative inline-block overflow-visible py-0 px-2">
-              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-scan pointer-events-none absolute -left-3 right-0 top-1/2 z-0 h-5 bg-gradient-to-r from-transparent via-cyan-300/70 to-fuchsia-400/70 blur-[2px]" style={{ animation: 'saraya-credit-scan 1.25s ease-out both' }} />}
-              <span className={`saraya-credit-main relative z-10 inline-block text-xl font-black tracking-[0.22em] text-amber-300 drop-shadow-[0_0_14px_rgba(245,185,66,0.28)] ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-main 1.35s cubic-bezier(.2,.8,.2,1) both' } : undefined}>DALI STUDIO</span>
-              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-cyan-300 mix-blend-screen" style={{ animation: 'saraya-credit-cyan 1.1s steps(2, end) both' }}>DALI STUDIO</span>}
-              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-rose-400 mix-blend-screen" style={{ animation: 'saraya-credit-pink 1.1s steps(2, end) both' }}>DALI STUDIO</span>}
-            </span>
-            <span className="text-sm font-bold leading-tight text-slate-300">Mohamed Alaa</span>
-            <a href="tel:+201146475759" className="text-xs font-bold leading-tight text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
-          </div>
+          <a href="tel:+201146475759" aria-label="Powered by DALI STUDIO"><DaliCredit tone={theme === 'dark' ? 'white' : 'dark'} contact /></a>
           <div className="mt-1 text-xs font-bold text-slate-500">© {new Date().getFullYear()} {companyProfile.nameEn}. All rights reserved.</div>
         </div>
       </div>
@@ -558,5 +501,6 @@ export default function App() {
     <Suspense fallback={null}>{selectedBookingForProfit && <EventProfitCalculatorModal key={selectedBookingForProfit.id} isOpen={!!selectedBookingForProfit && !portalUser?.sellingPricesOnly && portalUser?.role !== 'finance'} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} language={language} />}
     {selectedBookingForInvoice && <InvoicePrintModal key={selectedBookingForInvoice.id} isOpen onClose={() => setSelectedBookingForInvoice(null)} booking={selectedBookingForInvoice} language={language} company={companyProfile} />}</Suspense>
     <Suspense fallback={null}>{isOnboardingOpen && <OnboardingFlow isOpen language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}</Suspense>
+    <DaliOverlayCredit />
   </div>);
 }
