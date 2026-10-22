@@ -276,7 +276,7 @@ const Arrow = () => (
 )
 
 export default function BeamWordmarkFooter({
-  brand = "SARAYA EVENTS",
+  brand = "ELSARAYA EVENTS",
   wordmark,
   company,
   year = new Date().getFullYear(),
