@@ -37,7 +37,7 @@ export const UNIT_LABEL_AR: Record<OptionUnit, string> = { event: 'للمناس�
 
 const CELEBRATIONS: EventType[] = ['wedding', 'engagement'];
 const SOCIAL: EventType[] = ['wedding', 'engagement', 'birthday', 'party'];
-const ALL: EventType[] = ['wedding', 'engagement', 'birthday', 'party', 'conference'];
+const ALL: EventType[] = ['wedding', 'engagement', 'birthday', 'party', 'conference', 'corporate'];
 
 export const CHOICE_CATEGORIES: ChoiceCategory[] = [
   {
@@ -243,7 +243,7 @@ export const CHOICE_CATEGORIES: ChoiceCategory[] = [
     ],
   },
   {
-    id: 'seating-style', titleAr: 'نظام الجلوس', subtitleAr: 'ترتيب القاعة حسب طبيعة المؤتمر', emoji: '🪑', mode: 'single', eventTypes: ['conference'],
+    id: 'seating-style', titleAr: 'نظام الجلوس', subtitleAr: 'ترتيب القاعة حسب طبيعة المؤتمر', emoji: '🪑', mode: 'single', eventTypes: ['conference', 'corporate'],
     options: [
       { id: 'seat-theater', nameAr: 'مسرح', descAr: 'صفوف كراسي أمام المنصة — أكبر عدد', price: 25, cost: 10, unit: 'guest', emoji: '🎭', tagAr: 'الأكثر طلباً' },
       { id: 'seat-classroom', nameAr: 'فصل دراسي', descAr: 'طاولات وكراسي للكتابة', price: 45, cost: 20, unit: 'guest', emoji: '📝' },
@@ -254,7 +254,7 @@ export const CHOICE_CATEGORIES: ChoiceCategory[] = [
     ],
   },
   {
-    id: 'stage', titleAr: 'المنصة والشاشات', subtitleAr: 'تجهيزات المتحدثين والعرض — يمكن اختيار أكثر من عنصر', emoji: '🎤', mode: 'multi', eventTypes: ['conference'],
+    id: 'stage', titleAr: 'المنصة والشاشات', subtitleAr: 'تجهيزات المتحدثين والعرض — يمكن اختيار أكثر من عنصر', emoji: '🎤', mode: 'multi', eventTypes: ['conference', 'corporate'],
     options: [
       { id: 'stg-stage', nameAr: 'منصة مرتفعة', descAr: 'منصة بسجاد وخلفية', price: 6000, cost: 3200, unit: 'event', emoji: '🟫' },
       { id: 'stg-podium', nameAr: 'بوديوم وميكروفون', descAr: 'بوديوم بشعار الشركة', price: 1500, cost: 700, unit: 'event', emoji: '🎙️' },
@@ -267,7 +267,7 @@ export const CHOICE_CATEGORIES: ChoiceCategory[] = [
     ],
   },
   {
-    id: 'conf-hospitality', titleAr: 'الضيافة للمؤتمر', subtitleAr: 'استراحات ووجبات — يمكن اختيار أكثر من عنصر', emoji: '☕', mode: 'multi', eventTypes: ['conference'],
+    id: 'conf-hospitality', titleAr: 'الضيافة للمؤتمر', subtitleAr: 'استراحات ووجبات — يمكن اختيار أكثر من عنصر', emoji: '☕', mode: 'multi', eventTypes: ['conference', 'corporate'],
     options: [
       { id: 'cb-basic', nameAr: 'استراحة قهوة أساسية', descAr: 'قهوة وشاي ومياه', price: 60, cost: 25, unit: 'guest', emoji: '☕' },
       { id: 'cb-premium', nameAr: 'استراحة قهوة مميزة', descAr: 'معجنات وحلويات وعصائر', price: 120, cost: 55, unit: 'guest', emoji: '🥐', tagAr: 'الأكثر طلباً' },
@@ -277,7 +277,7 @@ export const CHOICE_CATEGORIES: ChoiceCategory[] = [
     ],
   },
   {
-    id: 'conf-extras', titleAr: 'التنظيم والتسجيل', subtitleAr: 'تفاصيل التنظيم — يمكن اختيار أكثر من عنصر', emoji: '🗂️', mode: 'multi', eventTypes: ['conference'],
+    id: 'conf-extras', titleAr: 'التنظيم والتسجيل', subtitleAr: 'تفاصيل التنظيم — يمكن اختيار أكثر من عنصر', emoji: '🗂️', mode: 'multi', eventTypes: ['conference', 'corporate'],
     options: [
       { id: 'cx-registration', nameAr: 'مكتب تسجيل', descAr: 'فريق تسجيل واستقبال', price: 2500, cost: 1300, unit: 'event', emoji: '🧾' },
       { id: 'cx-badges', nameAr: 'بادجات بالأسماء', descAr: 'طباعة بادج لكل مشارك', price: 25, cost: 10, unit: 'guest', emoji: '🪪' },

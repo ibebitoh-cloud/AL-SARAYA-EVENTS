@@ -16,9 +16,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Booking, BookingStatus, EventType, Hall, Language, PriceBook, ServiceDefinition } from '../types/venueSystem';
-import { BookingServicesEditor } from './BookingServicesEditor';
-import { RecordEditorModal, RowActions } from './RecordEditor';
-import { bookingFields } from '../data/recordFields';
+import { BookingEditModal } from './BookingEditModal';
+import { RowActions } from './RecordEditor';
 import { makeTr, eventTypeLabel } from '../utils/tr';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
@@ -42,6 +41,9 @@ interface BookingsViewProps {
   priceBook?: PriceBook;
   /** Only the CEO can set a discount. */
   canDiscount?: boolean;
+  /** May save an edit over a double-booking warning. */
+  canOverrideConflict?: boolean;
+  currentUser?: { id: string; name: string } | null;
 }
 
 export function BookingsView({
@@ -58,6 +60,8 @@ export function BookingsView({
   services = [],
   priceBook,
   canDiscount = false,
+  canOverrideConflict = false,
+  currentUser,
 }: BookingsViewProps) {
   const { isAr, tr, egp } = makeTr(language);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
@@ -305,7 +309,7 @@ export function BookingsView({
           </div>
         )}
       </div>
-      {editingBooking && onEditBooking && <RecordEditorModal title={`${tr('تعديل الحجز', 'Edit booking')} ${editingBooking.code}`} fields={bookingFields(halls)} value={editingBooking} language={language} extra={priceBook ? (draft, set) => <BookingServicesEditor booking={draft} services={services} priceBook={priceBook} language={language} canDiscount={canDiscount} set={set} /> : undefined} onClose={() => setEditingBooking(null)} onSave={(b) => { onEditBooking(b); setEditingBooking(null); }} onDelete={onDeleteBooking ? () => { onDeleteBooking(editingBooking.id); setEditingBooking(null); } : undefined} />}
+      {editingBooking && onEditBooking && <BookingEditModal booking={editingBooking} bookings={bookings} halls={halls} services={services} priceBook={priceBook} canDiscount={canDiscount} canOverrideConflict={canOverrideConflict} currentUser={currentUser} language={language} onClose={() => setEditingBooking(null)} onSave={(b) => { onEditBooking(b); setEditingBooking(null); }} onDelete={onDeleteBooking ? () => { onDeleteBooking(editingBooking.id); setEditingBooking(null); } : undefined} />}
     </div>
   );
 }

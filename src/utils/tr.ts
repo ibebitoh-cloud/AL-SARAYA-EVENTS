@@ -12,8 +12,9 @@ const EVENT_TYPE_LABELS: Record<string, [string, string]> = {
   wedding: ['حفل زفاف', 'Wedding'],
   engagement: ['خطوبة / كتب كتاب', 'Engagement'],
   birthday: ['عيد ميلاد', 'Birthday'],
-  conference: ['مؤتمر / ندوة', 'Conference'],
-  party: ['حفلة خاصة / تخرج', 'Private party'],
+  conference: ['مؤتمر / قمة', 'Conference / Summit'],
+  corporate: ['فعالية شركات', 'Corporate event'],
+  party: ['مناسبة أخرى', 'Other event'],
 };
 export const eventTypeLabel = (type: string, isAr: boolean) => EVENT_TYPE_LABELS[type]?.[isAr ? 0 : 1] ?? type;
 

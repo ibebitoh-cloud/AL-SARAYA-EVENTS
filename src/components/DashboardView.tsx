@@ -14,7 +14,8 @@ const EVENT_LABELS: Record<string, [string, string]> = {
   engagement: ['خطوبة', 'Engagement'],
   birthday: ['عيد ميلاد', 'Birthday'],
   conference: ['مؤتمر', 'Conference'],
-  party: ['حفلة', 'Party'],
+  corporate: ['شركات', 'Corporate'],
+  party: ['أخرى', 'Other'],
 };
 
 const STATUS_LABELS: Record<string, [string, string]> = {
