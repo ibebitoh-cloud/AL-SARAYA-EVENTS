@@ -15,7 +15,7 @@ import {
 import { InventoryItem, Language } from '../types/venueSystem';
 import { isCustomerItem } from '../data/inventoryDisplay';
 import { makeTr } from '../utils/tr';
-import { RowActions, ImageField } from './RecordEditor';
+import { ImageField } from './RecordEditor';
 import { sound } from '../utils/soundEffects';
 
 interface InventoryViewProps {
@@ -23,7 +23,7 @@ interface InventoryViewProps {
   onUpdateItemQuantity: (itemId: string, newQty: number, damagedQty?: number) => void;
   onAddItem: (newItem: InventoryItem) => void;
   onEditItem: (item: InventoryItem) => void;
-  /** Operations staff: show selling prices only (no purchase cost, stock value or item editing). */
+  /** Operations staff: can add/edit/delete items but never see or set the buying price or stock value. */
   sellingPricesOnly?: boolean;
   language?: Language;
   onDeleteItem?: (itemId: string) => void;
@@ -58,7 +58,7 @@ export function InventoryView({
   const missingPhotos = customerItems.filter((i) => !i.photoUrl?.trim()).length;
   const openCreate = () => {
     setEditingItem(null); setName(''); setCategory('buffet'); setQuantity(100); setUnit('قطعة');
-    setMinThreshold(20); setCostPerUnit(35); setSalePrice(0); setPhotoUrl(''); setShowOnWebsite(true);
+    setMinThreshold(20); setCostPerUnit(sellingPricesOnly ? 0 : 35); setSalePrice(0); setPhotoUrl(''); setShowOnWebsite(true);
     setIsModalOpen(true);
   };
 
@@ -100,6 +100,12 @@ export function InventoryView({
     setName('');
   };
 
+  const deleteItem = (item: InventoryItem) => {
+    if (!onDeleteItem || !window.confirm(tr(`حذف "${item.name}" من المخزون نهائياً؟`, `Delete "${item.name}" from stock for good?`))) return;
+    sound.click(400);
+    onDeleteItem(item.id);
+  };
+
   const openEdit = (item: InventoryItem) => {
     setEditingItem(item);
     setName(item.name);
@@ -120,7 +126,9 @@ export function InventoryView({
     const item: InventoryItem = {
       id: editingItem?.id ?? `inv-${Date.now()}`, name: name.trim(), category,
       quantity: Math.max(0, Number(quantity) || 0), unit: unit.trim() || 'قطعة',
-      minThreshold: Math.max(0, Number(minThreshold) || 0), costPerUnit: Math.max(0, Number(costPerUnit) || 0),
+      minThreshold: Math.max(0, Number(minThreshold) || 0),
+      // Selling-price-only staff never touch the buying price: keep the existing one (new items start at 0 for a manager to fill).
+      costPerUnit: sellingPricesOnly ? (editingItem?.costPerUnit ?? 0) : Math.max(0, Number(costPerUnit) || 0),
       salePrice: Math.max(0, Number(salePrice) || 0), damagedQuantity: editingItem?.damagedQuantity ?? 0,
       lastRestockedDate: editingItem?.lastRestockedDate ?? new Date().toISOString().split('T')[0],
       photoUrl: photoUrl.trim() || undefined,
@@ -145,7 +153,7 @@ export function InventoryView({
           </p>
         </div>
 
-        {!sellingPricesOnly && <button
+        <button
           onClick={() => {
             sound.click(650);
             openCreate();
@@ -154,7 +162,7 @@ export function InventoryView({
         >
           <Plus className="w-3.5 h-3.5" />
           <span>{tr('إضافة صنف جديد للمخزون', 'Add item')}</span>
-        </button>}
+        </button>
       </div>
 
       {/* Category Pills Bar */}
@@ -177,7 +185,7 @@ export function InventoryView({
         ))}
       </div>
 
-      {!sellingPricesOnly && missingPhotos > 0 && (
+      {missingPhotos > 0 && (
         <div role="note" className="flex items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-xs font-semibold text-amber-200">
           <ImageOff className="h-4 w-4 shrink-0" />
           {tr(`${missingPhotos} صنف معروض للعملاء بدون صورة. أضف صورة من زر التعديل.`, `${missingPhotos} item(s) shown to customers have no photo. Add one with the edit button.`)}
@@ -260,11 +268,16 @@ export function InventoryView({
                 </span>
 
                 <div className="flex items-center gap-1.5">
-                  {!sellingPricesOnly && <button
+                  <button
                     onClick={() => openEdit(item)}
                     className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer"
-                  >{tr('تعديل', 'Edit')}</button>}
-                  {!sellingPricesOnly && onDeleteItem && <RowActions language={language} onDelete={() => onDeleteItem(item.id)} />}
+                  >{tr('تعديل', 'Edit')}</button>
+                  {onDeleteItem && <button
+                    onClick={() => deleteItem(item)}
+                    aria-label={tr(`حذف ${item.name}`, `Delete ${item.name}`)}
+                    title={tr('حذف الصنف', 'Delete item')}
+                    className="p-1.5 rounded-lg border border-red-900/60 text-red-300 hover:bg-red-950/40 cursor-pointer"
+                  ><Trash2 className="w-3.5 h-3.5" /></button>}
                   <button
                     onClick={() => {
                       sound.tick();
@@ -338,7 +351,7 @@ export function InventoryView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className={`grid grid-cols-2 gap-3 ${sellingPricesOnly ? 'sm:grid-cols-3' : 'sm:grid-cols-4'}`}>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('الكمية الحالية', 'Quantity')}</label>
                   <input
@@ -359,7 +372,7 @@ export function InventoryView({
                   />
                 </div>
 
-                <div>
+                {!sellingPricesOnly && <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('سعر الشراء', 'Cost price')}</label>
                   <input
                     type="number"
@@ -367,7 +380,7 @@ export function InventoryView({
                     onChange={(e) => setCostPerUnit(Number(e.target.value) || 0)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono"
                   />
-                </div>
+                </div>}
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('سعر البيع', 'Selling price')}</label>
