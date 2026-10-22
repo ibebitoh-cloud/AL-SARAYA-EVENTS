@@ -190,6 +190,8 @@ export interface Booking {
   eventDetails?: Record<string, string>;
   /** Where the booking came from. Website requests have no prices until staff price them. */
   source?: 'staff' | 'website' | 'website_quick';
+  /** Discount on the final price, in percent. Only the CEO can set it. */
+  discountPercent?: number;
 }
 
 /** A sellable event package (e.g. Gold wedding package). Prices live in the PriceBook per location. */

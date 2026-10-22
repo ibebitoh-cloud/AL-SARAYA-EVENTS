@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pencil, Save, Trash2, Upload, X } from 'lucide-react';
 import type { Language } from '../types/venueSystem';
 
@@ -77,10 +77,12 @@ interface RecordEditorModalProps<T> {
   onSave: (value: T) => void;
   onClose: () => void;
   onDelete?: () => void;
+  /** Extra form content below the fields (e.g. a booking's services), editing the same draft. */
+  extra?: (draft: T, set: (key: string, value: unknown) => void) => ReactNode;
 }
 
 /** Generic add/edit form used by every management list, so each record type gets the same editing experience. */
-export function RecordEditorModal<T extends object>({ title, fields, value, language, onSave, onClose, onDelete }: RecordEditorModalProps<T>) {
+export function RecordEditorModal<T extends object>({ title, fields, value, language, onSave, onClose, onDelete, extra }: RecordEditorModalProps<T>) {
   const ar = language === 'ar';
   const [draft, setDraft] = useState<Record<string, unknown>>({ ...(value as Record<string, unknown>) });
   const [error, setError] = useState('');
@@ -113,6 +115,7 @@ export function RecordEditorModal<T extends object>({ title, fields, value, lang
             );
           })}
         </div>
+        {extra?.(draft as T, set)}
         {error && <p className="mt-3 text-xs font-semibold text-rose-400">{error}</p>}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
           {onDelete ? <button type="button" onClick={() => { if (window.confirm(ar ? 'هل تريد حذف هذا السجل نهائياً؟' : 'Delete this record permanently?')) onDelete(); }} className="flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-xs font-bold text-rose-300"><Trash2 className="h-3.5 w-3.5" />{ar ? 'حذف' : 'Delete'}</button> : <span />}

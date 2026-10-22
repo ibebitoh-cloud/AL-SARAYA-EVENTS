@@ -15,7 +15,8 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import { Booking, BookingStatus, EventType, Hall, Language } from '../types/venueSystem';
+import { Booking, BookingStatus, EventType, Hall, Language, PriceBook, ServiceDefinition } from '../types/venueSystem';
+import { BookingServicesEditor } from './BookingServicesEditor';
 import { RecordEditorModal, RowActions } from './RecordEditor';
 import { bookingFields } from '../data/recordFields';
 import { makeTr, eventTypeLabel } from '../utils/tr';
@@ -36,6 +37,11 @@ interface BookingsViewProps {
   halls?: Hall[];
   onEditBooking?: (booking: Booking) => void;
   onDeleteBooking?: (bookingId: string) => void;
+  /** For adding services when editing a booking. */
+  services?: ServiceDefinition[];
+  priceBook?: PriceBook;
+  /** Only the CEO can set a discount. */
+  canDiscount?: boolean;
 }
 
 export function BookingsView({
@@ -49,6 +55,9 @@ export function BookingsView({
   halls = [],
   onEditBooking,
   onDeleteBooking,
+  services = [],
+  priceBook,
+  canDiscount = false,
 }: BookingsViewProps) {
   const { isAr, tr, egp } = makeTr(language);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
@@ -167,6 +176,7 @@ export function BookingsView({
                     <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
                       {bk.source === 'website_quick' ? tr('النوع يُحدد بالاتصال', 'Type to confirm by phone') : getEventTypeLabel(bk.eventType)}
                     </span>
+                    {(bk.discountPercent ?? 0) > 0 && <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold border border-emerald-400/40 bg-emerald-400/10 text-emerald-200">{tr(`خصم ${bk.discountPercent}%`, `${bk.discountPercent}% discount`)}</span>}
                     {(bk.source === 'website' || bk.source === 'website_quick') && (
                       <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold border border-amber-400/40 bg-amber-400/10 text-amber-200">
                         {bk.source === 'website_quick' ? tr('طلب سريع من الموقع: اتصل بالعميل', 'Quick website request: call back') : tr('طلب من الموقع', 'Website request')}
@@ -295,7 +305,7 @@ export function BookingsView({
           </div>
         )}
       </div>
-      {editingBooking && onEditBooking && <RecordEditorModal title={`${tr('تعديل الحجز', 'Edit booking')} ${editingBooking.code}`} fields={bookingFields(halls)} value={editingBooking} language={language} onClose={() => setEditingBooking(null)} onSave={(b) => { onEditBooking(b); setEditingBooking(null); }} onDelete={onDeleteBooking ? () => { onDeleteBooking(editingBooking.id); setEditingBooking(null); } : undefined} />}
+      {editingBooking && onEditBooking && <RecordEditorModal title={`${tr('تعديل الحجز', 'Edit booking')} ${editingBooking.code}`} fields={bookingFields(halls)} value={editingBooking} language={language} extra={priceBook ? (draft, set) => <BookingServicesEditor booking={draft} services={services} priceBook={priceBook} language={language} canDiscount={canDiscount} set={set} /> : undefined} onClose={() => setEditingBooking(null)} onSave={(b) => { onEditBooking(b); setEditingBooking(null); }} onDelete={onDeleteBooking ? () => { onDeleteBooking(editingBooking.id); setEditingBooking(null); } : undefined} />}
     </div>
   );
 }
