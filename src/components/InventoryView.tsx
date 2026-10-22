@@ -10,7 +10,8 @@ import {
   TrendingDown,
   Layers,
 } from 'lucide-react';
-import { InventoryItem } from '../types/venueSystem';
+import { InventoryItem, Language } from '../types/venueSystem';
+import { makeTr } from '../utils/tr';
 import { sound } from '../utils/soundEffects';
 
 interface InventoryViewProps {
@@ -18,9 +19,10 @@ interface InventoryViewProps {
   onUpdateItemQuantity: (itemId: string, newQty: number, damagedQty?: number) => void;
   onAddItem: (newItem: InventoryItem) => void;
   onEditItem: (item: InventoryItem) => void;
-  onDeleteItem: (itemId: string) => void;
   /** Operations staff: can add/edit/delete items but never see or set the buying price or stock value. */
   sellingPricesOnly?: boolean;
+  language?: Language;
+  onDeleteItem?: (itemId: string) => void;
 }
 
 export function InventoryView({
@@ -28,9 +30,11 @@ export function InventoryView({
   onUpdateItemQuantity,
   onAddItem,
   onEditItem,
-  onDeleteItem,
   sellingPricesOnly = false,
+  language = 'ar',
+  onDeleteItem,
 }: InventoryViewProps) {
+  const { tr, egp } = makeTr(language);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,12 +50,12 @@ export function InventoryView({
   const [salePrice, setSalePrice] = useState(0);
 
   const categories = [
-    { id: 'all', label: 'جميع المستلزمات' },
-    { id: 'buffet', label: 'مستلزمات البوفيه' },
-    { id: 'serving', label: 'أدوات التقديم' },
-    { id: 'decor', label: 'مستلزمات الديكور' },
-    { id: 'operations', label: 'مستلزمات التشغيل' },
-    { id: 'cleaning', label: 'أدوات النظافة' },
+    { id: 'all', label: tr('جميع المستلزمات', 'All items') },
+    { id: 'buffet', label: tr('مستلزمات البوفيه', 'Buffet supplies') },
+    { id: 'serving', label: tr('أدوات التقديم', 'Serving ware') },
+    { id: 'decor', label: tr('مستلزمات الديكور', 'Decor supplies') },
+    { id: 'operations', label: tr('مستلزمات التشغيل', 'Operations supplies') },
+    { id: 'cleaning', label: tr('أدوات النظافة', 'Cleaning supplies') },
   ];
 
   const filteredItems = inventory.filter((item) => {
@@ -96,7 +100,7 @@ export function InventoryView({
   };
 
   const deleteItem = (item: InventoryItem) => {
-    if (!window.confirm(`حذف "${item.name}" من المخزون نهائياً؟`)) return;
+    if (!onDeleteItem || !window.confirm(tr(`حذف "${item.name}" من المخزون نهائياً؟`, `Delete "${item.name}" from stock for good?`))) return;
     sound.click(400);
     onDeleteItem(item.id);
   };
@@ -131,16 +135,16 @@ export function InventoryView({
   };
 
   return (
-    <div className="w-full space-y-6 pb-20 text-right">
+    <div className="w-full space-y-6 pb-20 text-start">
       {/* Top Banner & Search */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <Package className="w-5 h-5 text-indigo-400" />
-            <span>المخزون والمستلزمات وأدوات الضيافة</span>
+            <span>{tr('المخزون والمستلزمات وأدوات الضيافة', 'Inventory & supplies')}</span>
           </h2>
           <p className="text-xs text-slate-400">
-            متابعة عهدة القاعات، أدوات التقديم، الجرد، التالف، وتنبيهات الحد الأدنى
+            {tr('متابعة عهدة القاعات، أدوات التقديم، الجرد، التالف، وتنبيهات الحد الأدنى', 'Track hall stock, serving ware, stock counts, damage and low-stock alerts')}
           </p>
         </div>
 
@@ -152,7 +156,7 @@ export function InventoryView({
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer whitespace-nowrap active:scale-95"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>إضافة صنف جديد للمخزون</span>
+          <span>{tr('إضافة صنف جديد للمخزون', 'Add item')}</span>
         </button>
       </div>
 
@@ -194,14 +198,14 @@ export function InventoryView({
                 <div>
                   <h3 className="text-sm font-bold text-white leading-snug">{item.name}</h3>
                   <span className="text-[10px] text-indigo-300 font-mono">
-                    آخر جرد وتوريد: {item.lastRestockedDate}
+                    {tr('آخر جرد وتوريد', 'Last restock')}: {item.lastRestockedDate}
                   </span>
                 </div>
 
                 {isLowStock && (
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 shrink-0">
                     <AlertTriangle className="w-3 h-3" />
-                    <span>نقص مخزون</span>
+                    <span>{tr('نقص مخزون', 'Low stock')}</span>
                   </span>
                 )}
               </div>
@@ -209,7 +213,7 @@ export function InventoryView({
               {/* Quantity Gauge */}
               <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-center text-xs font-mono">
                 <div>
-                  <span className="text-[10px] text-slate-500 block font-sans">الرصيد الحالي</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('الرصيد الحالي', 'In stock')}</span>
                   <span className={`font-bold tabular-nums text-sm ${isLowStock ? 'text-amber-400' : 'text-emerald-400'}`}>
                     {item.quantity}
                   </span>
@@ -217,56 +221,56 @@ export function InventoryView({
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-slate-500 block font-sans">الحد الأدنى</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('الحد الأدنى', 'Minimum')}</span>
                   <span className="font-bold text-slate-300 tabular-nums text-sm">
                     {item.minThreshold}
                   </span>
-                  <span className="text-[9px] text-slate-500 font-sans block">للتنبيه</span>
+                  <span className="text-[9px] text-slate-500 font-sans block">{tr('للتنبيه', 'alert level')}</span>
                 </div>
 
                 {!sellingPricesOnly && <div>
-                  <span className="text-[10px] text-slate-500 block font-sans">قيمة المخزون</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('قيمة المخزون', 'Stock value')}</span>
                   <span className="font-bold text-amber-300 tabular-nums text-sm">
-                    {(item.quantity * item.costPerUnit).toLocaleString()} ج.م
+                    {egp((item.quantity * item.costPerUnit))}
                   </span>
-                  <span className="text-[9px] text-slate-500 font-sans block">بسعر التكلفة</span>
+                  <span className="text-[9px] text-slate-500 font-sans block">{tr('بسعر التكلفة', 'at cost')}</span>
                 </div>}
 
                 <div>
-                  <span className="text-[10px] text-slate-500 block font-sans">التالف / كسر</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('التالف / كسر', 'Damaged')}</span>
                   <span className="font-bold text-rose-400 tabular-nums text-sm">
                     {item.damagedQuantity}
                   </span>
-                  <span className="text-[9px] text-slate-500 font-sans block">هالك</span>
+                  <span className="text-[9px] text-slate-500 font-sans block">{tr('هالك', 'written off')}</span>
                 </div>
               </div>
 
               {/* Quick Stock Adjustment buttons */}
               <div className="flex items-center justify-between pt-1 text-xs">
                 <span className="text-[11px] text-slate-400 font-mono">
-                  {!sellingPricesOnly && <>شراء: {item.costPerUnit} ج.م · </>}بيع: {(item.salePrice ?? 0)} ج.م
+                  {!sellingPricesOnly && <>{tr('شراء', 'Cost')}: {egp(item.costPerUnit)} · </>}{tr('بيع', 'Price')}: {egp(item.salePrice ?? 0)}
                 </span>
 
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => openEdit(item)}
                     className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer"
-                  >تعديل</button>
-                  <button
+                  >{tr('تعديل', 'Edit')}</button>
+                  {onDeleteItem && <button
                     onClick={() => deleteItem(item)}
-                    aria-label={`حذف ${item.name}`}
-                    title="حذف الصنف"
+                    aria-label={tr(`حذف ${item.name}`, `Delete ${item.name}`)}
+                    title={tr('حذف الصنف', 'Delete item')}
                     className="p-1.5 rounded-lg border border-red-900/60 text-red-300 hover:bg-red-950/40 cursor-pointer"
-                  ><Trash2 className="w-3.5 h-3.5" /></button>
+                  ><Trash2 className="w-3.5 h-3.5" /></button>}
                   <button
                     onClick={() => {
                       sound.tick();
                       onUpdateItemQuantity(item.id, Math.max(0, item.quantity - 10));
                     }}
                     className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] cursor-pointer"
-                    title="صرف 10 وحدات"
+                    title={tr('صرف 10 وحدات', 'Issue 10 units')}
                   >
-                    −10 صرف
+                    −10 {tr('صرف', 'issue')}
                   </button>
                   <button
                     onClick={() => {
@@ -274,9 +278,9 @@ export function InventoryView({
                       onUpdateItemQuantity(item.id, item.quantity + 50);
                     }}
                     className="px-2 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 font-mono text-[11px] cursor-pointer"
-                    title="وارد 50 وحدة"
+                    title={tr('وارد 50 وحدة', 'Receive 50 units')}
                   >
-                    +50 توريد
+                    +50 {tr('توريد', 'receive')}
                   </button>
                 </div>
               </div>
@@ -288,16 +292,16 @@ export function InventoryView({
       {/* Add New Inventory Item Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-right">
-            <h3 className="text-base font-bold text-white mb-4">{editingItem ? "تعديل الصنف" : "إضافة مستلزم / صنف جديد"}</h3>
+          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-start">
+            <h3 className="text-base font-bold text-white mb-4">{editingItem ? tr('تعديل الصنف', 'Edit item') : tr('إضافة مستلزم / صنف جديد', 'Add item')}</h3>
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">اسم الصنف</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('اسم الصنف', 'Item name')}</label>
                 <input
                   type="text"
                   required
-                  placeholder="مثال: مناديل سفرة مطبوعة شعار القاعة"
+                  placeholder={tr('مثال: مناديل سفرة مطبوعة شعار القاعة', 'e.g. Printed napkins with the hall logo')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white"
@@ -306,22 +310,22 @@ export function InventoryView({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">القسم</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('القسم', 'Category')}</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as InventoryItem['category'])}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white"
                   >
-                    <option value="buffet">مستلزمات البوفيه</option>
-                    <option value="serving">أدوات التقديم</option>
-                    <option value="decor">مستلزمات الديكور</option>
-                    <option value="operations">مستلزمات التشغيل</option>
-                    <option value="cleaning">أدوات النظافة</option>
+                    <option value="buffet">{tr('مستلزمات البوفيه', 'Buffet supplies')}</option>
+                    <option value="serving">{tr('أدوات التقديم', 'Serving ware')}</option>
+                    <option value="decor">{tr('مستلزمات الديكور', 'Decor supplies')}</option>
+                    <option value="operations">{tr('مستلزمات التشغيل', 'Operations supplies')}</option>
+                    <option value="cleaning">{tr('أدوات النظافة', 'Cleaning supplies')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">الوحدة</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('الوحدة', 'Unit')}</label>
                   <input
                     type="text"
                     value={unit}
@@ -333,7 +337,7 @@ export function InventoryView({
 
               <div className={`grid grid-cols-2 gap-3 ${sellingPricesOnly ? 'sm:grid-cols-3' : 'sm:grid-cols-4'}`}>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">الكمية الحالية</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('الكمية الحالية', 'Quantity')}</label>
                   <input
                     type="number"
                     value={quantity}
@@ -343,7 +347,7 @@ export function InventoryView({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">الحد الأدنى</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('الحد الأدنى', 'Minimum')}</label>
                   <input
                     type="number"
                     value={minThreshold}
@@ -353,7 +357,7 @@ export function InventoryView({
                 </div>
 
                 {!sellingPricesOnly && <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">سعر الشراء</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('سعر الشراء', 'Cost price')}</label>
                   <input
                     type="number"
                     value={costPerUnit}
@@ -363,7 +367,7 @@ export function InventoryView({
                 </div>}
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">سعر البيع</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('سعر البيع', 'Selling price')}</label>
                   <input type="number" min="0" value={salePrice} onChange={(e) => setSalePrice(Number(e.target.value) || 0)} className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono" />
                 </div>
               </div>
@@ -374,13 +378,13 @@ export function InventoryView({
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
                 >
-                  إلغاء
+                  {tr('إلغاء', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white"
                 >
-                  {editingItem ? "حفظ التعديلات" : "حفظ الصنف"}
+                  {editingItem ? tr('حفظ التعديلات', 'Save changes') : tr('حفظ الصنف', 'Save item')}
                 </button>
               </div>
             </form>
