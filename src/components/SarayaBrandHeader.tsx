@@ -110,7 +110,7 @@ export function SarayaBrandHeader({
         <a
           href="#hero"
           onClick={(e) => { e.preventDefault(); sound.swoosh(); go('hero'); }}
-          className="group flex shrink-0 items-center gap-2 font-serif text-base font-black uppercase tracking-[0.18em] text-[#78350f] sm:text-lg"
+          className="group flex shrink-0 items-center gap-2 font-serif text-base font-black uppercase tracking-[0.18em] text-[#78350f] sm:text-xl"
         >
           <span className="h-2 w-2 rounded-full bg-[#f59e0b] shadow-[0_0_10px_rgba(245,158,11,0.9)] transition-transform group-hover:scale-125" />
           ELSARAYA EVENTS

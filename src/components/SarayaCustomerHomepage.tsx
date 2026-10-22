@@ -105,7 +105,7 @@ export function SarayaCustomerHomepage({ halls, photos, language, onOpenBookingM
   return (
     <main dir={isAr ? 'rtl' : 'ltr'} className="w-full">
       {/* First screen: the name, one line, one button and the occasions. */}
-      <section id="hero" className="flex min-h-[calc(100svh-5.5rem)] flex-col items-center justify-center px-3 py-14 text-center sm:px-10">
+      <section id="hero" className="flex min-h-[calc(100svh-5.5rem)] flex-col items-center justify-center px-1 py-14 text-center sm:px-6">
         <motion.p {...fadeIn(0.1)} className="mb-5 text-sm font-bold uppercase tracking-[0.35em] text-[#b45309] sm:mb-7 sm:text-base">
           {t('hero.kicker')}
         </motion.p>
@@ -114,7 +114,7 @@ export function SarayaCustomerHomepage({ halls, photos, language, onOpenBookingM
             text={t('hero.word')}
             textColor="text-[#451a03]"
             overlayColor="text-[#d97706]"
-            fontSize="text-[clamp(3.1rem,15.5vw,11rem)]"
+            fontSize="text-[clamp(3.4rem,17.5vw,15rem)]"
             letterImages={letterPhotos}
           />
         </h1>
