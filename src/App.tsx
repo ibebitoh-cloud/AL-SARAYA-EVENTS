@@ -436,7 +436,7 @@ export default function App() {
     {!isInternalManagementScreen ? <BeamWordmarkFooter
       className="mt-12 w-full"
       dir={isAr ? 'rtl' : 'ltr'}
-      brand={companyProfile.nameEn}
+      logoSrc="/brand/elsaraya-logo-white.png" brand={companyProfile.nameEn}
       company={isAr ? companyProfile.nameAr : companyProfile.nameEn}
       socials={[
         { label: 'WhatsApp', href: `https://wa.me/${companyProfile.whatsapp.replace(/\D/g, '')}`, icon: 'whatsapp' as const },
@@ -539,7 +539,7 @@ export default function App() {
         <div className="mt-6 flex flex-col items-center gap-2 border-t border-white/10 pt-4 text-center">
           <div dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'isolate' }} className="flex w-full flex-col items-center justify-center gap-0 text-center leading-tight">
             <div className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-500">Powered by</div>
-            <span className="relative inline-block overflow-visible py-0 px-2">
+            <span className="theme-keep relative inline-block overflow-visible py-0 px-2">
               {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-scan pointer-events-none absolute -left-3 right-0 top-1/2 z-0 h-5 bg-gradient-to-r from-transparent via-cyan-300/70 to-fuchsia-400/70 blur-[2px]" style={{ animation: 'saraya-credit-scan 1.25s ease-out both' }} />}
               <span className={`saraya-credit-main relative z-10 inline-block text-xl font-black tracking-[0.22em] text-amber-300 drop-shadow-[0_0_14px_rgba(245,185,66,0.28)] ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-main 1.35s cubic-bezier(.2,.8,.2,1) both' } : undefined}>DALI STUDIO</span>
               {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-cyan-300 mix-blend-screen" style={{ animation: 'saraya-credit-cyan 1.1s steps(2, end) both' }}>DALI STUDIO</span>}

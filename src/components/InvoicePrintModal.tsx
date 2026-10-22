@@ -26,17 +26,16 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
 
   return (
     <AnimatePresence>
-      {/* Scroll the overlay itself so the top bar (Print / Close) is never cut off on short screens. */}
-      <div className="invoice-print-root fixed inset-0 z-[90] overflow-y-auto bg-slate-950/85 backdrop-blur-md">
-        <div className="flex min-h-full items-start justify-center p-2 sm:p-4 print:p-0">
+      <div className="fixed inset-0 z-[90] flex justify-center p-2 sm:p-6 backdrop-blur-sm overflow-y-auto" style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)' }} onClick={onClose}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
-          className="relative w-full max-w-3xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-4 sm:p-8 text-start my-4 print:my-0 print:max-w-none print:rounded-none print:border-none print:bg-white print:p-0 print:shadow-none"
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full max-w-3xl h-fit rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-3 sm:p-6 text-start my-auto"
         >
           {/* Top Actions Bar (Hidden on print) */}
-          <div className="print:hidden flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+          <div className="print:hidden flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrint}
@@ -59,7 +58,7 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
           </div>
 
           {/* Printable Invoice Sheet Document */}
-          <div className="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 text-slate-100 print:bg-white print:text-black print:border-none print:p-0">
+          <div className="p-4 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 text-slate-100 print:bg-white print:text-black print:border-none print:p-0">
             {/* Header Lockup */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 print:border-gray-300 pb-6 mb-6">
               <div>
@@ -77,15 +76,15 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
                 </p>
               </div>
 
-              <div className="text-end font-mono">
-                <span className="text-xs uppercase tracking-widest text-indigo-400 print:text-black font-bold block">
+              <div className="text-end">
+                <span className="text-xs uppercase tracking-wide text-indigo-400 print:text-black font-bold block">
                   {tr('فاتورة حجز', 'Booking invoice')}{isAr ? ' (INVOICE)' : ''}
                 </span>
-                <span className="text-lg font-bold text-white print:text-black block mt-0.5">
+                <span className="text-lg font-bold font-mono text-white print:text-black block mt-0.5" dir="ltr">
                   #{booking.code}
                 </span>
                 <span className="text-xs text-slate-400 print:text-gray-600">
-                  {tr('التاريخ', 'Date')}: {new Date().toISOString().split('T')[0]}
+                  {tr('التاريخ', 'Date')}: <span className="font-mono">{new Date().toISOString().split('T')[0]}</span>
                 </span>
               </div>
             </div>
@@ -117,33 +116,33 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
               <table className="w-full text-xs text-start border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800 print:border-gray-300 text-slate-400 print:text-gray-700 font-semibold">
-                    <th className="py-2.5 px-3">{tr('البند / الخدمة', 'Item / service')}</th>
-                    <th className="py-2.5 px-3">{tr('الكمية', 'Qty')}</th>
-                    <th className="py-2.5 px-3">{tr('سعر الوحدة', 'Unit price')}</th>
-                    <th className="py-2.5 px-3 text-end">{tr('الإجمالي', 'Total')}</th>
+                    <th className="py-2.5 px-2 sm:px-3 whitespace-nowrap">{tr('البند / الخدمة', 'Item / service')}</th>
+                    <th className="py-2.5 px-2 sm:px-3 whitespace-nowrap">{tr('الكمية', 'Qty')}</th>
+                    <th className="py-2.5 px-2 sm:px-3 whitespace-nowrap hidden sm:table-cell print:table-cell">{tr('سعر الوحدة', 'Unit price')}</th>
+                    <th className="py-2.5 px-2 sm:px-3 whitespace-nowrap text-end">{tr('الإجمالي', 'Total')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 print:divide-gray-200">
                   <tr>
-                    <td className="py-3 px-3">
+                    <td className="py-3 px-2 sm:px-3">
                       <strong className="text-white print:text-black block">{tr('حجز القاعة الأساسي', 'Hall booking')} ({booking.hallName})</strong>
                       <span className="text-[11px] text-slate-400 print:text-gray-500">{tr('يشمل الاستخدام الكامل للمرافق والتكييف والخدمات الأساسية', 'Includes full use of facilities, air conditioning and basic services')}</span>
                     </td>
-                    <td className="py-3 px-3 font-mono">1</td>
-                    <td className="py-3 px-3 font-mono">{egp(booking.basePrice)}</td>
-                    <td className="py-3 px-3 text-end font-mono font-bold text-white print:text-black">
+                    <td className="py-3 px-2 sm:px-3 whitespace-nowrap font-mono">1</td>
+                    <td className="py-3 px-2 sm:px-3 whitespace-nowrap font-mono hidden sm:table-cell print:table-cell">{egp(booking.basePrice)}</td>
+                    <td className="py-3 px-2 sm:px-3 whitespace-nowrap text-end font-mono font-bold text-white print:text-black">
                       {egp(booking.basePrice)}
                     </td>
                   </tr>
 
                   {booking.services.map((srv) => (
                     <tr key={srv.id}>
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-2 sm:px-3">
                         <span className="text-slate-200 print:text-black font-medium">{srv.name}</span>
                       </td>
-                      <td className="py-3 px-3 font-mono">{srv.quantity}</td>
-                      <td className="py-3 px-3 font-mono">{egp(srv.unitPrice)}</td>
-                      <td className="py-3 px-3 text-end font-mono font-bold text-white print:text-black">
+                      <td className="py-3 px-2 sm:px-3 whitespace-nowrap font-mono">{srv.quantity}</td>
+                      <td className="py-3 px-2 sm:px-3 whitespace-nowrap font-mono hidden sm:table-cell print:table-cell">{egp(srv.unitPrice)}</td>
+                      <td className="py-3 px-2 sm:px-3 whitespace-nowrap text-end font-mono font-bold text-white print:text-black">
                         {egp(srv.totalPrice)}
                       </td>
                     </tr>
@@ -166,26 +165,26 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
               </div>
 
               {/* Tally Numbers */}
-              <div className="w-full sm:w-64 space-y-2 text-xs">
-                {(booking.discountPercent ?? 0) > 0 && <div className="flex justify-between text-emerald-300 print:text-green-700">
+              <div className="w-full sm:w-72 shrink-0 space-y-2 text-xs">
+                {(booking.discountPercent ?? 0) > 0 && <div className="flex justify-between gap-3 text-emerald-300 print:text-green-700">
                   <span>{tr(`خصم ${booking.discountPercent}%`, `Discount ${booking.discountPercent}%`)}:</span>
-                  <span className="font-mono font-bold">− {egp(bookingTotals(booking).discount)}</span>
+                  <span className="font-mono font-bold whitespace-nowrap">− {egp(bookingTotals(booking).discount)}</span>
                 </div>}
-                <div className="flex justify-between text-slate-300 print:text-gray-800">
+                <div className="flex justify-between gap-3 text-slate-300 print:text-gray-800">
                   <span>{tr('إجمالي قيمة الحجز', 'Booking total')}:</span>
-                  <span className="font-mono font-bold">{egp(booking.totalPrice)}</span>
+                  <span className="font-mono font-bold whitespace-nowrap">{egp(booking.totalPrice)}</span>
                 </div>
-                <div className="flex justify-between text-emerald-400 print:text-green-700">
+                <div className="flex justify-between gap-3 text-emerald-400 print:text-green-700">
                   <span>{tr('المدفوع حتى الآن', 'Paid so far')}:</span>
-                  <span className="font-mono font-bold">− {egp(booking.paidAmount)}</span>
+                  <span className="font-mono font-bold whitespace-nowrap">− {egp(booking.paidAmount)}</span>
                 </div>
-                <div className="flex justify-between text-amber-300 print:text-amber-800">
+                <div className="flex justify-between gap-3 text-amber-300 print:text-amber-800">
                   <span>{tr('التأمين (مسترد)', 'Security deposit (refundable)')}:</span>
-                  <span className="font-mono font-bold">+ {egp(booking.securityDeposit)}</span>
+                  <span className="font-mono font-bold whitespace-nowrap">+ {egp(booking.securityDeposit)}</span>
                 </div>
-                <div className="flex justify-between text-sm font-extrabold text-white print:text-black pt-2 border-t border-slate-800 print:border-gray-400">
+                <div className="flex justify-between gap-3 text-sm font-extrabold text-white print:text-black pt-2 border-t border-slate-800 print:border-gray-400">
                   <span>{tr('المبلغ المتبقي للتحصيل', 'Balance due')}:</span>
-                  <span className="font-mono text-base text-rose-400 print:text-black">
+                  <span className="font-mono text-base text-rose-400 print:text-black whitespace-nowrap">
                     {egp(booking.remainingAmount)}
                   </span>
                 </div>
