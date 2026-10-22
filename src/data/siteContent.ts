@@ -15,6 +15,13 @@ export interface SiteTextField { key: string; ar: string; en: string; labelAr: s
 export interface SiteImageField { key: string; labelAr: string; labelEn: string }
 export interface SiteSection { id: string; titleAr: string; titleEn: string; texts: SiteTextField[]; images?: SiteImageField[] }
 
+/** The six service cards shown on the home page and the Services page. */
+export const SERVICE_KEYS = ['1', '2', '3', '4', '5', '6'] as const;
+// Library photo categories that suit each service when no photo is set in Website Content.
+const SERVICE_PHOTO_HINTS: Record<(typeof SERVICE_KEYS)[number], string[]> = {
+  '1': ['kosha', 'wedding'], '2': ['ballroom'], '3': ['dining'], '4': ['wedding', 'engagement'], '5': ['kosha', 'engagement', 'birthday'], '6': ['corporate', 'party'],
+};
+
 const f = (key: string, labelAr: string, labelEn: string, ar: string, en: string, multiline = false): SiteTextField => ({ key, labelAr, labelEn, ar, en, multiline });
 
 export const SITE_SECTIONS: SiteSection[] = [
@@ -63,7 +70,7 @@ export const SITE_SECTIONS: SiteSection[] = [
     ],
   },
   {
-    id: 'services', titleAr: 'خدماتنا', titleEn: 'What we do',
+    id: 'services', titleAr: 'الخدمات وصورها', titleEn: 'Services & photos',
     texts: [
       f('services.kicker', 'عنوان القسم الصغير', 'Section label', '02 · خدماتنا', '02 · WHAT WE DO'),
       f('services.title', 'عنوان القسم', 'Section title', 'من الفكرة إلى التنفيذ', 'From concept to execution'),
@@ -75,7 +82,12 @@ export const SITE_SECTIONS: SiteSection[] = [
       f('services.3.text', 'الخدمة 3 - الوصف', 'Service 3 - text', 'تأجير الطاولات والكراسي والإضاءة والشاشات وتجهيزات المناسبة.', 'Rent tables, chairs, lighting, screens and other event equipment.', true),
       f('services.4.title', 'الخدمة 4 - العنوان', 'Service 4 - title', 'التنفيذ والإشراف', 'Production & Coordination'),
       f('services.4.text', 'الخدمة 4 - الوصف', 'Service 4 - text', 'فريق يتولى التجهيز والتنسيق في يوم المناسبة.', 'A team coordinating setup and production on event day.', true),
+      f('services.5.title', 'الخدمة 5 - العنوان', 'Service 5 - title', 'الديكور والزهور', 'Decoration & Flowers'),
+      f('services.5.text', 'الخدمة 5 - الوصف', 'Service 5 - text', 'كوشة وورود وديكورات تناسب ذوقكم وطابع المناسبة.', 'Kosha, florals and decor styled to your taste and the occasion.', true),
+      f('services.6.title', 'الخدمة 6 - العنوان', 'Service 6 - title', 'المنصات والإضاءة والصوت', 'Stages, Lighting & Sound'),
+      f('services.6.text', 'الخدمة 6 - الوصف', 'Service 6 - text', 'منصات وشاشات وإضاءة وصوت احترافي للحفلات والمؤتمرات.', 'Stages, screens, lighting and professional sound for parties and conferences.', true),
     ],
+    images: SERVICE_KEYS.map((n) => ({ key: `service.${n}`, labelAr: `صورة الخدمة ${n}`, labelEn: `Service ${n} photo` })),
   },
   {
     id: 'venues', titleAr: 'القاعات', titleEn: 'Venues',
@@ -139,4 +151,22 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
 export const siteText = (content: SiteContent | undefined, key: string, isAr: boolean) => {
   const lang = isAr ? 'ar' : 'en';
   return content?.texts[key]?.[lang]?.trim() || DEFAULT_SITE_CONTENT.texts[key]?.[lang] || '';
+};
+
+/**
+ * Photo for each service card: the one set in Website Content, otherwise a library photo of a fitting
+ * category that is not already used nearby (pass the sources already on screen in `used`).
+ */
+export const pickServicePhotos = (photos: { src: string; category: string }[], content: SiteContent | undefined, used = new Set<string>()) => {
+  const norm = (src: string) => src.trim().replace(/[?#].*$/, '').toLowerCase();
+  const taken = new Set(used);
+  return SERVICE_KEYS.map((key) => {
+    const custom = content?.images[`service.${key}`]?.trim();
+    if (custom) return { key, src: custom };
+    const hints = SERVICE_PHOTO_HINTS[key];
+    const pick = [...photos.filter((p) => hints.includes(p.category)), ...photos].find((p) => p.src && !taken.has(norm(p.src)))
+      ?? photos.find((p) => hints.includes(p.category)) ?? photos[0];
+    if (pick?.src) taken.add(norm(pick.src));
+    return { key, src: pick?.src || '' };
+  });
 };

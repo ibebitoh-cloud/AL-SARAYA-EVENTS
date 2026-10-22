@@ -188,6 +188,8 @@ export interface Booking {
   packageName?: string;
   /** Type-specific details, e.g. brideName / groomName for weddings, companyName for conferences. */
   eventDetails?: Record<string, string>;
+  /** Where the booking came from. Website requests have no prices until staff price them. */
+  source?: 'staff' | 'website' | 'website_quick';
 }
 
 /** A sellable event package (e.g. Gold wedding package). Prices live in the PriceBook per location. */

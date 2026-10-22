@@ -2,20 +2,20 @@ import { useState, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from 'motion/react';
 import {
   ArrowRight, ArrowLeft, Calendar, Camera, CheckCircle2, ChevronDown, Eye, Heart,
-  MapPin, MessageCircle, Sparkles, Users, Building2, Cake, Presentation, Ruler,
+  MapPin, MessageCircle, Sparkles, Users, Cake, Presentation, Ruler,
   X
 } from 'lucide-react';
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 import { WeddingHeroScene } from './WeddingHeroScene';
-import { SiteContent, siteText } from '../data/siteContent';
+import { SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
 
 interface SarayaCustomerHomepageProps {
   halls: Hall[];
   photos?: VenuePhoto[];
   language: Language;
   onSelectHallForBooking: (hallId: string) => void;
-  onOpenBookingModal: () => void;
+  onOpenBookingModal: (hallId?: string) => void;
   onCreateBooking: (newBooking: Booking) => void;
   onOpenEventDesigner?: () => void;
   onOpenEditManager?: (tab?: 'halls' | 'photos', targetId?: string) => void;
@@ -51,7 +51,7 @@ function Reveal({ children, delay = 0, className }: { children: ReactNode; delay
 }
 
 export function SarayaCustomerHomepage({
-  halls, photos, language, onSelectHallForBooking, onOpenBookingModal, onCreateBooking,
+  halls, photos, language, onOpenBookingModal, onCreateBooking,
   onOpenEventDesigner, onOpenEditManager, content
 }: SarayaCustomerHomepageProps) {
   const isAr = language === 'ar';
@@ -87,6 +87,8 @@ export function SarayaCustomerHomepage({
     const custom = customImage(`event.${key}`);
     return [key, custom ? { ...(photo ?? displayPhotos[0]), src: custom } : photo];
   })) as Record<EventKey, VenuePhoto | undefined>;
+  // Service cards use the photo set in Website Content, or a library photo not already on an event card.
+  const servicePhotos = pickServicePhotos(displayPhotos, content, usedEventPhotoSources);
   const [event, setEvent] = useState<EventKey>('wedding');
   const [gallery, setGallery] = useState<VenuePhoto | null>(null);
 
@@ -97,10 +99,7 @@ export function SarayaCustomerHomepage({
   const heroTextOpacity = useTransform(heroProgress, [0, 0.6], [1, 0]);
   const heroTextY = useTransform(heroProgress, [0, 1], [0, -80]);
 
-  const openBooking = (hallId?: string) => {
-    if (hallId) onSelectHallForBooking(hallId);
-    onOpenBookingModal();
-  };
+  const openBooking = (hallId?: string) => onOpenBookingModal(hallId);
 
   return (
     <main dir={isAr ? 'rtl' : 'ltr'} className="w-full overflow-x-hidden pb-12 text-slate-100 sm:pb-20">
@@ -207,13 +206,18 @@ export function SarayaCustomerHomepage({
             <h2 className="mt-2 text-3xl font-serif font-bold sm:text-4xl">{t('services.title')}</h2>
           </header>
         </Reveal>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            [Ruler, t('services.1.title'), t('services.1.text')],
-            [Building2, t('services.2.title'), t('services.2.text')],
-            [Sparkles, t('services.3.title'), t('services.3.text')],
-            [Users, t('services.4.title'), t('services.4.text')],
-          ].map(([Icon, title, text], index) => { const I = Icon as typeof Ruler; return <Reveal key={String(title)} delay={index * 0.08} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6"><I className="h-6 w-6 text-amber-300" /><h3 className="mt-5 text-base font-bold">{title as string}</h3><p className="mt-2 text-xs leading-6 text-slate-400">{text as string}</p></Reveal>; })}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {servicePhotos.map((service, index) => (
+            <Reveal key={service.key} delay={(index % 3) * 0.08} className="h-full">
+              <article className="group h-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+                <div className="relative h-44 overflow-hidden bg-slate-950 sm:h-48">
+                  {service.src && <img src={service.src} alt={t(`services.${service.key}.title`)} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" referrerPolicy="no-referrer" />}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                </div>
+                <div className="p-5"><h3 className="text-base font-bold">{t(`services.${service.key}.title`)}</h3><p className="mt-2 text-xs leading-6 text-slate-400">{t(`services.${service.key}.text`)}</p></div>
+              </article>
+            </Reveal>
+          ))}
         </div>
       </section>
 

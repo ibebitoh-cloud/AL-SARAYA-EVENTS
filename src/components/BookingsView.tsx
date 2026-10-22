@@ -165,8 +165,13 @@ export function BookingsView({
                       {badge.label}
                     </span>
                     <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
-                      {getEventTypeLabel(bk.eventType)}
+                      {bk.source === 'website_quick' ? tr('النوع يُحدد بالاتصال', 'Type to confirm by phone') : getEventTypeLabel(bk.eventType)}
                     </span>
+                    {(bk.source === 'website' || bk.source === 'website_quick') && (
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold border border-amber-400/40 bg-amber-400/10 text-amber-200">
+                        {bk.source === 'website_quick' ? tr('طلب سريع من الموقع: اتصل بالعميل', 'Quick website request: call back') : tr('طلب من الموقع', 'Website request')}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 pt-1">

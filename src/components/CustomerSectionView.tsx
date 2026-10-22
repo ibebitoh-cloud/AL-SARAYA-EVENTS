@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Calendar, Building2, Sparkles, Ruler, Image as ImageIcon, Cuboid, ArrowRight, ArrowLeft, X } from 'lucide-react';
 import { Hall, Language } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
+import { SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
 
 type Screen = 'events' | 'venues' | 'services' | 'planner' | 'gallery' | '3d-tour';
 
@@ -12,6 +13,8 @@ interface Props {
   language: Language;
   onOpenBooking: (hallId?: string) => void;
   onGoHome: () => void;
+  /** Editable service texts and photos from Website Content. */
+  content?: SiteContent;
 }
 
 const copy = {
@@ -23,7 +26,7 @@ const copy = {
   '3d-tour': { en: ['3D Tour', 'Explore the space with our team.', '3D venue visualization is presented by the Saraya team as part of the planning and interview process.'], ar: ['جولة 3D', 'استكشف المساحة مع فريق السرايا.', 'يقدم فريق السرايا التصور ثلاثي الأبعاد ضمن عملية التخطيط والمقابلة.'] },
 } as const;
 
-export function CustomerSectionView({ screen, halls, photos: libraryPhotos, language, onOpenBooking, onGoHome }: Props) {
+export function CustomerSectionView({ screen, halls, photos: libraryPhotos, language, onOpenBooking, onGoHome, content }: Props) {
   const isAr = language === 'ar';
   const [selectedVenuePhoto, setSelectedVenuePhoto] = useState<VenuePhoto | null>(null);
   const [venueAlbumSlides, setVenueAlbumSlides] = useState<Record<string, number>>({});
@@ -127,9 +130,15 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
 
         {screen === 'services' && (
           <div className="grid gap-4 border-t border-slate-800 p-6 sm:grid-cols-2 lg:grid-cols-3">
-            {(isAr ? ['التخطيط والتصميم','الديكور والتجهيز','المنصات والشاشات','الإضاءة والصوت','الطاولات والكراسي','التنسيق والإشراف'] : ['Planning & Design','Decoration & Setup','Stages & Screens','Lighting & Sound','Tables & Chairs','Event Coordination']).map((x, i) => (
-              <div key={x} className="rounded-2xl border border-slate-800 bg-slate-950 p-6"><Sparkles className="h-5 w-5 text-amber-300" /><h2 className="mt-4 font-bold">{x}</h2></div>
-            ))}
+            {pickServicePhotos(photos, content).map((service) => {
+              const title = siteText(content, `services.${service.key}.title`, isAr);
+              return (
+                <article key={service.key} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+                  {service.src ? <img src={service.src} alt={title} loading="lazy" className="h-48 w-full object-cover" /> : <div className="flex h-48 items-center justify-center bg-slate-900"><Sparkles className="h-6 w-6 text-amber-300" /></div>}
+                  <div className="p-5"><h2 className="font-bold">{title}</h2><p className="mt-2 text-xs leading-6 text-slate-400">{siteText(content, `services.${service.key}.text`, isAr)}</p></div>
+                </article>
+              );
+            })}
           </div>
         )}
 
