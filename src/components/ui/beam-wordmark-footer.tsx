@@ -87,7 +87,7 @@ export type FooterSocial = {
 export type FooterLink = { label: string; href?: string; onClick?: () => void }
 export type FooterColumn = { title: string; links: FooterLink[] }
 /** One credit line: `lead` muted, `label` bright (a link when it has an `href`), `tail` muted. */
-export type FooterCredit = { lead?: string; label: string; href?: string; tail?: string }
+export type FooterCredit = { lead?: string; label: string; href?: string; tail?: string; /** Replaces the label text, e.g. a branded lockup. */ node?: React.ReactNode }
 
 export type BeamWordmarkFooterProps = {
   brand?: string
@@ -541,10 +541,10 @@ export default function BeamWordmarkFooter({
                   {c.lead}
                   {c.href ? (
                     <a href={c.href} onClick={(e) => follow(e, c)} {...external(c.href)}>
-                      {c.label}
+                      {c.node ?? c.label}
                     </a>
                   ) : (
-                    c.label && <b>{c.label}</b>
+                    c.node ?? (c.label && <b>{c.label}</b>)
                   )}
                   {c.tail}
                 </p>

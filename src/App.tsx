@@ -27,6 +27,7 @@ import { DEFAULT_EDIT_PERMISSIONS, EditArea, EditPermissions, canEdit } from './
 import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import BeamWordmarkFooter from './components/ui/beam-wordmark-footer';
+import { DaliCredit } from './components/DaliCredit';
 import { HoneyEmberBackground } from './components/ui/honey-ember-background';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
 import { ALSARAYA_PHOTOS, VenuePhoto } from './data/venueImages';
@@ -444,7 +445,7 @@ export default function App() {
       ]}
       credits={[
         { lead: siteText(siteContent, 'footer.text', isAr), label: '' },
-        { lead: 'Powered by ', label: 'DALI STUDIO', href: 'tel:+201146475759', tail: ' · Mohamed Alaa' },
+        { lead: 'Powered by ', label: 'DALI STUDIO', node: <DaliCredit isAr={isAr} />, href: 'tel:+201146475759', tail: ' · Mohamed Alaa' },
       ]}
       columns={[
         { title: siteText(siteContent, 'footer.contactTitle', isAr), links: [
