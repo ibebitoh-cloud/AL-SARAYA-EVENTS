@@ -24,7 +24,7 @@ export const bookingFields = (halls: Hall[]): FieldDef[] => [
   { key: 'date', ar: 'التاريخ', en: 'Date', type: 'date', required: true },
   { key: 'startTime', ar: 'من', en: 'Start time', type: 'time' },
   { key: 'endTime', ar: 'إلى', en: 'End time', type: 'time' },
-  { key: 'totalPrice', ar: 'إجمالي الحجز (ج.م)', en: 'Total price (EGP)', type: 'number', min: 0 },
+  { key: 'basePrice', ar: 'سعر القاعة (ج.م)', en: 'Hall price (EGP)', type: 'number', min: 0 },
   { key: 'deposit', ar: 'العربون (ج.م)', en: 'Deposit (EGP)', type: 'number', min: 0 },
   { key: 'paidAmount', ar: 'إجمالي المدفوع (ج.م)', en: 'Paid so far (EGP)', type: 'number', min: 0 },
   { key: 'securityDeposit', ar: 'التأمين (ج.م)', en: 'Security deposit (EGP)', type: 'number', min: 0 },
@@ -32,12 +32,25 @@ export const bookingFields = (halls: Hall[]): FieldDef[] => [
   { key: 'notes', ar: 'ملاحظات', en: 'Notes', type: 'textarea' },
 ];
 
-/** Keeps derived booking fields (venue name, remaining balance) in step with what was edited. */
+/** Hall price plus services, the CEO's discount, and the final price. */
+export const bookingTotals = (b: Pick<Booking, 'basePrice' | 'services' | 'discountPercent'>) => {
+  const subtotal = (Number(b.basePrice) || 0) + b.services.reduce((sum, s) => sum + (Number(s.totalPrice) || 0), 0);
+  const percent = Math.min(100, Math.max(0, Number(b.discountPercent) || 0));
+  const discount = Math.round((subtotal * percent) / 100);
+  return { subtotal, percent, discount, total: subtotal - discount };
+};
+
+/** Keeps derived booking fields (venue name, service lines, total, remaining balance) in step with what was edited. */
 export const normalizeBooking = (b: Booking, halls: Hall[]): Booking => {
   const hall = halls.find((h) => h.id === b.hallId);
-  const totalPrice = Number(b.totalPrice) || 0;
+  const services = b.services.map((s) => {
+    const quantity = Math.max(1, Number(s.quantity) || 1);
+    return { ...s, quantity, totalPrice: quantity * (Number(s.unitPrice) || 0), totalCost: quantity * (Number(s.costPrice) || 0) };
+  });
+  const basePrice = Number(b.basePrice) || 0;
+  const { total, percent } = bookingTotals({ basePrice, services, discountPercent: b.discountPercent });
   const paidAmount = Number(b.paidAmount) || 0;
-  return { ...b, hallName: hall?.name ?? b.hallName, locationId: hall?.locationId ?? b.locationId, totalPrice, paidAmount, remainingAmount: Math.max(0, totalPrice - paidAmount) };
+  return { ...b, hallName: hall?.name ?? b.hallName, locationId: hall?.locationId ?? b.locationId, basePrice, services, discountPercent: percent || undefined, totalPrice: total, paidAmount, remainingAmount: Math.max(0, total - paidAmount) };
 };
 
 export const hallFields: FieldDef[] = [

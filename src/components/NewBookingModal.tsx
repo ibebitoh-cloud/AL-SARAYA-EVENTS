@@ -25,8 +25,6 @@ interface NewBookingModalProps {
   /** Limited staff user (operations agent): sees selling prices only, records a tentative booking without payments. */
   hideFinancials?: boolean;
   language?: Language;
-  /** Values carried over from the short booking form. */
-  prefill?: { clientName?: string; clientPhone?: string; date?: string; hallId?: string; hallName?: string };
 }
 
 const inputCls = 'w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500';
@@ -36,7 +34,6 @@ const sectionCls = 'p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 s
 export function NewBookingModal({
   isOpen, onClose, halls, servicesCatalogue, priceBook, existingBookings, onCreateBooking,
   preselectedHallId, customerMode = false, hideFinancials = false, language = 'ar',
-  prefill,
 }: NewBookingModalProps) {
   const isAr = language === 'ar';
   const tr = (ar: string, en: string) => (isAr ? ar : en);
@@ -74,12 +71,6 @@ export function NewBookingModal({
     setClientName(''); setClientPhone(''); setClientAddress(''); setNotes(''); setDate(''); setCustomHallName(''); setSubmittedCode('');
     setLocationId(hallLocation(hall)); setHallId(hall?.id || ''); setBasePrice(hall?.basePrice || 0);
     setStatus(noPayments ? 'tentative' : 'confirmed');
-    if (prefill) {
-      setClientName(prefill.clientName || ''); setClientPhone(prefill.clientPhone || ''); setDate(prefill.date || '');
-      const prefillHall = halls.find((h) => h.id === prefill.hallId);
-      if (prefillHall) { setHallId(prefillHall.id); setLocationId(hallLocation(prefillHall)); setBasePrice(prefillHall.basePrice); }
-      else if (prefill.hallName?.trim()) { setHallId(CUSTOMER_VENUE_ID); setCustomHallName(prefill.hallName.trim()); setBasePrice(0); }
-    }
   }, [isOpen, preselectedHallId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isOpen) return null;
@@ -376,6 +367,7 @@ export function NewBookingModal({
                         className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 text-xs ${isChecked ? 'bg-indigo-600/15 border-indigo-500 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'}`}>
                         <div className="flex items-center gap-2">
                           <div className={`w-4 h-4 rounded-md flex items-center justify-center border ${isChecked ? 'bg-indigo-600 border-indigo-400 text-white' : 'border-slate-600'}`}>{isChecked && <Check className="w-3 h-3" />}</div>
+                          {customerMode && (srv.photoUrl ? <img src={srv.photoUrl} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-lg object-cover" /> : <span className="h-9 w-9 shrink-0 rounded-lg bg-slate-800" />)}
                           <span className="font-medium line-clamp-1">{srv.name}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">

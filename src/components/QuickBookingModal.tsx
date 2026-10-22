@@ -15,8 +15,6 @@ interface Props {
   preselectedHallId?: string;
   onCreate: (booking: Booking) => void;
   onClose: () => void;
-  /** Opens the longer request form, carrying over what was typed here. */
-  onOpenFullForm?: (draft: { clientName: string; clientPhone: string; date: string; hallId?: string; hallName?: string }) => void;
 }
 
 const inputCls = 'w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-3 text-sm text-white placeholder:text-slate-600 focus:border-amber-400 focus:outline-none';

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Printer, CheckCircle2, Shield, Calendar, Phone, MapPin, Receipt } from 'lucide-react';
 import { Booking, Language } from '../types/venueSystem';
 import { makeTr, eventTypeLabel } from '../utils/tr';
+import { bookingTotals } from '../data/recordFields';
 import { sound } from '../utils/soundEffects';
 
 interface InvoicePrintModalProps {
@@ -164,6 +165,10 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
 
               {/* Tally Numbers */}
               <div className="w-full sm:w-64 space-y-2 text-xs">
+                {(booking.discountPercent ?? 0) > 0 && <div className="flex justify-between text-emerald-300 print:text-green-700">
+                  <span>{tr(`خصم ${booking.discountPercent}%`, `Discount ${booking.discountPercent}%`)}:</span>
+                  <span className="font-mono font-bold">− {egp(bookingTotals(booking).discount)}</span>
+                </div>}
                 <div className="flex justify-between text-slate-300 print:text-gray-800">
                   <span>{tr('إجمالي قيمة الحجز', 'Booking total')}:</span>
                   <span className="font-mono font-bold">{egp(booking.totalPrice)}</span>

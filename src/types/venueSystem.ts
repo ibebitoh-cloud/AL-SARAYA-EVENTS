@@ -190,6 +190,8 @@ export interface Booking {
   eventDetails?: Record<string, string>;
   /** Where the booking came from. Website requests have no prices until staff price them. */
   source?: 'staff' | 'website' | 'website_quick';
+  /** Discount on the final price, in percent. Only the CEO can set it. */
+  discountPercent?: number;
 }
 
 /** A sellable event package (e.g. Gold wedding package). Prices live in the PriceBook per location. */
@@ -234,6 +236,8 @@ export interface ServiceDefinition {
   defaultCost: number;
   unit: string;
   description?: string;
+  /** Photo shown to customers on the website and in the booking form. */
+  photoUrl?: string;
 }
 
 export interface Expense {
@@ -271,6 +275,10 @@ export interface InventoryItem {
   salePrice?: number; // سعر بيع/احتساب الوحدة
   damagedQuantity: number; // التالف
   lastRestockedDate: string;
+  /** Photo shown to customers on the website's rental items list. */
+  photoUrl?: string;
+  /** Show this item to customers. When unset, everything except cleaning and operations supplies is shown. */
+  showOnWebsite?: boolean;
 }
 
 export interface Employee {
