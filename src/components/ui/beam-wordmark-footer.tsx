@@ -93,6 +93,8 @@ export type BeamWordmarkFooterProps = {
   brand?: string
   /** What the giant wordmark spells. Defaults to `brand`. */
   wordmark?: string
+  /** A logo image to show in place of the giant wordmark (for example a transparent white PNG). */
+  logoSrc?: string
   /** Copyright holder; defaults to `brand`. */
   company?: string
   year?: number
@@ -252,6 +254,8 @@ const CSS =
   // The wordmark. Each letter paints the section-sized background, shifted
   // back by its own offset, so beam and glow line up with the backdrop.
   ".bwf-word{position:relative;z-index:1;overflow:hidden;margin-top:clamp(28px,7cqw,96px)}" +
+  ".bwf-logo{overflow:visible;padding:0 0 clamp(20px,4cqw,40px)}" +
+  ".bwf-logo-img{display:block;margin:0 auto;width:min(340px,62%);height:auto;opacity:.92}" +
   ".bwf-word-box{padding:0 clamp(20px,6cqw,88px);max-width:1120px;margin:0 auto;box-sizing:border-box}" +
   ".bwf-word-in{display:inline-flex;white-space:nowrap;font-weight:var(--bwf-ww);line-height:1;letter-spacing:-.045em;user-select:none;-webkit-user-select:none}" +
   ".bwf-lw{display:inline-block;translate:0 0;transition:translate 1.25s cubic-bezier(.16,.84,.2,1) var(--bwf-d,0ms)}" +
@@ -277,6 +281,7 @@ const Arrow = () => (
 
 export default function BeamWordmarkFooter({
   brand = "ELSARAYA EVENTS",
+  logoSrc,
   wordmark,
   company,
   year = new Date().getFullYear(),
@@ -572,6 +577,11 @@ export default function BeamWordmarkFooter({
         ))}
       </div>
 
+      {logoSrc ? (
+        <div className="bwf-word bwf-logo">
+          <img src={logoSrc} alt={word} className="bwf-logo-img" />
+        </div>
+      ) : (
       <div
         ref={wordRef}
         dir="ltr"
@@ -592,6 +602,7 @@ export default function BeamWordmarkFooter({
         </div>
         <div className="bwf-foot" aria-hidden="true" />
       </div>
+      )}
     </footer>
   )
 }

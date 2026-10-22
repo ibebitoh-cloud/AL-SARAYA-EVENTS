@@ -435,7 +435,7 @@ export default function App() {
     {!isInternalManagementScreen ? <BeamWordmarkFooter
       className="mt-12 w-full"
       dir={isAr ? 'rtl' : 'ltr'}
-      brand={companyProfile.nameEn}
+      logoSrc="/brand/elsaraya-logo-white.png" brand={companyProfile.nameEn}
       company={isAr ? companyProfile.nameAr : companyProfile.nameEn}
       socials={[
         { label: 'WhatsApp', href: `https://wa.me/${companyProfile.whatsapp.replace(/\D/g, '')}`, icon: 'whatsapp' as const },
