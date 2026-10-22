@@ -79,10 +79,12 @@ interface RecordEditorModalProps<T> {
   onDelete?: () => void;
   /** Extra form content below the fields (e.g. a booking's services), editing the same draft. */
   extra?: (draft: T, set: (key: string, value: unknown) => void) => ReactNode;
+  /** Extra check before saving; return a message to stop the save. */
+  validate?: (draft: T) => string | undefined;
 }
 
 /** Generic add/edit form used by every management list, so each record type gets the same editing experience. */
-export function RecordEditorModal<T extends object>({ title, fields, value, language, onSave, onClose, onDelete, extra }: RecordEditorModalProps<T>) {
+export function RecordEditorModal<T extends object>({ title, fields, value, language, onSave, onClose, onDelete, extra, validate }: RecordEditorModalProps<T>) {
   const ar = language === 'ar';
   const [draft, setDraft] = useState<Record<string, unknown>>({ ...(value as Record<string, unknown>) });
   const [error, setError] = useState('');
@@ -90,6 +92,8 @@ export function RecordEditorModal<T extends object>({ title, fields, value, lang
   const save = () => {
     const missing = fields.find((f) => f.required && (draft[f.key] === undefined || String(draft[f.key]).trim() === ''));
     if (missing) { setError(ar ? `الحقل "${missing.ar}" مطلوب` : `"${missing.en}" is required`); return; }
+    const problem = validate?.(draft as T);
+    if (problem) { setError(problem); return; }
     onSave(draft as T);
   };
   return (

@@ -1,4 +1,5 @@
-export type EventType = 'wedding' | 'engagement' | 'birthday' | 'conference' | 'party';
+/** 'party' is shown as "Other event" (private parties, graduations and anything else). */
+export type EventType = 'wedding' | 'engagement' | 'birthday' | 'conference' | 'corporate' | 'party';
 
 export type BookingStatus = 'confirmed' | 'tentative' | 'completed' | 'cancelled';
 
@@ -192,6 +193,19 @@ export interface Booking {
   source?: 'staff' | 'website' | 'website_quick';
   /** Discount on the final price, in percent. Only the CEO can set it. */
   discountPercent?: number;
+  /** Set when an authorised user saved this booking despite a clash with another booking at the same venue. */
+  conflictOverride?: ConflictOverride;
+}
+
+/** Audit record of a double-booking warning that was overridden. */
+export interface ConflictOverride {
+  /** Code of the booking it clashed with when it was saved, e.g. BK-2026-101. */
+  conflictWithCode: string;
+  reason: string;
+  byUserId: string;
+  byName: string;
+  /** ISO timestamp. */
+  at: string;
 }
 
 /** A sellable event package (e.g. Gold wedding package). Prices live in the PriceBook per location. */

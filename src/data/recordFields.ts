@@ -9,8 +9,9 @@ export const EVENT_TYPE_OPTIONS = [
   opt('wedding', 'حفل زفاف', 'Wedding'),
   opt('engagement', 'خطوبة / كتب كتاب', 'Engagement'),
   opt('birthday', 'عيد ميلاد', 'Birthday'),
-  opt('conference', 'مؤتمر / ندوة', 'Conference'),
-  opt('party', 'حفلة خاصة / تخرج', 'Private party'),
+  opt('conference', 'مؤتمر / قمة', 'Conference / Summit'),
+  opt('corporate', 'فعالية شركات', 'Corporate event'),
+  opt('party', 'مناسبة أخرى', 'Other event'),
 ];
 
 export const bookingFields = (halls: Hall[]): FieldDef[] => [

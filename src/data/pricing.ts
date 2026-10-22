@@ -31,12 +31,12 @@ export const EVENT_PACKAGES: EventPackage[] = [
     includesEn: ['Balloon & theme decor', 'Cake & sweets', 'DJ', 'Hospitality'],
   },
   {
-    id: 'pkg-conference-half', nameAr: 'باقة مؤتمر نصف يوم', nameEn: 'Half-day Conference', eventTypes: ['conference'], minGuests: 30,
+    id: 'pkg-conference-half', nameAr: 'باقة مؤتمر نصف يوم', nameEn: 'Half-day Conference', eventTypes: ['conference', 'corporate'], minGuests: 30,
     includesAr: ['قاعة مجهزة', 'شاشة عرض وصوتيات', 'استراحة قهوة'],
     includesEn: ['Equipped hall', 'Screen & sound', 'Coffee break'],
   },
   {
-    id: 'pkg-conference-full', nameAr: 'باقة مؤتمر يوم كامل', nameEn: 'Full-day Conference', eventTypes: ['conference'], minGuests: 30,
+    id: 'pkg-conference-full', nameAr: 'باقة مؤتمر يوم كامل', nameEn: 'Full-day Conference', eventTypes: ['conference', 'corporate'], minGuests: 30,
     includesAr: ['قاعة مجهزة', 'شاشة عرض وصوتيات', 'استراحتي قهوة', 'غداء بوفيه'],
     includesEn: ['Equipped hall', 'Screen & sound', 'Two coffee breaks', 'Buffet lunch'],
   },

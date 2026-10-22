@@ -3,10 +3,12 @@ import type { SystemRole, SystemUser } from './systemProfiles';
 /** Parts of the system that can be edited. The CEO always edits everything and decides who else may edit each part. */
 export type EditArea =
   | 'bookings' | 'clients' | 'staff' | 'services' | 'inventory' | 'payments' | 'expenses'
-  | 'contracts' | 'catering' | 'price_lists' | 'photo_library' | 'company' | 'site_content';
+  | 'contracts' | 'catering' | 'price_lists' | 'photo_library' | 'company' | 'site_content'
+  | 'booking_override';
 
 export const EDIT_AREAS: { id: EditArea; ar: string; en: string; hintAr: string; hintEn: string }[] = [
   { id: 'bookings', ar: 'الحجوزات', en: 'Bookings', hintAr: 'إضافة وتعديل وحذف الحجوزات وتغيير حالتها', hintEn: 'Add, edit, delete bookings and change their status' },
+  { id: 'booking_override', ar: 'تجاوز تعارض الحجز', en: 'Override double-booking', hintAr: 'الحفظ رغم وجود حجز آخر في نفس القاعة والوقت، مع كتابة السبب', hintEn: 'Save despite another booking at the same venue and time, with a written reason' },
   { id: 'clients', ar: 'العملاء', en: 'Clients', hintAr: 'بيانات العملاء وأرصدتهم', hintEn: 'Client details and balances' },
   { id: 'staff', ar: 'الموظفون', en: 'Staff', hintAr: 'الموظفون والأجور والحضور', hintEn: 'Staff, wages and attendance' },
   { id: 'services', ar: 'الخدمات', en: 'Services', hintAr: 'كتالوج الخدمات وأسعارها', hintEn: 'Service catalogue and prices' },
