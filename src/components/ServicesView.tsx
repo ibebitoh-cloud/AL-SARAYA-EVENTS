@@ -11,12 +11,13 @@ import {
   Layers,
   Check,
   Pencil,
+  ImageOff,
 } from 'lucide-react';
 import { ServiceDefinition, Language } from '../types/venueSystem';
 import { makeTr } from '../utils/tr';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
-import { RowActions } from './RecordEditor';
+import { RowActions, ImageField } from './RecordEditor';
 
 interface ServicesViewProps {
   services: ServiceDefinition[];
@@ -42,6 +43,8 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
   const [defaultCost, setDefaultCost] = useState(1200);
   const [unit, setUnit] = useState('مناسبة');
   const [description, setDescription] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const missingPhotos = services.filter((s) => !s.photoUrl?.trim()).length;
 
   const categories = [
     { id: 'all', label: tr('جميع الخدمات', 'All services') },
@@ -70,6 +73,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
     setDefaultCost(1200);
     setUnit('مناسبة');
     setDescription('');
+    setPhotoUrl('');
     setIsModalOpen(true);
   };
 
@@ -81,6 +85,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
     setDefaultCost(service.defaultCost);
     setUnit(service.unit);
     setDescription(service.description || '');
+    setPhotoUrl(service.photoUrl || '');
     setIsModalOpen(true);
   };
 
@@ -96,6 +101,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
       defaultCost: Number(defaultCost) || 0,
       unit: unit.trim() || 'مناسبة',
       description: description.trim(),
+      photoUrl: photoUrl.trim() || undefined,
     };
     if (editingService) onUpdateService(updatedService);
     else onAddService(updatedService);
@@ -151,6 +157,13 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
         ))}
       </div>
 
+      {!sellingPricesOnly && missingPhotos > 0 && (
+        <div role="note" className="flex items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-xs font-semibold text-amber-200">
+          <ImageOff className="h-4 w-4 shrink-0" />
+          {tr(`${missingPhotos} خدمة بدون صورة. العملاء يرون صورة كل خدمة في الموقع ونموذج الحجز، فأضف صورة من زر «تعديل».`, `${missingPhotos} service(s) have no photo. Customers see each service's photo on the website and in the booking form, so add one with "Edit".`)}
+        </div>
+      )}
+
       {/* Services Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredServices.map((srv) => {
@@ -163,6 +176,9 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
               tiltMax={4}
               className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all space-y-3 shadow-md"
             >
+              <div className="-mx-5 -mt-5 mb-1 h-36 overflow-hidden rounded-t-2xl bg-slate-950">
+                {srv.photoUrl ? <img src={srv.photoUrl} alt={srv.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-1 text-[11px] text-slate-500"><ImageOff className="h-5 w-5" />{tr('لا توجد صورة', 'No photo yet')}</div>}
+              </div>
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1 min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 font-semibold">
@@ -218,7 +234,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
       {/* Add New Service Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-start">
+          <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-start">
             <h3 className="text-base font-bold text-white mb-4">{editingService ? tr('تعديل الخدمة الحالية', 'Edit service') : tr('إضافة خدمة أو باقة جديدة', 'Add service or package')}</h3>
 
             <form onSubmit={handleSave} className="space-y-4">
@@ -295,6 +311,8 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white resize-none"
                 />
               </div>
+
+              <ImageField label={tr('صورة الخدمة (تظهر للعملاء)', 'Service photo (shown to customers)')} value={photoUrl} onChange={setPhotoUrl} language={language} />
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                 <button

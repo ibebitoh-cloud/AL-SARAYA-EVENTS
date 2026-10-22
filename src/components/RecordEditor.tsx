@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pencil, Save, Trash2, Upload, X } from 'lucide-react';
 import type { Language } from '../types/venueSystem';
 
@@ -17,11 +17,31 @@ export interface FieldDef {
 
 const inputClass = 'mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none';
 
-/** Reads an image file as a data URL so uploaded photos survive in local storage. */
+/**
+ * Reads an image file as a data URL so uploaded photos survive in local storage.
+ * Phone photos are scaled down to at most 1200px so many of them fit in the browser's storage.
+ */
 export const readImageFile = (file: File, onDone: (dataUrl: string) => void) => {
   if (!file.type.startsWith('image/')) return;
   const reader = new FileReader();
-  reader.onload = () => onDone(String(reader.result));
+  reader.onload = () => {
+    const original = String(reader.result);
+    if (file.type === 'image/svg+xml' || file.type === 'image/gif') { onDone(original); return; }
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
+      if (scale === 1 && file.size < 400_000) { onDone(original); return; }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { onDone(original); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      onDone(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => onDone(original);
+    img.src = original;
+  };
   reader.readAsDataURL(file);
 };
 
@@ -57,10 +77,12 @@ interface RecordEditorModalProps<T> {
   onSave: (value: T) => void;
   onClose: () => void;
   onDelete?: () => void;
+  /** Extra form content below the fields (e.g. a booking's services), editing the same draft. */
+  extra?: (draft: T, set: (key: string, value: unknown) => void) => ReactNode;
 }
 
 /** Generic add/edit form used by every management list, so each record type gets the same editing experience. */
-export function RecordEditorModal<T extends object>({ title, fields, value, language, onSave, onClose, onDelete }: RecordEditorModalProps<T>) {
+export function RecordEditorModal<T extends object>({ title, fields, value, language, onSave, onClose, onDelete, extra }: RecordEditorModalProps<T>) {
   const ar = language === 'ar';
   const [draft, setDraft] = useState<Record<string, unknown>>({ ...(value as Record<string, unknown>) });
   const [error, setError] = useState('');
@@ -93,6 +115,7 @@ export function RecordEditorModal<T extends object>({ title, fields, value, lang
             );
           })}
         </div>
+        {extra?.(draft as T, set)}
         {error && <p className="mt-3 text-xs font-semibold text-rose-400">{error}</p>}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
           {onDelete ? <button type="button" onClick={() => { if (window.confirm(ar ? 'هل تريد حذف هذا السجل نهائياً؟' : 'Delete this record permanently?')) onDelete(); }} className="flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-xs font-bold text-rose-300"><Trash2 className="h-3.5 w-3.5" />{ar ? 'حذف' : 'Delete'}</button> : <span />}
