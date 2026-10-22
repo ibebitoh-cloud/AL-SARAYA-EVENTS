@@ -6,21 +6,30 @@ import {
   ChevronRight,
   ChevronUp,
   Copy,
+  Redo2,
+  RotateCcw,
   DoorOpen,
   Monitor,
   Move3d,
   Plus,
   RotateCw,
   Save,
+  Grid3X3,
+  FolderOpen,
+  Files,
+  Pencil,
   Presentation,
   ScreenShare,
   Sparkles,
   Trash2,
+  Undo2,
+  Utensils,
   Users,
   X,
 } from 'lucide-react';
-import { Hall3DProfile, HallLayoutItem, Language } from '../types/venueSystem';
+import { Hall, Hall3DProfile, HallLayoutItem, Language, LocationId, SavedHallLayout } from '../types/venueSystem';
 import { EventLayout3D } from './EventLayout3D';
+import { LOCATIONS, hallLocation } from '../data/locations';
 
 type LayoutMode = '2d' | '3d' | 'pov';
 type EventKind = 'engagement' | 'wedding' | 'conference' | 'summit' | 'birthday' | 'other';
@@ -37,6 +46,12 @@ const ITEM_LIBRARY = [
   { type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', icon: Move3d },
   { type: 'buffet', labelEn: 'Buffet', labelAr: 'بوفيه', icon: Sparkles },
   { type: 'registration', labelEn: 'Registration', labelAr: 'تسجيل', icon: DoorOpen },
+  { type: 'entrance', labelEn: 'Entrance Portal', labelAr: 'بوابة دخول كبيرة', icon: DoorOpen },
+  { type: 'exit', labelEn: 'Exit Portal', labelAr: 'بوابة خروج كبيرة', icon: DoorOpen },
+  { type: 'bar', labelEn: 'Service Bar', labelAr: 'بار ضيافة كبير', icon: Utensils },
+  { type: 'lounge', labelEn: 'Lounge Zone', labelAr: 'منطقة جلوس كبيرة', icon: Users },
+  { type: 'led_wall', labelEn: 'Large LED Wall', labelAr: 'جدار شاشة LED كبير', icon: Monitor },
+  { type: 'truss', labelEn: 'Lighting Truss', labelAr: 'جسر إضاءة كبير', icon: Sparkles },
 ] as const;
 
 // Ready-made table sets (table + chairs) with real sizes, added in bulk from the designer.
@@ -78,19 +93,25 @@ const INITIAL_ITEMS: LayoutItem[] = [
   { id: 'dance-1', type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', x: 50, y: 58, rotation: 0 },
 ];
 
-interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; }
+interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; halls?: Hall[]; onUpdateHall?: (hall: Hall) => void; }
 
-export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose }: DesignerProps) {
+export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose, halls = [], onUpdateHall }: DesignerProps) {
   const isAr = language === 'ar';
+  const [locationId, setLocationId] = useState<LocationId>(() => halls[0] ? hallLocation(halls[0]) : 'arcane');
+  const locationHalls = halls.filter((hall) => hallLocation(hall) === locationId);
+  const [hallId, setHallId] = useState(() => halls.find((hall) => hallLocation(hall) === 'arcane')?.id || halls[0]?.id || '');
+  const activeHall = halls.find((hall) => hall.id === hallId);
   const [eventKind, setEventKind] = useState<EventKind>('engagement');
   const [locationKind, setLocationKind] = useState<LocationKind>('client');
   const [guests, setGuests] = useState(250);
-  const [width, setWidth] = useState(initialDesign?.width ?? 20);
-  const [depth, setDepth] = useState(initialDesign?.depth ?? 30);
+  const initialHall = halls.find((hall) => hall.id === (halls.find((entry) => hallLocation(entry) === 'arcane')?.id || halls[0]?.id));
+  const [width, setWidth] = useState(initialDesign?.width ?? initialHall?.default3D?.width ?? 20);
+  const [depth, setDepth] = useState(initialDesign?.depth ?? initialHall?.default3D?.depth ?? 30);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('3d');
   const [cameraYaw, setCameraYaw] = useState(0);
   const [items, setItems] = useState<LayoutItem[]>(() => {
     if (initialDesign?.items?.length) return initialDesign.items;
+    if (halls.length) return initialHall?.default3D?.items?.length ? initialHall.default3D.items : INITIAL_ITEMS;
     try {
       const stored = typeof window !== 'undefined' ? window.localStorage.getItem('saraya-event-layout-design-v1') : null;
       if (stored) {
@@ -100,7 +121,16 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     } catch {}
     return INITIAL_ITEMS;
   });
-  const [selectedId, setSelectedId] = useState<string | null>('stage-1');
+  const [history, setHistory] = useState<LayoutItem[][]>([]);
+  const [future, setFuture] = useState<LayoutItem[][]>([]);
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const snapToGridRef = useRef(snapToGrid);
+  snapToGridRef.current = snapToGrid;
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [rotationMode, setRotationMode] = useState(false);
+  const rotationModeRef = useRef(rotationMode);
+  rotationModeRef.current = rotationMode;
   const [clientView, setClientView] = useState(false);
   const [saved, setSaved] = useState(false);
   const [projectName, setProjectName] = useState(() => {
@@ -110,9 +140,11 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     } catch { return ''; }
   });
   const [autoBuilderOpen, setAutoBuilderOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [autoSelection, setAutoSelection] = useState<Record<string, number>>({ table: 0, stage: 1, screen: 1, podium: 0, dance: 1, buffet: 0, registration: 0 });
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number; dx: number; dy: number; rotation: number; canvasWidth: number; canvasHeight: number } | null>(null);
+  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number } | null>(null);
+  const rotationDragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; centerX: number; centerY: number; startAngle: number; startRotation: number; rotation: number } | null>(null);
 
   useEffect(() => {
     try {
@@ -124,6 +156,17 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const eventName = EVENT_NAMES[eventKind][isAr ? 1 : 0];
 
   const tableCount = Math.max(1, Math.ceil(guests / 10));
+  const commitItems = (next: LayoutItem[] | ((previous: LayoutItem[]) => LayoutItem[])) => {
+    setItems((previous) => {
+      const resolved = typeof next === 'function' ? next(previous) : next;
+      setHistory((stack) => [...stack.slice(-39), previous]);
+      setFuture([]);
+      return resolved;
+    });
+    setSaved(false);
+  };
+  const undo = () => setHistory((stack) => { if (!stack.length) return stack; const previous = stack[stack.length - 1]; setFuture((redoStack) => [items, ...redoStack]); setItems(previous); setSaved(false); return stack.slice(0, -1); });
+  const redo = () => setFuture((stack) => { if (!stack.length) return stack; const next = stack[0]; setHistory((undoStack) => [...undoStack, items]); setItems(next); setSaved(false); return stack.slice(1); });
 
   const addItem = (type: string) => {
     const source = ITEM_LIBRARY.find((item) => item.type === type);
@@ -138,7 +181,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       rotation: 0,
       seats: type === 'table' ? 10 : undefined,
     };
-    setItems((prev) => [...prev, item]);
+    commitItems((prev) => [...prev, item]);
     setSelectedId(item.id);
     setSaved(false);
   };
@@ -174,7 +217,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
         depthM: set.depthM,
       };
     });
-    setItems((prev) => [...prev, ...added]);
+    commitItems((prev) => [...prev, ...added]);
     setSelectedId(added[0].id);
     setSaved(false);
   };
@@ -182,17 +225,19 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
   const updateSelected = (patch: Partial<LayoutItem>) => {
     if (!selectedId) return;
-    setItems((prev) => prev.map((item) => item.id === selectedId ? { ...item, ...patch } : item));
+    commitItems((prev) => prev.map((item) => item.id === selectedId ? { ...item, ...patch } : item));
     setSaved(false);
+  };
+
+  const rotateItem = (id: string, delta: number) => {
+    commitItems((prev) => prev.map((item) => item.id === id ? { ...item, rotation: item.rotation + delta } : item));
+    setSelectedId(null);
+    setRotationMode(false);
   };
 
   const nudge = (dx: number, dy: number) => {
     if (!selected) return;
     updateSelected({ x: Math.max(5, Math.min(95, selected.x + dx)), y: Math.max(5, Math.min(95, selected.y + dy)) });
-  };
-
-  const applyDragTransform = (drag: NonNullable<typeof dragRef.current>) => {
-    drag.el.style.transform = `translate(-50%, -50%) translate3d(${drag.dx}px, ${drag.dy}px, 0) rotate(${drag.rotation}deg)`;
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, item: LayoutItem) => {
@@ -202,9 +247,23 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-
     setSelectedId(item.id);
+    if (rotationModeRef.current) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      rotationDragRef.current = {
+        id: item.id,
+        el: event.currentTarget,
+        pointerId: event.pointerId,
+        centerX: rect.left + rect.width / 2,
+        centerY: rect.top + rect.height / 2,
+        startAngle: Math.atan2(event.clientY - (rect.top + rect.height / 2), event.clientX - (rect.left + rect.width / 2)),
+        startRotation: item.rotation,
+        rotation: item.rotation,
+      };
+      event.currentTarget.style.willChange = 'transform';
+      try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+      return;
+    }
     dragRef.current = {
       id: item.id,
       el: event.currentTarget,
@@ -215,11 +274,6 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       startY: item.y,
       x: item.x,
       y: item.y,
-      dx: 0,
-      dy: 0,
-      rotation: item.rotation,
-      canvasWidth: rect.width,
-      canvasHeight: rect.height,
     };
 
     event.currentTarget.style.transition = 'none';
@@ -228,20 +282,46 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   const updateDragFromPointer = (clientX: number, clientY: number, pointerId: number) => {
+    const rotating = rotationDragRef.current;
+    if (rotating && rotating.pointerId === pointerId) {
+      const angle = Math.atan2(clientY - rotating.centerY, clientX - rotating.centerX);
+      let delta = angle - rotating.startAngle;
+      if (delta > Math.PI) delta -= Math.PI * 2;
+      if (delta < -Math.PI) delta += Math.PI * 2;
+      rotating.rotation = rotating.startRotation + delta * (180 / Math.PI);
+      rotating.el.style.transform = `translate(-50%, -50%) rotate(${rotating.rotation}deg)`;
+      return;
+    }
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
 
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return;
     const dx = clientX - drag.startClientX;
     const dy = clientY - drag.startClientY;
-    drag.dx = dx;
-    drag.dy = dy;
-    drag.x = Math.max(2, Math.min(98, drag.startX + (dx / drag.canvasWidth) * 100));
-    drag.y = Math.max(2, Math.min(98, drag.startY + (dy / drag.canvasHeight) * 100));
+    const rawX = Math.max(2, Math.min(98, drag.startX + (dx / rect.width) * 100));
+    const rawY = Math.max(2, Math.min(98, drag.startY + (dy / rect.height) * 100));
+    drag.x = snapToGridRef.current ? Math.max(2, Math.min(98, Math.round(rawX))) : rawX;
+    drag.y = snapToGridRef.current ? Math.max(2, Math.min(98, Math.round(rawY))) : rawY;
 
-    applyDragTransform(drag);
+    // Move the element in the same percentage coordinate system used by the canvas,
+    // so releasing it does not cause a second snap from a pixel transform.
+    drag.el.style.left = `${drag.x}%`;
+    drag.el.style.top = `${drag.y}%`;
   };
 
   const finishDrag = (clientX: number, clientY: number, pointerId: number) => {
+    const rotating = rotationDragRef.current;
+    if (rotating && rotating.pointerId === pointerId) {
+      updateDragFromPointer(clientX, clientY, pointerId);
+      const rotation = rotating.rotation;
+      try { rotating.el.releasePointerCapture(rotating.pointerId); } catch {}
+      rotating.el.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+      rotating.el.style.willChange = 'auto';
+      rotationDragRef.current = null;
+      if (Math.abs(rotation - rotating.startRotation) >= 3) rotateItem(rotating.id, rotation - rotating.startRotation);
+      return;
+    }
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== pointerId) return;
 
@@ -249,15 +329,12 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     const finalX = drag.x;
     const finalY = drag.y;
     const element = drag.el;
-    const originalTransform = `translate(-50%, -50%) rotate(${drag.rotation}deg)`;
-
-    setItems((prev) => prev.map((item) =>
-      item.id === drag.id ? { ...item, x: finalX, y: finalY } : item
-    ));
+    commitItems((prev) => prev.map((item) => item.id === drag.id ? { ...item, x: finalX, y: finalY } : item));
     setSaved(false);
 
     try { element.releasePointerCapture(drag.pointerId); } catch {}
-    element.style.transform = originalTransform;
+    element.style.left = `${finalX}%`;
+    element.style.top = `${finalY}%`;
     element.style.willChange = 'auto';
     dragRef.current = null;
   };
@@ -270,21 +347,35 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       if (event.key === 'ArrowDown') { event.preventDefault(); nudge(0, step); }
       if (event.key === 'ArrowLeft') { event.preventDefault(); nudge(-step, 0); }
       if (event.key === 'ArrowRight') { event.preventDefault(); nudge(step, 0); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); }
+      if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelected(); }
+      if (event.key === 'Escape') { setSelectedId(null); setRotationMode(false); }
     };
 
     const onWindowPointerMove = (event: PointerEvent) => updateDragFromPointer(event.clientX, event.clientY, event.pointerId);
     const onWindowPointerUp = (event: PointerEvent) => finishDrag(event.clientX, event.clientY, event.pointerId);
+    const onDocumentPointerDown = (event: PointerEvent) => {
+      if (!rotationModeRef.current) return;
+      const target = event.target as Element | null;
+      if (target?.closest('[data-rotation-ui]')) return;
+      setRotationMode(false);
+      setSelectedId(null);
+    };
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('pointermove', onWindowPointerMove);
     window.addEventListener('pointerup', onWindowPointerUp);
     window.addEventListener('pointercancel', onWindowPointerUp);
+    document.addEventListener('pointerdown', onDocumentPointerDown);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('pointermove', onWindowPointerMove);
       window.removeEventListener('pointerup', onWindowPointerUp);
       window.removeEventListener('pointercancel', onWindowPointerUp);
+      document.removeEventListener('pointerdown', onDocumentPointerDown);
     };
   }, []);
 
@@ -295,14 +386,14 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const duplicateSelected = () => {
     if (!selected) return;
     const copy: LayoutItem = { ...selected, id: `${selected.type}-${Date.now()}`, x: Math.min(90, selected.x + 8), y: Math.min(90, selected.y + 6) };
-    setItems((prev) => [...prev, copy]);
+    commitItems((prev) => [...prev, copy]);
     setSelectedId(copy.id);
     setSaved(false);
   };
 
   const deleteSelected = () => {
     if (!selected) return;
-    setItems((prev) => prev.filter((item) => item.id !== selected.id));
+    commitItems((prev) => prev.filter((item) => item.id !== selected.id));
     setSelectedId(null);
     setSaved(false);
   };
@@ -321,18 +412,35 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     for (let i = 0; i < tableQty; i++) { const row = Math.floor(i / cols); const col = i % cols; const x = cols === 1 ? 0 : -((cols - 1) * 3.8) / 2 + col * 3.8; add('table', i + 1, x, -depth / 2 + margin + 4 + row * 3.8); }
     const simple = ['stage','screen','podium','dance','buffet','registration'];
     simple.forEach((type) => { const qty = autoSelection[type] || 0; for (let i = 0; i < qty; i++) { const x = (i - (qty - 1) / 2) * (type === 'stage' || type === 'screen' ? 8 : 2.5); const y = type === 'dance' ? depth / 2 - margin - 2.5 : -depth / 2 + margin + (type === 'screen' ? 1 : type === 'stage' ? 2 : 5); add(type, i + 1, x, y); } });
-    setItems(next); setSelectedId(next[0]?.id ?? null); setSaved(false); setAutoBuilderOpen(false);
+    commitItems(next); setSelectedId(next[0]?.id ?? null); setAutoBuilderOpen(false);
   };
 
   const saveDesign = () => {
     try { window.localStorage.setItem('saraya-event-layout-design-v1', JSON.stringify({ width, depth, items, projectName })); } catch {}
-    onSaveDesign?.({ width, depth, items });
+    const design = { width, depth, items };
+    onSaveDesign?.(design);
+    if (activeHall && onUpdateHall) {
+      if (activePlanId) {
+        const savedLayouts = (activeHall.savedLayouts || []).map((plan) => plan.id === activePlanId ? { ...plan, name: projectName.trim() || plan.name, eventType: eventKind, updatedAt: new Date().toISOString(), design } : plan);
+        onUpdateHall({ ...activeHall, savedLayouts });
+      } else onUpdateHall({ ...activeHall, default3D: design });
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
   };
 
+  const saveAsPlan = () => {
+    if (!activeHall || !onUpdateHall) { saveDesign(); return; }
+    const plan: SavedHallLayout = { id: `layout-${Date.now()}`, name: projectName.trim() || (isAr ? `مخطط ${eventName}` : `${eventName} layout`), eventType: eventKind, updatedAt: new Date().toISOString(), design: { width, depth, items } };
+    onUpdateHall({ ...activeHall, savedLayouts: [...(activeHall.savedLayouts || []), plan] });
+    setActivePlanId(plan.id); setProjectName(plan.name); setSaved(true); setTimeout(() => setSaved(false), 2200);
+  };
+  const openSavedPlan = (plan: SavedHallLayout) => { setActivePlanId(plan.id); setProjectName(plan.name); setEventKind((EVENT_NAMES[plan.eventType as EventKind] ? plan.eventType : 'other') as EventKind); setWidth(plan.design.width); setDepth(plan.design.depth); setItems(plan.design.items); setHistory([]); setFuture([]); setSelectedId(null); setSaved(true); };
+  const duplicateSavedPlan = (plan: SavedHallLayout) => { if (!activeHall || !onUpdateHall) return; const copy = { ...plan, id: `layout-${Date.now()}`, name: `${plan.name} ${isAr ? 'نسخة' : 'copy'}`, updatedAt: new Date().toISOString(), design: { ...plan.design, items: plan.design.items.map((item) => ({ ...item, id: `${item.id}-${Date.now()}` })) } }; onUpdateHall({ ...activeHall, savedLayouts: [...(activeHall.savedLayouts || []), copy] }); };
+  const deleteSavedPlan = (id: string) => { if (!activeHall || !onUpdateHall) return; onUpdateHall({ ...activeHall, savedLayouts: (activeHall.savedLayouts || []).filter((plan) => plan.id !== id) }); if (activePlanId === id) setActivePlanId(null); };
+
   const itemVisual = (item: LayoutItem) => {
-    const common = 'absolute flex items-center justify-center select-none';
+    const common = 'absolute flex items-center justify-center overflow-hidden whitespace-nowrap px-1 text-ellipsis select-none';
     if (item.type === 'table' && item.shape === 'rect') return `${common} w-16 h-8 rounded-md border-2 border-amber-300/70 bg-amber-200/20 text-amber-100`;
     if (item.type === 'table') return `${common} w-14 h-14 rounded-full border-2 border-amber-300/70 bg-amber-200/20 text-amber-100`;
     if (item.type === 'chairs') return `${common} w-7 h-7 rounded-md border border-slate-300/50 bg-slate-300/20 text-slate-200`;
@@ -342,6 +450,9 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     if (item.type === 'dance') return `${common} w-28 h-16 rounded-lg border-2 border-amber-200/50 bg-amber-100/10 text-[10px] text-amber-100`;
     if (item.type === 'flowers') return `${common} w-10 h-10 rounded-full border border-pink-200/60 bg-pink-200/15 text-pink-100`;
     if (item.type === 'buffet') return `${common} w-28 h-9 rounded border border-emerald-200/50 bg-emerald-200/10 text-[9px] text-emerald-100`;
+    if (item.type === 'entrance' || item.type === 'exit') return `${common} w-32 h-12 rounded-lg border-2 border-emerald-200/60 bg-emerald-200/15 text-[9px] font-bold text-emerald-100`;
+    if (item.type === 'bar' || item.type === 'lounge') return `${common} w-40 h-16 rounded-xl border-2 border-pink-200/50 bg-pink-200/10 text-[9px] font-bold text-pink-100`;
+    if (item.type === 'led_wall' || item.type === 'truss') return `${common} w-48 h-20 rounded-xl border-2 border-sky-200/60 bg-sky-200/10 text-[9px] font-bold text-sky-100`;
     return `${common} w-24 h-9 rounded border border-slate-300/50 bg-slate-300/10 text-[9px] text-slate-100`;
   };
 
@@ -363,11 +474,14 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <button type="button" onClick={() => setLayoutMode('3d')} className={`px-3 py-2 rounded-lg text-xs font-bold border ${layoutMode === '3d' ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-950 text-slate-300 border-slate-700'}`}>{isAr ? 'منظور 3D' : '3D View'}</button>
               <button type="button" onClick={() => setLayoutMode('pov')} className={`px-3 py-2 rounded-lg text-xs font-bold border ${layoutMode === 'pov' ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-950 text-slate-300 border-slate-700'}`}>{isAr ? 'منظور الشخص' : 'Inside POV'}</button>
               <button type="button" onClick={() => setClientView(true)} className="px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-white">{isAr ? 'عرض العميل' : 'Client View'}</button>
-              <button type="button" onClick={saveDesign} className="px-3 py-2 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5"><Save className="w-3.5 h-3.5" />{saved ? (isAr ? 'تم الحفظ' : 'Saved') : (isAr ? 'حفظ التصميم' : 'Save Design')}</button>
+              {activeHall && <button type="button" onClick={saveAsPlan} className="px-3 py-2 rounded-lg border border-amber-400/40 bg-amber-400/10 text-amber-200 text-xs font-bold flex items-center gap-1.5"><Files className="w-3.5 h-3.5" />{isAr ? 'حفظ كخطة' : 'Save as Plan'}</button>}
+              <button type="button" onClick={saveDesign} className="px-3 py-2 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5"><Save className="w-3.5 h-3.5" />{saved ? (isAr ? 'تم الحفظ' : 'Saved') : (isAr ? (activePlanId ? 'تحديث الخطة' : 'حفظ الافتراضي') : (activePlanId ? 'Update Plan' : 'Save Default'))}</button>
             </div>
           </div>
         </div>
       )}
+
+      {!clientView && halls.length > 0 && <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-amber-400/40 bg-slate-950/95 p-3 shadow-xl backdrop-blur"><span className="text-[10px] font-black uppercase tracking-widest text-amber-300">{isAr ? 'الموقع الجاري تعديله' : 'EDITING LOCATION'}</span><select value={locationId} onChange={(e) => { const loc = e.target.value as LocationId; setLocationId(loc); const next = halls.find((hall) => hallLocation(hall) === loc); if (next) { setHallId(next.id); setActivePlanId(null); setProjectName(''); setWidth(next.default3D?.width ?? 20); setDepth(next.default3D?.depth ?? 30); setItems(next.default3D?.items?.length ? next.default3D.items : INITIAL_ITEMS); setHistory([]); setFuture([]); } }} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white">{LOCATIONS.map((location) => <option key={location.id} value={location.id}>{isAr ? location.nameAr : location.nameEn}</option>)}</select><select value={hallId} onChange={(e) => { const hall = halls.find((entry) => entry.id === e.target.value); setHallId(e.target.value); setActivePlanId(null); setProjectName(''); if (hall) { setWidth(hall.default3D?.width ?? 20); setDepth(hall.default3D?.depth ?? 30); setItems(hall.default3D?.items?.length ? hall.default3D.items : INITIAL_ITEMS); setHistory([]); setFuture([]); } }} className="min-w-40 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white">{locationHalls.map((hall) => <option key={hall.id} value={hall.id}>{isAr ? hall.name : hall.nameEn || hall.name}</option>)}</select><select value={activePlanId || ''} onChange={(e) => { const plan = activeHall?.savedLayouts?.find((entry) => entry.id === e.target.value); if (plan) openSavedPlan(plan); else { setActivePlanId(null); setProjectName(''); if (activeHall?.default3D) { setWidth(activeHall.default3D.width); setDepth(activeHall.default3D.depth); setItems(activeHall.default3D.items); } } }} className="min-w-36 rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option value="">{isAr ? 'التصميم الافتراضي' : 'Default layout'}</option>{(activeHall?.savedLayouts || []).map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select><span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">{activeHall ? (isAr ? activeHall.name : activeHall.nameEn || activeHall.name) : ''}</span><button type="button" disabled={!history.length} onClick={undo} title="Ctrl+Z" className="rounded-lg border border-slate-700 p-2 text-slate-300 disabled:opacity-40"><Undo2 className="h-4 w-4" /></button><button type="button" disabled={!future.length} onClick={redo} title="Ctrl+Y" className="rounded-lg border border-slate-700 p-2 text-slate-300 disabled:opacity-40"><Redo2 className="h-4 w-4" /></button></div>}
 
       {clientView ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
@@ -384,7 +498,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="absolute inset-[7%] border border-white/10 rounded-xl">
                 {items.map((item) => (
                   <div key={item.id} className={itemVisual(item)} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)` }}>
-                    {item.type === 'screen' ? 'LED SCREEN' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? (item.seats || 10) : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.labelEn}
+                    {item.type === 'table' ? (item.seats || 10) : (isAr ? item.labelAr : item.labelEn)}
                   </div>
                 ))}
               </div>
@@ -397,6 +511,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             <div className="text-xs font-bold text-white mb-3">{isAr ? 'بيانات المناسبة' : 'Event Setup'}</div>
             <label className="block text-[11px] text-slate-400 mb-1">{isAr ? 'اسم التصميم' : 'Design Name'}</label>
             <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder={isAr ? 'مثال: خطوبة أحمد وسارة' : 'e.g. Ahmed & Sara Engagement'} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-amber-400" />
+            {activeHall && (activeHall.savedLayouts || []).length > 0 && <div className="mt-3 space-y-1.5"><div className="text-[10px] font-bold text-slate-400">{isAr ? 'الخطط المحفوظة لهذه القاعة' : 'Saved plans for this hall'}</div>{activeHall.savedLayouts?.map((plan) => <div key={plan.id} className="flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-950 p-1.5"><button type="button" onClick={() => openSavedPlan(plan)} title={isAr ? 'فتح الخطة' : 'Open plan'} className="min-w-0 flex-1 truncate text-start text-[10px] font-semibold text-slate-200"><FolderOpen className="me-1 inline h-3 w-3 text-amber-300" />{plan.name}</button><button type="button" onClick={() => duplicateSavedPlan(plan)} title={isAr ? 'نسخ' : 'Duplicate'} className="rounded p-1 text-slate-400 hover:text-white"><Copy className="h-3 w-3" /></button><button type="button" onClick={() => { const name = window.prompt(isAr ? 'اسم الخطة الجديد' : 'New plan name', plan.name); if (name?.trim() && activeHall && onUpdateHall) onUpdateHall({ ...activeHall, savedLayouts: (activeHall.savedLayouts || []).map((entry) => entry.id === plan.id ? { ...entry, name: name.trim() } : entry) }); }} title={isAr ? 'إعادة تسمية' : 'Rename'} className="rounded p-1 text-slate-400 hover:text-white"><Pencil className="h-3 w-3" /></button><button type="button" onClick={() => deleteSavedPlan(plan.id)} title={isAr ? 'حذف' : 'Delete'} className="rounded p-1 text-rose-400 hover:text-rose-300"><Trash2 className="h-3 w-3" /></button></div>)}</div>}
 
             <label className="block text-[11px] text-slate-400 mt-3 mb-1">{isAr ? 'نوع المناسبة' : 'Event Type'}</label>
             <select value={eventKind} onChange={(e) => setEventKind(e.target.value as EventKind)} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white">
@@ -419,16 +534,6 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             <button type="button" onClick={() => setAutoBuilderOpen(true)} className="mt-3 w-full rounded-lg bg-slate-800 border border-slate-700 py-2.5 text-xs font-bold text-white">{isAr ? 'إنشاء تخطيط تلقائي' : 'Build Auto Layout'}</button>
 
             <div className="mt-5 border-t border-slate-800 pt-3">
-              <div className="text-xs font-bold text-white mb-2">{isAr ? 'إضافة عناصر' : 'Add Items'}</div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {ITEM_LIBRARY.map((item) => {
-                  const Icon = item.icon;
-                  return <button key={item.type} type="button" onClick={() => addItem(item.type)} className="min-h-10 rounded-lg border border-slate-700 bg-slate-950 hover:border-slate-500 text-[10px] text-slate-300 flex items-center gap-1.5 px-2"><Plus className="w-3 h-3 text-amber-400" /><Icon className="w-3.5 h-3.5" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>;
-                })}
-              </div>
-            </div>
-
-            <div className="mt-5 border-t border-slate-800 pt-3">
               <div className="text-xs font-bold text-white">{isAr ? 'طاولات جاهزة بالكراسي' : 'Table Sets'}</div>
               <p className="mt-0.5 mb-2 text-[10px] text-slate-500">{isAr ? 'حدد العدد ثم أضف دفعة واحدة' : 'Set a quantity, then add them in bulk'}</p>
               <div className="space-y-1.5">
@@ -445,20 +550,33 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </aside>
 
           <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-2 sm:p-3 min-w-0">
-            <div className="flex items-center justify-between px-2 py-2">
-              <div className="text-xs font-bold text-white">{isAr ? eventName : eventName} · {width} × {depth}m</div>
-              <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'}</div>
+            <div className="relative flex items-center justify-between gap-2 px-2 py-2">
+              <div className="text-xs font-bold text-white">{activeHall ? `${isAr ? activeHall.name : activeHall.nameEn || activeHall.name} · ` : ''}{eventName} · {width} × {depth}m</div>
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'} · {items.filter((item) => item.type === 'table').reduce((sum, item) => sum + (item.seats || 10), 0)} {isAr ? 'مقعداً' : 'seats'}</div>
+                <button type="button" data-rotation-ui onClick={() => { setRotationMode((active) => !active); setSelectedId(null); }} aria-pressed={rotationMode} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-black ${rotationMode ? 'border-amber-300 bg-amber-300 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-amber-300/60'}`}><RotateCw className="h-3.5 w-3.5" />{isAr ? (rotationMode ? 'وضع التدوير' : 'تدوير') : (rotationMode ? 'Rotate mode on' : 'Rotate')}</button>
+                <button type="button" onClick={() => setQuickAddOpen((open) => !open)} aria-expanded={quickAddOpen} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 text-[10px] font-black text-slate-950 hover:bg-amber-300"><Plus className="h-3.5 w-3.5" />{isAr ? 'إضافة عناصر' : 'Add items'}</button>
+              </div>
+              {quickAddOpen && <div className="absolute end-2 top-full z-50 mt-1 grid w-[min(92vw,360px)] grid-cols-2 gap-1.5 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl sm:grid-cols-3">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; return <button key={item.type} type="button" onClick={() => { addItem(item.type); setQuickAddOpen(false); }} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-800 px-2 text-start text-[10px] text-slate-200 hover:border-amber-400/60 hover:bg-slate-900"><Icon className="h-3.5 w-3.5 shrink-0 text-amber-300" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>; })}</div>}
             </div>
             <div className="relative w-full aspect-[4/3] min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
               {layoutMode === '2d' ? (
                 <div ref={canvasRef} className="absolute inset-[7%] rounded-lg border-2 border-slate-500/80 bg-slate-900 overflow-hidden" style={{ touchAction: 'none' }}>
-                  <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.25) 1px, transparent 1px)', backgroundSize: '8% 10%' }} />
+                  <div className={`absolute inset-0 ${snapToGrid ? 'opacity-45' : 'opacity-20'}`} style={{ backgroundImage: 'linear-gradient(to right, rgba(148,163,184,.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,.3) 1px, transparent 1px)', backgroundSize: '4% 4%' }} />
+                  <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-cyan-300/20" /><div className="pointer-events-none absolute inset-y-0 start-1/2 border-s border-dashed border-cyan-300/20" />
                   <div className="absolute -top-7 start-0 end-0 text-center text-[10px] text-slate-500">{isAr ? 'حدود المكان · الواجهة' : 'SPACE BOUNDARY · FRONT / STAGE SIDE'}</div>
                   {items.map((item) => (
-                    <button key={item.id} type="button" onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} cursor-grab active:cursor-grabbing touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
+                    <button key={item.id} type="button" data-rotation-ui onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} className={`${itemVisual(item)} ${rotationMode ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'} touch-none ${selectedId === item.id ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
                       {item.type === 'screen' ? 'LED' : item.type === 'stage' ? (isAr ? 'منصة' : 'STAGE') : item.type === 'dance' ? (isAr ? 'رقص' : 'DANCE') : item.type === 'table' ? <><span className="relative z-10">{item.seats || 10}</span>{seatDots(item).map((dot, seat) => <span key={seat} className="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-200/80" style={{ left: dot.left + '%', top: dot.top + '%' }} />)}</> : item.type === 'chairs' ? '●' : item.type === 'flowers' ? '✿' : item.type === 'buffet' ? (isAr ? 'بوفيه' : 'BUFFET') : item.type === 'podium' ? 'P' : 'REG'}
                     </button>
                   ))}
+                  {rotationMode && selected && <div data-rotation-ui className="pointer-events-none absolute z-40" style={{ left: `${selected.x}%`, top: `${selected.y}%`, transform: selected.y < 20 ? 'translate(-50%, 40px)' : 'translate(-50%, calc(-100% - 10px))' }}>
+                    <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" onPointerDown={(event) => event.stopPropagation()}>
+                      <button type="button" onClick={() => rotateItem(selected.id, -15)} title={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
+                      <span className="min-w-10 text-center text-[10px] font-bold tabular-nums text-white">{((selected.rotation % 360) + 360) % 360}°</span>
+                      <button type="button" onClick={() => rotateItem(selected.id, 15)} title={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
+                    </div>
+                  </div>}
                 </div>
               ) : (
                 <EventLayout3D
@@ -467,11 +585,14 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   depth={depth}
                   language={language}
                   mode={layoutMode === 'pov' ? 'pov' : 'overview'}
-                  onSelect={setSelectedId}
+                  selectedId={selectedId}
+                  rotationMode={rotationMode}
+                  onSelect={(id) => { setSelectedId(id); if (!id) setRotationMode(false); }}
                   onMove={(id, x, y) => {
-                    setItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
+                    commitItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
                     setSaved(false);
                   }}
+                  onRotate={(id, delta = 15) => rotateItem(id, delta)}
                 />
               )}            </div>
           </section>
@@ -481,12 +602,17 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             {selected ? (
               <>
                 <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
-                  <div className="text-sm font-bold text-white">{isAr ? selected.labelAr : selected.labelEn}</div>
-                  {selected.type === 'table' && <div className="text-[10px] text-slate-500 mt-1">{selected.seats || 10} {isAr ? 'مقاعد' : 'seats'}</div>}
+                  <label className="block text-[10px] text-slate-500">{isAr ? 'اسم العنصر' : 'Item name'}<input value={isAr ? selected.labelAr : selected.labelEn} onChange={(event) => updateSelected(isAr ? { labelAr: event.target.value } : { labelEn: event.target.value })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs font-bold text-white outline-none focus:border-amber-400" /></label>
+                  {selected.type === 'table' && <label className="mt-2 block text-[10px] text-slate-500">{isAr ? 'عدد المقاعد' : 'Seats'}<input type="number" min={1} max={40} value={selected.seats || 10} onChange={(event) => updateSelected({ seats: Math.max(1, Math.min(40, Number(event.target.value) || 1)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-white outline-none focus:border-amber-400" /></label>}
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                  <label className="text-[9px] text-slate-500">X %<input type="number" min={5} max={95} value={Math.round(selected.x)} onChange={(event) => updateSelected({ x: Math.max(5, Math.min(95, Number(event.target.value) || 5)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] text-white" /></label>
+                  <label className="text-[9px] text-slate-500">Y %<input type="number" min={5} max={95} value={Math.round(selected.y)} onChange={(event) => updateSelected({ y: Math.max(5, Math.min(95, Number(event.target.value) || 5)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] text-white" /></label>
+                  <label className="text-[9px] text-slate-500">{isAr ? 'الزاوية' : 'Angle'}<input type="number" value={selected.rotation} onChange={(event) => updateSelected({ rotation: Number(event.target.value) || 0 })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] text-white" /></label>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 mt-3">
                   <button type="button" onClick={() => nudge(0, -3)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronUp className="w-4 h-4" /></button>
-                  <button type="button" onClick={() => updateSelected({ rotation: selected.rotation + 15 })} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><RotateCw className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => rotateItem(selected.id, 15)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><RotateCw className="w-4 h-4" /></button>
                   <button type="button" onClick={() => nudge(0, 3)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronDown className="w-4 h-4" /></button>
                   <button type="button" onClick={() => nudge(isAr ? 3 : -3, 0)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronLeft className="w-4 h-4" /></button>
                   <button type="button" onClick={() => duplicateSelected()} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><Copy className="w-4 h-4" /></button>
@@ -498,6 +624,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="text-xs text-slate-500">{isAr ? 'اختر عنصراً من المخطط.' : 'Select an item on the plan.'}</div>
             )}
             <div className="mt-5 border-t border-slate-800 pt-3">
+              <button type="button" onClick={() => setSnapToGrid((value) => !value)} className={`mb-3 flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-[10px] font-bold ${snapToGrid ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200' : 'border-slate-700 bg-slate-950 text-slate-400'}`}><span className="flex items-center gap-2"><Grid3X3 className="h-3.5 w-3.5" />{isAr ? 'محاذاة للشبكة' : 'Snap to grid'}</span><span>{snapToGrid ? 'ON' : 'OFF'}</span></button>
               <div className="text-[10px] text-slate-500">{isAr ? 'ملخص' : 'Summary'}</div>
               <div className="mt-2 text-xs text-slate-300">{guests} {isAr ? 'ضيف' : 'guests'}</div>
               <div className="text-xs text-slate-300">{tableCount} {isAr ? 'طاولة تقريباً' : 'tables approx.'}</div>

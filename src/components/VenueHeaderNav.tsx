@@ -42,29 +42,36 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     } catch { /* Browser/device policy can block fullscreen. */ }
   };
   const allNavItems: NavItem[] = [
-    { id: 'package_builder', label: isAr ? 'تصميم الحفلة مع العميل' : 'Event Planner', icon: Sparkles },
-    { id: 'price_lists', label: isAr ? 'قوائم الأسعار' : 'Price Lists', icon: Tags },
     { id: 'dashboard', label: isAr ? 'لوحة التحكم' : 'Dashboard', icon: LayoutDashboard },
     { id: 'bookings', label: isAr ? 'الحجوزات' : 'Bookings', icon: Calendar },
     { id: 'agenda', label: isAr ? 'التقويم' : 'Calendar', icon: CalendarDays },
+    { id: 'clients', label: isAr ? 'العملاء' : 'Clients', icon: Users },
+    { id: 'package_builder', label: isAr ? 'تخطيط المناسبة' : 'Event Planner', icon: Sparkles },
+    { id: 'event_designer', label: isAr ? 'مصمم المناسبات' : 'Event Designer', icon: Ruler },
     { id: 'photo_library', label: isAr ? 'مكتبة الصور' : 'Photo Library', icon: Images },
+    { id: 'contracts', label: isAr ? 'العقود' : 'Contracts', icon: FileText },
+    { id: 'services', label: isAr ? 'الخدمات' : 'Services', icon: Utensils },
+    { id: 'catering', label: isAr ? 'الضيافة' : 'Catering', icon: ClipboardList },
     { id: 'inventory', label: isAr ? 'المخزون' : 'Inventory', icon: Package },
+    { id: 'staff', label: isAr ? 'الموظفون' : 'Staff', icon: Users },
+    { id: 'finance', label: isAr ? 'المالية' : 'Finance', icon: Wallet },
+    { id: 'payments', label: isAr ? 'المدفوعات' : 'Payments', icon: CreditCard },
+    { id: 'expenses', label: isAr ? 'المصروفات' : 'Expenses', icon: Receipt },
+    { id: 'reports', label: isAr ? 'التقارير' : 'Reports', icon: ClipboardList },
+    { id: 'price_lists', label: isAr ? 'قوائم الأسعار' : 'Price Lists', icon: Tags },
     { id: 'company', label: isAr ? 'ملف الشركة' : 'Company', icon: Building },
     { id: 'site_content', label: isAr ? 'محتوى الموقع' : 'Website Content', icon: Globe2 },
     { id: 'permissions', label: isAr ? 'صلاحيات التعديل' : 'Edit Permissions', icon: ShieldCheck },
-    { id: 'event_designer', label: isAr ? 'مصمم المناسبات' : 'Event Designer', icon: Ruler },
-    { id: 'services', label: isAr ? 'الخدمات' : 'Services', icon: Utensils },
-    { id: 'finance', label: isAr ? 'المالية' : 'Finance', icon: Wallet },
-    { id: 'catering', label: isAr ? 'الضيافة' : 'Catering', icon: ClipboardList },
-    { id: 'contracts', label: isAr ? 'العقود' : 'Contracts', icon: FileText },
-    { id: 'clients', label: isAr ? 'العملاء' : 'Clients', icon: Users },
-    { id: 'payments', label: isAr ? 'المدفوعات' : 'Payments', icon: CreditCard },
-    { id: 'expenses', label: isAr ? 'المصروفات' : 'Expenses', icon: Receipt },
-    { id: 'staff', label: isAr ? 'الموظفون' : 'Staff', icon: Users },
-    { id: 'reports', label: isAr ? 'التقارير' : 'Reports', icon: ClipboardList },
   ];
   // Only show the screens this user is allowed to open.
   const navItems = allNavItems.filter((item) => item.id === 'permissions' ? user.role === 'ceo' : canAccess(user, item.id));
+  const groupedItems = [
+    { title: isAr ? 'نظرة عامة' : 'Overview', ids: ['dashboard'] },
+    { title: isAr ? 'الحجوزات والعملاء' : 'Bookings & Clients', ids: ['bookings', 'agenda', 'clients', 'contracts'] },
+    { title: isAr ? 'تخطيط وتجهيز المناسبة' : 'Event Planning', ids: ['package_builder', 'event_designer', 'photo_library', 'services', 'catering'] },
+    { title: isAr ? 'التشغيل والمالية' : 'Operations & Finance', ids: ['inventory', 'staff', 'finance', 'payments', 'expenses', 'reports'] },
+    { title: isAr ? 'الإعدادات' : 'Setup', ids: ['price_lists', 'company', 'site_content', 'permissions'] },
+  ].map((group) => ({ ...group, items: navItems.filter((item) => group.ids.includes(item.id)) })).filter((group) => group.items.length);
   const homeTab: VenueTab = canAccess(user, 'dashboard') ? 'dashboard' : (navItems[0]?.id || 'dashboard');
   const displayName = (isAr ? user.nameAr : user.name) || user.username;
   const displayRole = (isAr ? user.roleAr : user.role) || (isAr ? 'مستخدم النظام' : 'System user');
@@ -89,7 +96,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     const Icon = item.icon;
     const active = currentTab === item.id;
     return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined}
-      className={`flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-xs font-semibold transition-colors ${active ? 'bg-amber-400 text-slate-950 shadow-sm' : (theme === 'dark' ? 'text-slate-300 hover:bg-slate-800 hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950')}`}>
+      className={`flex min-h-9 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-xs font-semibold transition-colors ${active ? 'bg-amber-400 text-slate-950 shadow-sm' : (theme === 'dark' ? 'text-slate-300 hover:bg-slate-800 hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950')}`}>
       <Icon className="h-4 w-4 shrink-0" /><span className="min-w-0 flex-1">{item.label}</span>
       {active && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-70" />}
     </button>;
@@ -99,16 +106,15 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     {/* Full-height control rail anchored to the logical start: right in Arabic, left in English. */}
     <aside dir={isAr ? 'rtl' : 'ltr'} className={`fixed start-0 top-0 z-[60] hidden h-dvh w-64 flex-col border-e shadow-xl shadow-black/20 backdrop-blur-xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform lg:flex ${theme === 'dark' ? 'border-amber-500/20 bg-slate-950/95' : 'border-slate-200 bg-white/95'} ${isHidden ? (isAr ? 'translate-x-full' : '-translate-x-full') : 'translate-x-0'}`}>
       <div className="border-b border-slate-800 p-3">
-        <div className="mb-3 flex items-center justify-between gap-2"><div className="min-w-0"><div className="truncate text-xs font-black text-white">{isAr ? 'شاشات الإدارة' : 'Management screens'}</div><div className="mt-1 truncate text-[10px] text-slate-500">{displayName} · {displayRole}</div></div>
+        <div className="mb-2 flex items-center justify-between gap-2"><div className="min-w-0"><div className="truncate text-sm font-black text-white">{isAr ? 'بوابة السرايا' : 'Saraya Portal'}</div><div className="mt-1 truncate text-[10px] text-slate-500">{displayName} · {displayRole}</div></div>
         <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إخفاء القائمة' : 'Hide navigation'} title={isAr ? 'إخفاء القائمة' : 'Hide navigation'} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-amber-300"><PanelRightClose className="h-4 w-4" /></button></div>
-        <div className="grid grid-cols-3 gap-2">
-          <button type="button" onClick={() => goTo(homeTab)} title={isAr ? 'لوحة التحكم' : 'Dashboard'} aria-label={isAr ? 'الانتقال إلى لوحة التحكم' : 'Go to dashboard'} className="flex h-10 items-center justify-center gap-1 rounded-lg border border-amber-500/25 bg-amber-400/10 text-[10px] font-bold text-amber-300 hover:bg-amber-400/20"><LayoutDashboard className="h-4 w-4" /><span>{isAr ? 'لوحة التحكم' : 'Dashboard'}</span></button>
-          <button type="button" onClick={onToggleTheme} title={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light mode') : (isAr ? 'الوضع الليلي' : 'Night mode')} className="flex h-10 items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-amber-300">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span>{theme === 'dark' ? (isAr ? 'فاتح' : 'Light') : (isAr ? 'ليلي' : 'Night')}</span></button>
-          <button type="button" onClick={toggleFullscreen} title={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit fullscreen') : (isAr ? 'ملء الشاشة' : 'Full view')} aria-pressed={isFullscreen} className="flex h-10 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:border-amber-400/40 hover:text-amber-300">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button>
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={onToggleTheme} title={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light mode') : (isAr ? 'الوضع الليلي' : 'Night mode')} className="flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-amber-300">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span>{theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الليلي' : 'Dark theme')}</span></button>
+          <button type="button" onClick={toggleFullscreen} title={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit fullscreen') : (isAr ? 'ملء الشاشة' : 'Full view')} aria-pressed={isFullscreen} className="flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-amber-300">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}<span>{isFullscreen ? (isAr ? 'تصغير' : 'Exit full') : (isAr ? 'ملء الشاشة' : 'Full screen')}</span></button>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto overscroll-contain p-3" aria-label={isAr ? 'التنقل بين شاشات الإدارة' : 'Admin navigation'}>{navItems.map(renderNavItem)}</nav>
-      <div className="flex items-center gap-2 border-t border-slate-800 p-3">
+      <nav className="flex-1 space-y-3 overflow-y-auto overscroll-contain p-2.5" aria-label={isAr ? 'التنقل بين شاشات الإدارة' : 'Admin navigation'}>{groupedItems.map((group) => <section key={group.title}><h2 className="mb-1 px-2 text-[9px] font-black uppercase tracking-wider text-slate-500">{group.title}</h2><div className="space-y-0.5">{group.items.map(renderNavItem)}</div></section>)}</nav>
+      <div className="flex items-center gap-2 border-t border-slate-800 p-2.5">
         <button type="button" onClick={onToggleLanguage} className="flex-1 rounded-lg border border-slate-800 px-3 py-2 text-[11px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-white">{isAr ? 'EN · English' : 'العربية'}</button>
         <button type="button" onClick={onOpenTour} className="rounded-lg px-3 py-2 text-[11px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">{isAr ? 'الجولة' : 'Tour'}</button>
         <button type="button" onClick={() => setProfileOpen((v) => !v)} aria-expanded={profileOpen} title={displayName} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-400/15 text-xs font-black text-amber-300"><UserRound className="h-4 w-4" /></button>
@@ -125,9 +131,9 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
       <div className="min-w-0 text-end"><div className="truncate text-sm font-black text-white">{currentLabel}</div><div className="truncate text-[10px] text-slate-500">{displayName}</div></div>
     </div>
     {mobileOpen && <><button type="button" aria-label={isAr ? 'إغلاق القائمة' : 'Close menu'} onClick={() => setMobileOpen(false)} className="fixed inset-0 z-[60] bg-slate-950/50 lg:hidden" />
-      <aside dir={isAr ? 'rtl' : 'ltr'} className="fixed start-0 top-14 z-[65] flex h-[calc(100dvh-3.5rem)] w-[min(84vw,320px)] flex-col border-e border-amber-500/20 bg-slate-950 shadow-2xl lg:hidden">
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><div><div className="text-xs font-black text-white">{isAr ? 'شاشات الإدارة' : 'Management screens'}</div><div className="mt-1 text-[10px] text-slate-500">{displayName}</div></div><button type="button" onClick={() => setMobileOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X className="h-4 w-4" /></button></div>
-        <div className="grid grid-cols-3 gap-2 border-b border-slate-800 p-3"><button type="button" onClick={() => goTo(homeTab)} aria-label={isAr ? 'الانتقال إلى لوحة التحكم' : 'Go to dashboard'} className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-amber-500/25 bg-amber-400/10 px-2 text-[10px] font-bold text-amber-300"><LayoutDashboard className="h-4 w-4" />{isAr ? 'لوحة التحكم' : 'Dashboard'}</button><button type="button" onClick={onToggleTheme} className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-slate-700 px-2 text-[10px] font-bold text-slate-300">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{isAr ? (theme === 'dark' ? 'فاتح' : 'ليلي') : (theme === 'dark' ? 'Light' : 'Night')}</button><button type="button" onClick={toggleFullscreen} className="flex min-h-10 items-center justify-center rounded-lg border border-slate-700 text-slate-300">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button></div><nav className="flex-1 space-y-1 overflow-y-auto p-3">{navItems.map(renderNavItem)}</nav>
+      <aside dir={isAr ? 'rtl' : 'ltr'} className="fixed start-0 top-14 z-[65] flex h-[calc(100dvh-3.5rem)] w-[min(90vw,360px)] flex-col border-e border-amber-500/20 bg-slate-950 shadow-2xl lg:hidden">
+        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><div><div className="text-sm font-black text-white">{isAr ? 'بوابة السرايا' : 'Saraya Portal'}</div><div className="mt-1 text-[10px] text-slate-500">{displayName} · {displayRole}</div></div><button type="button" onClick={() => setMobileOpen(false)} aria-label={isAr ? 'إغلاق القائمة' : 'Close navigation'} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X className="h-4 w-4" /></button></div>
+        <div className="grid grid-cols-2 gap-2 border-b border-slate-800 p-3"><button type="button" onClick={onToggleTheme} className="flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-2 text-[10px] font-bold text-slate-300">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{isAr ? (theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الليلي') : (theme === 'dark' ? 'Light theme' : 'Dark theme')}</button><button type="button" onClick={toggleFullscreen} className="flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-2 text-[10px] font-bold text-slate-300">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}{isAr ? (isFullscreen ? 'تصغير' : 'ملء الشاشة') : (isFullscreen ? 'Exit full' : 'Full screen')}</button></div><nav className="flex-1 space-y-3 overflow-y-auto overscroll-contain p-2.5">{groupedItems.map((group) => <section key={group.title}><h2 className="mb-1 px-2 text-[9px] font-black uppercase tracking-wider text-slate-500">{group.title}</h2><div className="space-y-0.5">{group.items.map(renderNavItem)}</div></section>)}</nav>
         <div className="flex gap-2 border-t border-slate-800 p-3"><button type="button" onClick={onToggleLanguage} className="flex-1 rounded-lg border border-slate-800 px-3 py-2 text-xs font-bold text-slate-300">{isAr ? 'EN · English' : 'العربية'}</button><button type="button" onClick={onOpenTour} className="rounded-lg px-3 py-2 text-xs text-slate-300 hover:bg-slate-800">{isAr ? 'الجولة' : 'Tour'}</button></div>
         <div className="border-t border-slate-800 p-3">{accountActions}</div>
       </aside></>}

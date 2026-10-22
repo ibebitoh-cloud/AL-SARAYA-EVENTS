@@ -28,13 +28,12 @@ import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
 import { ALSARAYA_PHOTOS, VenuePhoto } from './data/venueImages';
-import { CustomerSectionView } from './components/CustomerSectionView';
-import { CompanyShowcaseView } from './components/CompanyShowcaseView';
+const CustomerSectionView = lazy(() => import('./components/CustomerSectionView').then((m) => ({ default: m.CustomerSectionView })));
 import { PortalLogin } from './components/PortalLogin';
 import { SystemUser, canAccess, landingTab } from './data/systemProfiles';
 import { buildInitialPriceBook } from './data/pricing';
-import { NewBookingModal } from './components/NewBookingModal';
-import { OnboardingFlow } from './components/OnboardingFlow';
+const NewBookingModal = lazy(() => import('./components/NewBookingModal').then((m) => ({ default: m.NewBookingModal })));
+const OnboardingFlow = lazy(() => import('./components/OnboardingFlow').then((m) => ({ default: m.OnboardingFlow })));
 // Management screens load on demand so public visitors only download the website.
 const CompanyProfileView = lazy(() => import('./components/CompanyProfileView').then((m) => ({ default: m.CompanyProfileView })));
 const PackageBuilderView = lazy(() => import('./components/PackageBuilderView').then((m) => ({ default: m.PackageBuilderView })));
@@ -106,8 +105,15 @@ export default function App() {
     if (typeof window === 'undefined') return 'dark';
     return (window.localStorage.getItem('saraya-theme') as 'dark' | 'light') || 'dark';
   });
-  const [currentTab, setCurrentTab] = useState<VenueTab>('home');
-  const [portalUser, setPortalUser] = useState<SystemUser | null>(null);
+  const [currentTab, setCurrentTab] = useState<VenueTab>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const id = window.localStorage.getItem('saraya-portal-user-id') || 'guest';
+    return (window.localStorage.getItem(`saraya-last-tab-${id}`) as VenueTab | null) || 'home';
+  });
+  const [portalUser, setPortalUser] = useState<SystemUser | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try { return JSON.parse(window.localStorage.getItem('saraya-portal-user') || 'null') as SystemUser | null; } catch { return null; }
+  });
   const [portalLoginOpen, setPortalLoginOpen] = useState(false);
   const [portalWelcome, setPortalWelcome] = useState<SystemUser | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -131,6 +137,38 @@ export default function App() {
   useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; window.localStorage.setItem('saraya-theme', theme); }, [theme]);
   useEffect(() => { document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = language; }, [language]);
   const toggleLanguage = () => setLanguage((prev) => (prev === 'ar' ? 'en' : 'ar'));
+  useEffect(() => {
+    if (!portalUser) return;
+    const savedTab = window.localStorage.getItem(`saraya-last-tab-${portalUser.id}`) as VenueTab | null;
+    if (savedTab && canAccess(portalUser, savedTab) && currentTab === 'home') setCurrentTab(savedTab);
+  }, [portalUser]);
+  useEffect(() => {
+    if (!portalUser) return;
+    let cancelled = false;
+    const preload = () => {
+      if (cancelled) return;
+      const commonScreens: Partial<Record<VenueTab, () => Promise<unknown>>> = {
+        dashboard: () => import('./components/DashboardView'),
+        bookings: () => import('./components/BookingsView'),
+        agenda: () => import('./components/CalendarAgendaView'),
+        clients: () => import('./components/ClientsView'),
+        finance: () => import('./components/FinanceView'),
+        price_lists: () => import('./components/PriceListsView'),
+      };
+      Object.entries(commonScreens).forEach(([tab, load]) => {
+        if (load && canAccess(portalUser, tab as VenueTab)) void load();
+      });
+    };
+    const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    const idleId = idleWindow.requestIdleCallback ? idleWindow.requestIdleCallback(preload, { timeout: 1800 }) : window.setTimeout(preload, 500);
+    return () => { cancelled = true; if (typeof idleWindow.cancelIdleCallback === 'function' && typeof idleWindow.requestIdleCallback === 'function') idleWindow.cancelIdleCallback(idleId); else window.clearTimeout(idleId); };
+  }, [portalUser]);
+  useEffect(() => {
+    if (!portalUser || !canAccess(portalUser, currentTab)) return;
+    window.localStorage.setItem('saraya-portal-user-id', portalUser.id);
+    window.localStorage.setItem('saraya-portal-user', JSON.stringify(portalUser));
+    window.localStorage.setItem(`saraya-last-tab-${portalUser.id}`, currentTab);
+  }, [portalUser, currentTab]);
   const [bookings, setBookings] = useState<Booking[]>(() => {
     if (typeof window === 'undefined') return dedupeBookings(INITIAL_BOOKINGS);
     try {
@@ -157,21 +195,27 @@ export default function App() {
     } catch { return INITIAL_HALLS; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-halls-v2', JSON.stringify(halls)); }, [halls]);
-  const [photos, setPhotos] = useState<VenuePhoto[]>(() => {
-    if (typeof window === 'undefined') return uniqueEventPhotos(ALSARAYA_PHOTOS);
+  const [photos, setPhotos] = useState<VenuePhoto[]>(() => uniqueEventPhotos(ALSARAYA_PHOTOS));
+  const [savedPhotosLoaded, setSavedPhotosLoaded] = useState(false);
+  useEffect(() => {
+    // Uploaded photos may contain large data URLs. Read them after the first screen paints.
     try {
       const saved = JSON.parse(window.localStorage.getItem('alsaraya_custom_photos_v2') || 'null');
-      const list = Array.isArray(saved) && saved.length ? saved : ALSARAYA_PHOTOS;
-      return uniqueEventPhotos(list);
-    } catch {
-      return uniqueEventPhotos(ALSARAYA_PHOTOS);
-    }
-  });
+      if (Array.isArray(saved) && saved.length) {
+        const builtIn = new Map(ALSARAYA_PHOTOS.map((p) => [p.id, p]));
+        const savedIds = new Set(saved.map((p: VenuePhoto) => p.id));
+        const list = [...saved.map((p: VenuePhoto) => builtIn.get(p.id) ?? p), ...ALSARAYA_PHOTOS.filter((p) => !savedIds.has(p.id))];
+        setPhotos(uniqueEventPhotos(list));
+      }
+    } catch { /* Ignore invalid browser-local photo data and use the built-in gallery. */ }
+    setSavedPhotosLoaded(true);
+  }, []);
   useEffect(() => {
+    if (!savedPhotosLoaded) return;
     try { window.localStorage.setItem('alsaraya_custom_photos_v2', JSON.stringify(uniqueEventPhotos(photos))); } catch (error) {
       console.warn('Photo library could not be saved locally:', error);
     }
-  }, [photos]);
+  }, [photos, savedPhotosLoaded]);
   const handleSavePhotos = (updatedPhotos: VenuePhoto[]) => setPhotos(uniqueEventPhotos(updatedPhotos));
   const handleUpdateHall = (updated: Hall) => setHalls((prev) => prev.map((h) => h.id === updated.id ? updated : h));
   const [servicesCatalogue, setServicesCatalogue] = useState<ServiceDefinition[]>(() => {
@@ -195,6 +239,10 @@ export default function App() {
       return saved?.arcane && saved?.porto ? saved : buildInitialPriceBook(INITIAL_SERVICES);
     } catch { return buildInitialPriceBook(INITIAL_SERVICES); }
   });
+  const [pendingFinancePriceBook, setPendingFinancePriceBook] = useState<PriceBook | null>(() => {
+    try { return JSON.parse(window.localStorage.getItem('saraya-pending-finance-prices') || 'null') as PriceBook | null; } catch { return null; }
+  });
+  useEffect(() => { if (pendingFinancePriceBook) window.localStorage.setItem('saraya-pending-finance-prices', JSON.stringify(pendingFinancePriceBook)); else window.localStorage.removeItem('saraya-pending-finance-prices'); }, [pendingFinancePriceBook]);
   useEffect(() => { window.localStorage.setItem('saraya-price-book-v1', JSON.stringify(priceBook)); }, [priceBook]);
   useEffect(() => { window.localStorage.setItem('saraya-payments', JSON.stringify(payments)); }, [payments]);
   useEffect(() => { window.localStorage.setItem('saraya-expenses', JSON.stringify(expenses)); }, [expenses]);
@@ -314,10 +362,10 @@ export default function App() {
   const isInternalManagementScreen = Boolean(portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && !portalLoginOpen);
   return (<div className={`min-h-screen w-full max-w-full overflow-x-clip flex flex-col selection:bg-indigo-500 selection:text-white relative box-border font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
     {!isInternalManagementScreen && <SarayaBrandHeader language={language} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onToggleLanguage={toggleLanguage} instagramUrl={companyProfile.instagramUrl} tiktokUrl={companyProfile.tiktokUrl} onOpenBookingModal={() => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); }} onNavigateSection={(sectionId) => { const screenMap: Record<string, VenueTab> = { events: 'public_events', venues: 'public_venues', services: 'public_services', planner: 'public_planner', gallery: 'public_gallery', '3d-tour': 'public_3d_tour' }; const nextTab = screenMap[sectionId]; if (nextTab) { setCurrentTab(nextTab); window.scrollTo({ top: 0, behavior: 'smooth' }); } else if (sectionId === 'hero') { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); } else { setCurrentTab('home'); window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' }), 350); } }} onOpenManagementPortal={() => { sound.click(650); if (portalUser && portalUser.role !== 'customer') { setPortalLoginOpen(false); setCurrentTab(landingTab(portalUser)); } else { setPortalLoginOpen(true); setCurrentTab('home'); } window.scrollTo({ top: 0, behavior: 'smooth' }); }} isManagementMode={false} onExitManagementMode={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
-    {!portalLoginOpen && portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && <VenueHeaderNav currentTab={currentTab} language={language} user={may('site_content') && !canAccess(portalUser, 'site_content') ? { ...portalUser, permissions: [...portalUser.permissions, 'site_content'] } : portalUser} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onVisibilityChange={setSidebarVisible} onTabChange={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onToggleLanguage={toggleLanguage} onOpenTour={() => setIsOnboardingOpen(true)} onGoToWebsite={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onLogout={() => { sound.swoosh(); setPortalUser(null); setSidebarVisible(true); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
+    {!portalLoginOpen && portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && <VenueHeaderNav currentTab={currentTab} language={language} user={may('site_content') && !canAccess(portalUser, 'site_content') ? { ...portalUser, permissions: [...portalUser.permissions, 'site_content'] } : portalUser} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onVisibilityChange={setSidebarVisible} onTabChange={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onToggleLanguage={toggleLanguage} onOpenTour={() => setIsOnboardingOpen(true)} onGoToWebsite={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onLogout={() => { sound.swoosh(); setPortalUser(null); window.localStorage.removeItem('saraya-portal-user'); window.localStorage.removeItem('saraya-portal-user-id'); setSidebarVisible(true); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
     {portalWelcome && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-md px-4" onClick={() => setPortalWelcome(null)}><motion.div initial={{opacity:0,scale:.96,y:10}} animate={{opacity:1,scale:1,y:0}} className="w-full max-w-md rounded-3xl border border-amber-400/20 bg-slate-900 p-8 text-center shadow-2xl"><div className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-400">WELCOME</div><h1 className="mt-3 text-3xl font-black text-white">{language === 'ar' ? `أهلاً بك، ${portalWelcome.nameAr}` : `Welcome, ${portalWelcome.name}`}</h1><p className="mt-2 text-xs text-slate-500">{language === 'ar' ? 'تم تسجيل دخولك إلى نظام الإدارة' : 'You are signed in to the management system'}</p><button onClick={() => setPortalWelcome(null)} className="mt-6 px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold">{language === 'ar' ? 'دخول النظام' : 'Enter system'}</button></motion.div></div>}
-    <main className={`flex-1 w-full px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${isInternalManagementScreen ? `lg:flex-none mx-0 w-full max-w-none pb-6 sm:px-4 lg:px-8 lg:pb-8 transition-[width,margin] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${sidebarVisible ? 'lg:w-[calc(100%-16rem)] lg:ms-64' : 'lg:w-full lg:ms-0'}` : 'max-w-7xl mx-auto'}`}><AnimatePresence mode="wait"><motion.div onTouchStart={handleScreenTouchStart} onTouchEnd={handleScreenTouchEnd} key={`${currentTab}-${language}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}><Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center" role="status" aria-live="polite"><div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" /><span className="sr-only">{language === 'ar' ? 'جارٍ التحميل…' : 'Loading…'}</span></div>}>
-      {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(landingTab(user)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
+    <main className={`flex-1 w-full px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${isInternalManagementScreen ? `lg:flex-none mx-0 w-full max-w-none pb-6 sm:px-4 lg:px-8 lg:pb-8 transition-[width,margin] duration-300 ease-out ${sidebarVisible ? 'lg:w-[calc(100%-16rem)] lg:ms-64' : 'lg:w-full lg:ms-0'}` : 'max-w-7xl mx-auto'}`}><AnimatePresence initial={false}><motion.div onTouchStart={handleScreenTouchStart} onTouchEnd={handleScreenTouchEnd} key={currentTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.08 }}><Suspense fallback={<div className="min-h-24 animate-pulse rounded-2xl bg-slate-900/40" role="status" aria-live="polite"><span className="sr-only">{language === 'ar' ? 'جارٍ التحميل…' : 'Loading…'}</span></div>}>
+      {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? landingTab(user) : canAccess(user, 'dashboard') ? 'dashboard' : landingTab(user)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
       {!portalLoginOpen && currentTab === 'home' && <SarayaCustomerHomepage halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenBookingModal={() => setIsNewBookingModalOpen(true)} onCreateBooking={handleCreateBooking} onOpenEventDesigner={() => setCurrentTab('event_designer')} content={siteContent} />}
       {currentTab.startsWith('public_') && <CustomerSectionView screen={({ public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour' } as const)[currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour']} halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} onOpenBooking={(hallId) => { if (hallId) setPreselectedHallId(hallId); setIsNewBookingModalOpen(true); }} onGoHome={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
       {currentTab === 'company' && canAccess(portalUser, 'company') && <CompanyProfileView language={language} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} companyProfile={companyProfile} onUpdateCompanyProfile={setCompanyProfile} onUpdateHall={handleUpdateHall} readOnly={!may('company')} onAddHall={may('company') ? handleAddHall : undefined} onDeleteHall={may('company') ? handleDeleteHall : undefined} />}
@@ -325,12 +373,12 @@ export default function App() {
       {currentTab === 'permissions' && isCeo && <PermissionsView language={language} permissions={editPermissions} onChange={setEditPermissions} />}
       {currentTab === 'photo_library' && canAccess(portalUser, 'photo_library') && viewOnly('photo_library', <PhotoLibraryPage language={language} photos={photos} bookings={bookings} onSavePhotos={handleSavePhotos} />)}
       {currentTab === 'package_builder' && canAccess(portalUser, 'package_builder') && viewOnly('bookings', <PackageBuilderView halls={halls} services={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} />)}
-      {currentTab === 'price_lists' && canAccess(portalUser, 'price_lists') && viewOnly('price_lists', <PriceListsView halls={halls} services={servicesCatalogue} priceBook={priceBook} onUpdatePriceBook={setPriceBook} onUpdateHall={handleUpdateHall} language={language} />)}
+      {currentTab === 'price_lists' && canAccess(portalUser, 'price_lists') && viewOnly('price_lists', <PriceListsView halls={halls} services={servicesCatalogue} priceBook={priceBook} onUpdatePriceBook={setPriceBook} onUpdateHall={handleUpdateHall} language={language} isCEO={portalUser?.role === 'ceo'} pendingPriceBook={pendingFinancePriceBook} onSubmitApproval={setPendingFinancePriceBook} onApprovePending={() => { if (portalUser?.role === 'ceo' && pendingFinancePriceBook) { setPriceBook(pendingFinancePriceBook); setPendingFinancePriceBook(null); } }} onRejectPending={() => { if (portalUser?.role === 'ceo') setPendingFinancePriceBook(null); }} />)}
       {portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && !portalLoginOpen && !tabAllowed(currentTab) && <div className="mx-auto max-w-md py-20 text-center text-sm text-slate-400">{language === 'ar' ? 'هذه الشاشة غير متاحة لحسابك.' : 'This screen is not available for your account.'}</div>}
       {currentTab === 'dashboard' && canAccess(portalUser, 'dashboard') && <DashboardView bookings={bookings} halls={halls} language={language} onNavigateTab={(tab) => setCurrentTab(tab)} />}
       {currentTab === 'bookings' && canAccess(portalUser, 'bookings') && <BookingsView bookings={bookings} halls={halls} onOpenNewBooking={() => { if (may('bookings')) setIsNewBookingModalOpen(true); }} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={(id, status) => { if (may('bookings')) handleUpdateBookingStatus(id, status); }} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)}  language={language} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} />}
       {currentTab === 'agenda' && canAccess(portalUser, 'agenda') && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={() => setIsNewBookingModalOpen(true)}  language={language} />}
-      {currentTab === 'event_designer' && canAccess(portalUser, 'event_designer') && <EventLayoutDesigner language={language} />}
+      {currentTab === 'event_designer' && canAccess(portalUser, 'event_designer') && <EventLayoutDesigner language={language} halls={halls} onUpdateHall={handleUpdateHall} />}
       {currentTab === 'catering' && canAccess(portalUser, 'catering') && viewOnly('catering', <CateringMenuView language={language} />)}
       {currentTab === 'contracts' && canAccess(portalUser, 'contracts') && viewOnly('contracts', <ContractsView bookings={bookings} language={language} />)}
       {currentTab === 'clients' && canAccess(portalUser, 'clients') && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)}  language={language} onSaveClient={may('clients') ? handleSaveClient : undefined} onDeleteClient={may('clients') ? handleDeleteClient : undefined} />}
@@ -338,7 +386,7 @@ export default function App() {
       {currentTab === 'finance' && canAccess(portalUser, 'finance') && (may('payments') || may('expenses') ? <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={(p) => { if (may('payments')) handleAddPayment(p); }} onRefundSecurityDeposit={(id) => { if (may('payments')) handleRefundSecurityDeposit(id); }} onAddExpense={(e) => { if (may('expenses')) handleAddExpense(e); }}  language={language} onEditPayment={may('payments') ? handleEditPayment : undefined} onDeletePayment={may('payments') ? handleDeletePayment : undefined} onEditExpense={may('expenses') ? handleEditExpense : undefined} onDeleteExpense={may('expenses') ? handleDeleteExpense : undefined} /> : viewOnly('payments', <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} language={language} />))}
       {currentTab === 'payments' && canAccess(portalUser, 'payments') && viewOnly('payments', <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit}  language={language} onEditPayment={handleEditPayment} onDeletePayment={handleDeletePayment} />)}
       {currentTab === 'expenses' && canAccess(portalUser, 'expenses') && viewOnly('expenses', <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense}  language={language} onEditExpense={handleEditExpense} onDeleteExpense={handleDeleteExpense} />)}
-      {currentTab === 'inventory' && canAccess(portalUser, 'inventory') && viewOnly('inventory', <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)} language={language} onDeleteItem={handleDeleteInventoryItem} />)}
+      {currentTab === 'inventory' && canAccess(portalUser, 'inventory') && viewOnly('inventory', <InventoryView inventory={inventory} onUpdateItemQuantity={handleUpdateInventoryQty} onAddItem={handleAddInventoryItem} onEditItem={handleEditInventoryItem} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly || portalUser?.role === 'finance')} language={language} onDeleteItem={handleDeleteInventoryItem} />)}
       {currentTab === 'staff' && canAccess(portalUser, 'staff') && viewOnly('staff', <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance}  language={language} onEditStaff={handleEditStaff} onDeleteStaff={handleDeleteStaff} />)}
       {currentTab === 'reports' && canAccess(portalUser, 'reports') && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff}  language={language} />}
     </Suspense></motion.div></AnimatePresence></main>
@@ -415,12 +463,12 @@ export default function App() {
         `}</style>
         <div className="mt-6 flex flex-col items-center gap-2 border-t border-white/10 pt-4 text-center">
           <div dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'isolate' }} className="flex w-full flex-col items-center justify-center gap-0 text-center leading-tight">
-            <div className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-500">Designed & developed by</div>
+            <div className="text-[9px] font-black uppercase tracking-[0.24em] text-slate-500">Powered by</div>
             <span className="relative inline-block overflow-visible py-0 px-2">
               {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-scan pointer-events-none absolute -left-3 right-0 top-1/2 z-0 h-5 bg-gradient-to-r from-transparent via-cyan-300/70 to-fuchsia-400/70 blur-[2px]" style={{ animation: 'saraya-credit-scan 1.25s ease-out both' }} />}
-              <span className={`saraya-credit-main relative z-10 inline-block text-xl font-black tracking-[0.22em] text-amber-300 drop-shadow-[0_0_14px_rgba(245,185,66,0.28)] ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-main 1.35s cubic-bezier(.2,.8,.2,1) both' } : undefined}>BEBITO</span>
-              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-cyan-300 mix-blend-screen" style={{ animation: 'saraya-credit-cyan 1.1s steps(2, end) both' }}>BEBITO</span>}
-              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-rose-400 mix-blend-screen" style={{ animation: 'saraya-credit-pink 1.1s steps(2, end) both' }}>BEBITO</span>}
+              <span className={`saraya-credit-main relative z-10 inline-block text-xl font-black tracking-[0.22em] text-amber-300 drop-shadow-[0_0_14px_rgba(245,185,66,0.28)] ${footerCreditVisible ? '' : 'opacity-0'}`} style={footerCreditVisible ? { animation: 'saraya-credit-main 1.35s cubic-bezier(.2,.8,.2,1) both' } : undefined}>DALI STUDIO</span>
+              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-cyan-300 mix-blend-screen" style={{ animation: 'saraya-credit-cyan 1.1s steps(2, end) both' }}>DALI STUDIO</span>}
+              {footerCreditVisible && <span aria-hidden="true" className="saraya-credit-layer pointer-events-none absolute left-2 top-1/2 z-20 -translate-y-1/2 whitespace-nowrap text-xl font-black tracking-[0.22em] text-rose-400 mix-blend-screen" style={{ animation: 'saraya-credit-pink 1.1s steps(2, end) both' }}>DALI STUDIO</span>}
             </span>
             <span className="text-sm font-bold leading-tight text-slate-300">Mohamed Alaa</span>
             <a href="tel:+201146475759" className="text-xs font-bold leading-tight text-slate-500 transition-colors hover:text-amber-300">+20 114 647 5759</a>
@@ -429,9 +477,9 @@ export default function App() {
         </div>
       </div>
     </footer>
-    <NewBookingModal isOpen={isNewBookingModalOpen} onClose={() => setIsNewBookingModalOpen(false)} halls={halls} servicesCatalogue={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} preselectedHallId={preselectedHallId} customerMode={currentTab === 'home' || currentTab.startsWith('public_')} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} language={language} />
-    <Suspense fallback={null}>{selectedBookingForProfit && <EventProfitCalculatorModal key={selectedBookingForProfit.id} isOpen={!!selectedBookingForProfit && !portalUser?.sellingPricesOnly} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} language={language} />}
+    <Suspense fallback={null}>{isNewBookingModalOpen && <NewBookingModal isOpen onClose={() => setIsNewBookingModalOpen(false)} halls={halls} servicesCatalogue={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} preselectedHallId={preselectedHallId} customerMode={currentTab === 'home' || currentTab.startsWith('public_')} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} language={language} />}</Suspense>
+    <Suspense fallback={null}>{selectedBookingForProfit && <EventProfitCalculatorModal key={selectedBookingForProfit.id} isOpen={!!selectedBookingForProfit && !portalUser?.sellingPricesOnly && portalUser?.role !== 'finance'} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} language={language} />}
     {selectedBookingForInvoice && <InvoicePrintModal key={selectedBookingForInvoice.id} isOpen onClose={() => setSelectedBookingForInvoice(null)} booking={selectedBookingForInvoice} language={language} company={companyProfile} />}</Suspense>
-    <OnboardingFlow isOpen={isOnboardingOpen} language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+    <Suspense fallback={null}>{isOnboardingOpen && <OnboardingFlow isOpen language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}</Suspense>
   </div>);
 }

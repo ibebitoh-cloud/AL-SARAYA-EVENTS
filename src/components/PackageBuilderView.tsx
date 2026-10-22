@@ -6,7 +6,7 @@ import { LOCATIONS, hallLocation, locationName } from '../data/locations';
 import { PreparedOperation, loadPreparedOperations, savePreparedOperations } from '../data/preparedOperations';
 import { ChoiceSessionView } from './ChoiceSessionView';
 import { sound } from '../utils/soundEffects';
-import { findBookingConflict, uniqueBookingCode } from '../utils/bookingRules';
+import { findBookingConflict } from '../utils/bookingRules';
 
 interface Props {
   halls: Hall[];
@@ -45,7 +45,7 @@ export function PackageBuilderView({ halls, priceBook, existingBookings, onCreat
   const session = ops.find((o) => o.id === sessionId);
 
   if (session) {
-    return <ChoiceSessionView op={session} hall={halls.find((h) => h.id === session.hallId)} priceBook={priceBook}
+    return <ChoiceSessionView op={session} hall={halls.find((h) => h.id === session.hallId)} priceBook={priceBook} existingBookings={existingBookings}
       onChange={upsert} onBack={() => setSessionId(null)} onCreateBooking={onCreateBooking} />;
   }
 
@@ -142,7 +142,7 @@ function OperationForm({ draft, halls, existingBookings, onCancel, onSave }: For
     ...cfg.fields.filter((f) => f.required && !op.details[f.key]?.trim()).map((f) => f.labelAr),
   ].filter(Boolean) as string[];
   const overCapacity = hall && hall.capacity > 0 && op.guests > hall.capacity;
-  const sameDay = hall && op.date ? existingBookings.find((b) => b.status !== 'cancelled' && b.hallId === hall.id && b.date === op.date) : undefined;
+  const conflict = hall ? findBookingConflict(existingBookings, { hallId: hall.id, date: op.date, startTime: op.startTime, endTime: op.endTime }) : undefined;
 
   return (
     <div className="w-full pb-20 text-right space-y-5">
@@ -207,7 +207,7 @@ function OperationForm({ draft, halls, existingBookings, onCancel, onSave }: For
           <label className="text-xs text-slate-400">إلى<input type="time" value={op.endTime} onChange={(e) => set({ endTime: e.target.value })} className={`${input} mt-1 font-mono`} /></label>
         </div>
         {overCapacity && <p className="mt-2 flex items-center gap-1 text-xs text-rose-300"><AlertTriangle className="h-3.5 w-3.5" /> العدد أكبر من سعة {hall?.name} ({hall?.capacity} فرد)</p>}
-        {sameDay && <p className="mt-2 flex items-center gap-1 text-xs text-rose-300"><AlertTriangle className="h-3.5 w-3.5" /> يوجد حجز آخر في {hall?.name} بنفس اليوم ({sameDay.startTime}–{sameDay.endTime})</p>}
+        {conflict && <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-rose-300"><AlertTriangle className="h-3.5 w-3.5" /> القاعة محجوزة في هذا الموعد ({conflict.startTime} – {conflict.endTime}) باسم {conflict.clientName}. اختر موعداً أو قاعة أخرى.</p>}
       </section>
 
       <section className={card}>
@@ -220,8 +220,8 @@ function OperationForm({ draft, halls, existingBookings, onCancel, onSave }: For
       </section>
 
       <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-[11px] text-slate-500">{missing.length ? `مطلوب: ${missing.join(' · ')}` : `جاهزة — ${locationName(op.locationId, true)} · ${hall?.name}`}</p>
-        <button type="button" disabled={missing.length > 0} onClick={() => onSave(op)} className="rounded-xl bg-amber-400 px-6 py-3 text-sm font-black text-slate-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40">حفظ العملية</button>
+        <p className="text-[11px] text-slate-500">{missing.length ? `مطلوب: ${missing.join(' · ')}` : conflict ? 'يوجد تعارض في موعد القاعة' : `جاهزة — ${locationName(op.locationId, true)} · ${hall?.name}`}</p>
+        <button type="button" disabled={missing.length > 0 || !!conflict} onClick={() => onSave(op)} className="rounded-xl bg-amber-400 px-6 py-3 text-sm font-black text-slate-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40">حفظ العملية</button>
       </div>
     </div>
   );

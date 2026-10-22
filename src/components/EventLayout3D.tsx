@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { RotateCcw, RotateCw } from 'lucide-react';
 
 type LayoutItem = {
   id: string;
@@ -20,15 +21,18 @@ type Props = {
   depth: number;
   language: 'ar' | 'en';
   mode: 'overview' | 'pov';
-  onSelect: (id: string) => void;
+  onSelect: (id: string | null) => void;
+  selectedId?: string | null;
+  rotationMode?: boolean;
   onMove: (id: string, x: number, y: number) => void;
+  onRotate?: (id: string, delta?: number) => void;
 };
 
 const THREE_URL = 'three';
 const CONTROLS_URL = 'three/addons/controls/OrbitControls.js';
 const POV_URL = 'three/addons/controls/PointerLockControls.js';
 
-export function EventLayout3D({ items, width, depth, language, mode, onSelect, onMove }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode, selectedId, rotationMode = false, onSelect, onMove, onRotate }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -36,6 +40,15 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
   // The engine boots once per size/language, so it reads items through a ref to see later additions.
   const itemsRef = useRef(items);
   itemsRef.current = items;
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
+  const rotationModeRef = useRef(rotationMode);
+  rotationModeRef.current = rotationMode;
+  const rotateRef = useRef(onRotate);
+  rotateRef.current = onRotate;
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const rotationBarRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -227,6 +240,28 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         } else if (item.type === 'buffet') {
           addPart(group, new THREE.BoxGeometry(4.5, 1.0, 0.9), green, [0, 0.5, 0]);
           addPart(group, new THREE.BoxGeometry(4.3, 0.12, 1.05), gold, [0, 1.05, 0]);
+        } else if (item.type === 'entrance' || item.type === 'exit') {
+          const accent = item.type === 'entrance' ? green : pink;
+          addPart(group, new THREE.BoxGeometry(5.5, 0.15, 2), dark, [0, 0.08, 0]);
+          addPart(group, new THREE.BoxGeometry(5.2, 2.7, 0.18), accent, [0, 1.4, -0.9]);
+          addPart(group, new THREE.BoxGeometry(0.18, 2.7, 1.8), accent, [-2.5, 1.4, 0]);
+          addPart(group, new THREE.BoxGeometry(0.18, 2.7, 1.8), accent, [2.5, 1.4, 0]);
+        } else if (item.type === 'bar') {
+          addPart(group, new THREE.BoxGeometry(6, 1.35, 1.5), dark, [0, 0.68, 0]);
+          addPart(group, new THREE.BoxGeometry(6.2, 0.12, 1.65), gold, [0, 1.38, 0]);
+          for (let i = -2; i <= 2; i++) addPart(group, new THREE.CylinderGeometry(0.22, 0.22, 0.75, 16), white, [i * 1.1, 0.38, 1.25]);
+        } else if (item.type === 'lounge') {
+          addPart(group, new THREE.BoxGeometry(6, 0.5, 2.3), pink, [0, 0.28, 0]);
+          addPart(group, new THREE.BoxGeometry(6, 1.1, 0.3), pink, [0, 0.8, -1]);
+          for (const x of [-2.4, 2.4]) addPart(group, new THREE.BoxGeometry(0.3, 0.9, 2.3), gold, [x, 0.65, 0]);
+        } else if (item.type === 'led_wall') {
+          addPart(group, new THREE.BoxGeometry(12, 4.2, 0.3), blue, [0, 2.15, 0]);
+          for (let x = -5; x <= 5; x += 2) addPart(group, new THREE.BoxGeometry(0.04, 3.8, 0.04), white, [x, 2.15, 0.17]);
+          for (let y = 0.5; y <= 3.5; y += 1) addPart(group, new THREE.BoxGeometry(11.8, 0.04, 0.04), white, [0, y, 0.17]);
+        } else if (item.type === 'truss') {
+          addPart(group, new THREE.BoxGeometry(10, 0.18, 0.18), gold, [0, 4, 0]);
+          for (const x of [-4.8, 4.8]) addPart(group, new THREE.BoxGeometry(0.18, 4, 0.18), gold, [x, 2, 0]);
+          for (let x = -4; x <= 4; x += 2) addPart(group, new THREE.CylinderGeometry(0.28, 0.28, 0.4, 16), pink, [x, 3.75, 0]);
         } else {
           addPart(group, new THREE.BoxGeometry(2.6, 0.95, 0.9), blue, [0, 0.48, 0]);
           addPart(group, new THREE.BoxGeometry(2.4, 0.1, 1.0), white, [0, 1.0, 0]);
@@ -280,7 +315,7 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
       const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-      let dragging: { id: string; group: any; offset: any; pointerId: number } | null = null;
+      let dragging: { id: string; group: any; offset: any; pointerId: number; mode: 'move' | 'rotate'; startClientX: number; startRotation: number } | null = null;
       let dragRaf = 0;
       let pendingPointer: PointerEvent | null = null;
 
@@ -296,16 +331,20 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         raycaster.setFromCamera(mouse, camera);
         const hits = raycaster.intersectObjects(itemRoot.children, true);
         const hit = hits.find((h: any) => h.object.parent?.userData?.itemId || h.object.parent?.parent?.userData?.itemId);
-        if (!hit) return;
+        if (!hit) { onSelect(null); return; }
         let group = hit.object;
         while (group.parent && !group.userData.itemId) group = group.parent;
         if (!group.userData.itemId) return;
         const item = itemsRef.current.find((i) => i.id === group.userData.itemId);
         if (!item) return;
-        const point = new THREE.Vector3();
-        if (!raycaster.ray.intersectPlane(floorPlane, point)) return;
-        dragging = { id: item.id, group, offset: group.position.clone().sub(point), pointerId: e.pointerId };
         onSelect(item.id);
+        if (rotationModeRef.current) {
+          dragging = { id: item.id, group, offset: null, pointerId: e.pointerId, mode: 'rotate', startClientX: e.clientX, startRotation: group.rotation.y };
+        } else {
+          const point = new THREE.Vector3();
+          if (!raycaster.ray.intersectPlane(floorPlane, point)) return;
+          dragging = { id: item.id, group, offset: group.position.clone().sub(point), pointerId: e.pointerId, mode: 'move', startClientX: e.clientX, startRotation: group.rotation.y };
+        }
         orbit.enabled = false;
         renderer.domElement.style.cursor = 'grabbing';
         try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
@@ -317,6 +356,11 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         if (!dragging || !pendingPointer) return;
         const e = pendingPointer;
         pendingPointer = null;
+        if (dragging.mode === 'rotate') {
+          const delta = (e.clientX - dragging.startClientX) * 0.6;
+          dragging.group.rotation.y = dragging.startRotation + (delta * Math.PI) / 180;
+          return;
+        }
         pointer(e);
         raycaster.setFromCamera(mouse, camera);
         const point = new THREE.Vector3();
@@ -338,10 +382,15 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         if (!dragging) return;
         const id = dragging.id;
         if (pendingPointer) applyPendingDrag();
-        const position = dragging.group.position.clone();
-        const x = ((position.x / width) * 100) + 50;
-        const y = ((position.z / depth) * 100) + 50;
-        onMove(id, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
+        if (dragging.mode === 'rotate') {
+          const delta = ((dragging.group.rotation.y - dragging.startRotation) * 180) / Math.PI;
+          if (Math.abs(delta) >= 3) onRotate?.(id, delta);
+        } else {
+          const position = dragging.group.position.clone();
+          const x = ((position.x / width) * 100) + 50;
+          const y = ((position.z / depth) * 100) + 50;
+          onMove(id, Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y)));
+        }
         dragging = null;
         pendingPointer = null;
         if (dragRaf) { cancelAnimationFrame(dragRaf); dragRaf = 0; }
@@ -410,6 +459,23 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
         } else {
           orbit.update();
         }
+        const rotationBar = rotationBarRef.current;
+        const selectedGroup = selectedIdRef.current && itemRoot.children.find((child: any) => child.userData?.itemId === selectedIdRef.current);
+        if (rotationBar && selectedGroup && modeRef.current === 'overview') {
+          const projected = new THREE.Vector3();
+          selectedGroup.getWorldPosition(projected);
+          projected.y += 2.8;
+          projected.project(camera);
+          const bounds = renderer.domElement.getBoundingClientRect();
+          const screenX = ((projected.x + 1) / 2) * bounds.width;
+          const screenY = ((1 - projected.y) / 2) * bounds.height;
+          const visible = projected.z >= -1 && projected.z <= 1 && screenX >= 0 && screenX <= bounds.width && screenY >= 0 && screenY <= bounds.height;
+          rotationBar.style.display = visible ? 'flex' : 'none';
+          rotationBar.style.left = `${screenX}px`;
+          rotationBar.style.top = `${screenY}px`;
+        } else if (rotationBar) {
+          rotationBar.style.display = 'none';
+        }
         renderer.render(scene, camera);
       };
       raf = requestAnimationFrame(animate);
@@ -458,7 +524,11 @@ export function EventLayout3D({ items, width, depth, language, mode, onSelect, o
 
   return (
     <div className="relative h-full min-h-[520px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950">
-      <div ref={hostRef} className="absolute inset-0" />
+      <div ref={hostRef} data-rotation-ui className="absolute inset-0" />
+      {mode === 'overview' && rotationMode && selectedId && items.some((item) => item.id === selectedId) && <div ref={rotationBarRef} data-rotation-ui className="pointer-events-auto absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" style={{ left: '50%', top: '50%' }} onPointerDown={(event) => event.stopPropagation()}>
+        <button type="button" title={language === 'ar' ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={language === 'ar' ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, -15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
+        <button type="button" title={language === 'ar' ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={language === 'ar' ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
+      </div>}
       {!ready && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400 bg-slate-950/90">{language === 'ar' ? 'جاري تحميل المحرك ثلاثي الأبعاد…' : 'Loading 3D engine…'}</div>}
       <div className="absolute left-3 top-3 rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-[10px] text-slate-300">
         {mode === 'pov'
