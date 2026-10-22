@@ -26,12 +26,14 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
+      {/* Scroll the overlay itself so the top bar (Print / Close) is never cut off on short screens. */}
+      <div className="invoice-print-root fixed inset-0 z-[90] overflow-y-auto bg-slate-950/85 backdrop-blur-md">
+        <div className="flex min-h-full items-start justify-center p-2 sm:p-4 print:p-0">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
-          className="relative w-full max-w-3xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-4 sm:p-8 text-start my-4"
+          className="relative w-full max-w-3xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-4 sm:p-8 text-start my-4 print:my-0 print:max-w-none print:rounded-none print:border-none print:bg-white print:p-0 print:shadow-none"
         >
           {/* Top Actions Bar (Hidden on print) */}
           <div className="print:hidden flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
@@ -203,6 +205,7 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
             </div>
           </div>
         </motion.div>
+        </div>
       </div>
     </AnimatePresence>
   );

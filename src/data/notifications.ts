@@ -16,6 +16,8 @@ export interface StaffNotification {
   createdAt: string;
   /** Portal user ids that have opened or dismissed this alert. */
   readBy: string[];
+  /** Portal user ids that cleared this alert from their own list. Clearing never affects other users. */
+  clearedBy?: string[];
 }
 
 export const NOTIFICATIONS_KEY = 'saraya-staff-notifications-v2';
@@ -31,4 +33,13 @@ export const notificationFor = (booking: Booking): StaffNotification => ({
   date: booking.date,
   createdAt: new Date().toISOString(),
   readBy: [],
+  clearedBy: [],
 });
+
+/** The alerts one portal user still sees: each user reads and clears their own list. */
+export const notificationsForUser = (all: StaffNotification[], userId: string) =>
+  all.filter((n) => !(n.clearedBy ?? []).includes(userId));
+
+/** Hide the given alerts (or all of them) for one user only. */
+export const clearNotificationsForUser = (all: StaffNotification[], userId: string, ids?: string[]) =>
+  all.map((n) => (ids && !ids.includes(n.id)) || (n.clearedBy ?? []).includes(userId) ? n : { ...n, clearedBy: [...(n.clearedBy ?? []), userId] });

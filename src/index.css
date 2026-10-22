@@ -881,3 +881,11 @@ html[data-theme="light"] textarea::placeholder {
   color: #6b7280 !important;
 }
 
+
+/* Printing an invoice prints only the invoice, not the portal behind it. */
+@media print {
+  body:has(.invoice-print-root) * { visibility: hidden; }
+  body:has(.invoice-print-root) .invoice-print-root,
+  body:has(.invoice-print-root) .invoice-print-root * { visibility: visible; }
+  .invoice-print-root { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: #fff; backdrop-filter: none; }
+}
