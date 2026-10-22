@@ -23,7 +23,7 @@ const inputCls = 'w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 
 const labelCls = 'mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-300';
 
 /** The short public booking form: venue, date, name and phone. The team calls back for everything else. */
-export function QuickBookingModal({ halls, existingBookings, language, preselectedHallId, onCreate, onClose, onOpenFullForm }: Props) {
+export function QuickBookingModal({ halls, existingBookings, language, preselectedHallId, onCreate, onClose }: Props) {
   const isAr = language === 'ar';
   const tr = (ar: string, en: string) => (isAr ? ar : en);
   const [hallId, setHallId] = useState(() => (preselectedHallId && halls.some((h) => h.id === preselectedHallId) ? preselectedHallId : ''));
@@ -143,11 +143,6 @@ export function QuickBookingModal({ halls, existingBookings, language, preselect
             <button type="submit" className="w-full rounded-xl bg-amber-400 px-6 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:bg-amber-300">
               {tr('أرسل الطلب', 'Send request')}
             </button>
-            {onOpenFullForm && (
-              <button type="button" onClick={() => onOpenFullForm({ clientName: name, clientPhone: phone, date, hallId: hall?.id, hallName: hallId === OTHER_VENUE ? otherVenue : undefined })} className="w-full text-center text-xs font-semibold text-slate-400 underline decoration-slate-600 underline-offset-4 hover:text-amber-300">
-                {tr('تريد إضافة تفاصيل أكثر؟ افتح النموذج الكامل', 'Want to add more details? Open the full form')}
-              </button>
-            )}
           </form>
         )}
       </motion.div>
