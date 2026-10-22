@@ -11,7 +11,10 @@ import {
   Clock,
   UserCheck,
 } from 'lucide-react';
-import { Employee, Booking } from '../types/venueSystem';
+import { Employee, Booking, Language } from '../types/venueSystem';
+import { makeTr } from '../utils/tr';
+import { RecordEditorModal, RowActions } from './RecordEditor';
+import { staffFields } from '../data/recordFields';
 import { sound } from '../utils/soundEffects';
 
 interface StaffViewProps {
@@ -19,6 +22,9 @@ interface StaffViewProps {
   bookings: Booking[];
   onAddStaff: (newStaff: Employee) => void;
   onUpdateStaffAttendance: (staffId: string, status: Employee['attendanceStatus']) => void;
+  language?: Language;
+  onEditStaff?: (employee: Employee) => void;
+  onDeleteStaff?: (staffId: string) => void;
 }
 
 export function StaffView({
@@ -26,13 +32,18 @@ export function StaffView({
   bookings,
   onAddStaff,
   onUpdateStaffAttendance,
+  language = 'ar',
+  onEditStaff,
+  onDeleteStaff,
 }: StaffViewProps) {
+  const { tr, egp } = makeTr(language);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New staff form state
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState('كابتن بوفيه وضيافة');
+  const [role, setRole] = useState(tr('كابتن بوفيه وضيافة', 'Buffet & hospitality captain'));
   const [baseSalary, setBaseSalary] = useState(7000);
   const [wagesType, setWagesType] = useState<Employee['wagesType']>('monthly');
 
@@ -60,16 +71,16 @@ export function StaffView({
   };
 
   return (
-    <div className="w-full space-y-6 pb-20 text-right">
+    <div className="w-full space-y-6 pb-20 text-start">
       {/* Top Banner */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-400" />
-            <span>فريق العمل والمشرفين والعمال</span>
+            <span>{tr('فريق العمل والمشرفين والعمال', 'Staff & crew')}</span>
           </h2>
           <p className="text-xs text-slate-400">
-            بيانات الموظفين، الوظائف، الحضور والانصراف، الأجور، السلف، والحوافز
+            {tr('بيانات الموظفين، الوظائف، الحضور والانصراف، الأجور، السلف، والحوافز', 'Roles, attendance, wages, advances and bonuses')}
           </p>
         </div>
 
@@ -81,7 +92,7 @@ export function StaffView({
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer whitespace-nowrap active:scale-95"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>إضافة موظف / فني جديد</span>
+          <span>{tr('إضافة موظف / فني جديد', 'Add staff member')}</span>
         </button>
       </div>
 
@@ -106,6 +117,8 @@ export function StaffView({
                   </div>
                 </div>
 
+                <div className="flex flex-col items-end gap-2">
+                <RowActions language={language} onEdit={onEditStaff ? () => setEditingEmployee(emp) : undefined} onDelete={onDeleteStaff ? () => onDeleteStaff(emp.id) : undefined} />
                 {/* Attendance Toggle Pill */}
                 <button
                   onClick={() => {
@@ -121,47 +134,48 @@ export function StaffView({
                       : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                   }`}
                 >
-                  {isPresent ? 'حاضر اليوم' : 'غائب'}
+                  {isPresent ? tr('حاضر اليوم', 'Present today') : tr('غائب', 'Absent')}
                 </button>
+                </div>
               </div>
 
               {/* Financial Ledger (Wages, Loans, Bonuses) */}
               <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
                 <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block font-sans">الأجر الأساسي</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('الأجر الأساسي', 'Base pay')}</span>
                   <span className="font-bold text-white tabular-nums">
-                    {emp.baseSalary.toLocaleString()} ج.م
+                    {egp(emp.baseSalary)}
                   </span>
                   <span className="text-[9px] text-slate-500 block font-sans">
-                    {emp.wagesType === 'monthly' ? 'شهري' : 'للمناسبة'}
+                    {emp.wagesType === 'monthly' ? tr('شهري', 'Monthly') : tr('للمناسبة', 'Per event')}
                   </span>
                 </div>
 
                 <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block font-sans">السلف</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('السلف', 'Advances')}</span>
                   <span className="font-bold text-rose-400 tabular-nums">
-                    {emp.loans.toLocaleString()} ج.م
+                    {egp(emp.loans)}
                   </span>
-                  <span className="text-[9px] text-slate-500 block font-sans">مخصومة</span>
+                  <span className="text-[9px] text-slate-500 block font-sans">{tr('مخصومة', 'Deducted')}</span>
                 </div>
 
                 <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block font-sans">الحوافز</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">{tr('الحوافز', 'Bonuses')}</span>
                   <span className="font-bold text-emerald-400 tabular-nums">
-                    +{emp.bonuses.toLocaleString()} ج.م
+                    +{egp(emp.bonuses)}
                   </span>
-                  <span className="text-[9px] text-slate-500 block font-sans">مكافآت</span>
+                  <span className="text-[9px] text-slate-500 block font-sans">{tr('مكافآت', 'Rewards')}</span>
                 </div>
               </div>
 
               {/* Net Wage & Events Participation */}
               <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
                 <span className="text-slate-400">
-                  شارك في <strong className="text-white font-mono">{emp.eventsCount}</strong> مناسبة سابقة
+                  {tr('شارك في', 'Worked')} <strong className="text-white font-mono">{emp.eventsCount}</strong> {tr('مناسبة سابقة', 'past events')}
                 </span>
-                <div className="font-mono text-left">
-                  <span className="text-[10px] text-slate-500 block">صافي المستحق:</span>
-                  <strong className="text-emerald-400 font-bold">{netWages.toLocaleString()} ج.م</strong>
+                <div className="font-mono text-end">
+                  <span className="text-[10px] text-slate-500 block">{tr('صافي المستحق', 'Net due')}:</span>
+                  <strong className="text-emerald-400 font-bold">{egp(netWages)}</strong>
                 </div>
               </div>
             </div>
@@ -172,16 +186,16 @@ export function StaffView({
       {/* Add New Staff Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-right">
-            <h3 className="text-base font-bold text-white mb-4">إضافة موظف / فني / مشرف</h3>
+          <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-start">
+            <h3 className="text-base font-bold text-white mb-4">{tr('إضافة موظف / فني / مشرف', 'Add staff member')}</h3>
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">اسم الموظف</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('اسم الموظف', 'Name')}</label>
                 <input
                   type="text"
                   required
-                  placeholder="مثال: حسام الدين عبد الرحيم"
+                  placeholder={tr('مثال: حسام الدين عبد الرحيم', 'e.g. Hossam El-Din Abdel Rahim')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white"
@@ -189,11 +203,11 @@ export function StaffView({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">المسمى الوظيفي</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('المسمى الوظيفي', 'Job title')}</label>
                 <input
                   type="text"
                   required
-                  placeholder="مشرف قاعة / كابتن بوفيه / فني صوت / إضاءة"
+                  placeholder={tr('مشرف قاعة / كابتن بوفيه / فني صوت / إضاءة', 'Hall supervisor / buffet captain / sound / lighting')}
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white"
@@ -201,7 +215,7 @@ export function StaffView({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">رقم الهاتف</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('رقم الهاتف', 'Phone')}</label>
                 <input
                   type="tel"
                   required
@@ -214,7 +228,7 @@ export function StaffView({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">الأجر الأساسي</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('الأجر الأساسي', 'Base pay')}</label>
                   <input
                     type="number"
                     value={baseSalary}
@@ -224,14 +238,14 @@ export function StaffView({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">طبيعة الأجر</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('طبيعة الأجر', 'Pay type')}</label>
                   <select
                     value={wagesType}
                     onChange={(e) => setWagesType(e.target.value as Employee['wagesType'])}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white"
                   >
-                    <option value="monthly">راتب شهري ثابت</option>
-                    <option value="per_event">أجر باليومية / بالمناسبة</option>
+                    <option value="monthly">{tr('راتب شهري ثابت', 'Fixed monthly salary')}</option>
+                    <option value="per_event">{tr('أجر باليومية / بالمناسبة', 'Daily / per-event pay')}</option>
                   </select>
                 </div>
               </div>
@@ -242,19 +256,20 @@ export function StaffView({
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
                 >
-                  إلغاء
+                  {tr('إلغاء', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white"
                 >
-                  حفظ الموظف
+                  {tr('حفظ الموظف', 'Save')}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+      {editingEmployee && onEditStaff && <RecordEditorModal title={tr('تعديل بيانات الموظف', 'Edit staff member')} fields={staffFields} value={editingEmployee} language={language} onClose={() => setEditingEmployee(null)} onSave={(e) => { onEditStaff(e); setEditingEmployee(null); }} onDelete={onDeleteStaff ? () => { onDeleteStaff(editingEmployee.id); setEditingEmployee(null); } : undefined} />}
     </div>
   );
 }

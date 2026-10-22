@@ -1,15 +1,19 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Printer, CheckCircle2, Shield, Calendar, Phone, MapPin, Receipt } from 'lucide-react';
-import { Booking } from '../types/venueSystem';
+import { Booking, Language } from '../types/venueSystem';
+import { makeTr, eventTypeLabel } from '../utils/tr';
 import { sound } from '../utils/soundEffects';
 
 interface InvoicePrintModalProps {
   isOpen: boolean;
   onClose: () => void;
   booking: Booking | null;
+  language?: Language;
+  company?: { phone?: string; locationsAr?: string; locationsEn?: string };
 }
 
-export function InvoicePrintModal({ isOpen, onClose, booking }: InvoicePrintModalProps) {
+export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', company }: InvoicePrintModalProps) {
+  const { isAr, tr, egp } = makeTr(language);
   if (!isOpen || !booking) return null;
 
   const handlePrint = () => {
@@ -26,7 +30,7 @@ export function InvoicePrintModal({ isOpen, onClose, booking }: InvoicePrintModa
           initial={{ opacity: 0, scale: 0.95, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
-          className="relative w-full max-w-3xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-4 sm:p-8 text-right my-4"
+          className="relative w-full max-w-3xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-4 sm:p-8 text-start my-4"
         >
           {/* Top Actions Bar (Hidden on print) */}
           <div className="print:hidden flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
@@ -36,7 +40,7 @@ export function InvoicePrintModal({ isOpen, onClose, booking }: InvoicePrintModa
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>طباعة الفاتورة / إيصال رسمي</span>
+                <span>{tr('طباعة الفاتورة / إيصال رسمي', 'Print invoice')}</span>
               </button>
             </div>
 
@@ -59,26 +63,26 @@ export function InvoicePrintModal({ isOpen, onClose, booking }: InvoicePrintModa
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-indigo-500 print:bg-black" />
                   <h1 className="text-2xl font-black text-white print:text-black">
-                    قاعات ومناسبات أورا إيفنت الملكية
+                    {isAr ? 'السرايا للمناسبات' : 'SARAYA EVENTS'}
                   </h1>
                 </div>
                 <p className="text-xs text-slate-400 print:text-gray-600 mt-1">
-                  AuraEvent Luxury Ballrooms & Event Management
+                  {isAr ? 'SARAYA EVENTS · قاعات أفراح ومناسبات وإدارة فعاليات' : 'Wedding halls, events & event management'}
                 </p>
                 <p className="text-xs text-slate-500 print:text-gray-500 mt-0.5">
-                  سجل تجاري: 489210 · بطاقة ضريبية: 341-890 · هاتف: 01000000000
+                  {(isAr ? company?.locationsAr : company?.locationsEn) || ''}{company?.phone ? ` · ${tr('هاتف', 'Phone')}: ${company.phone}` : ''}
                 </p>
               </div>
 
-              <div className="text-left font-mono">
+              <div className="text-end font-mono">
                 <span className="text-xs uppercase tracking-widest text-indigo-400 print:text-black font-bold block">
-                  فاتورة حجز رسمية (OFFICIAL INVOICE)
+                  {tr('فاتورة حجز', 'Booking invoice')}{isAr ? ' (INVOICE)' : ''}
                 </span>
                 <span className="text-lg font-bold text-white print:text-black block mt-0.5">
                   #{booking.code}
                 </span>
                 <span className="text-xs text-slate-400 print:text-gray-600">
-                  التاريخ: {new Date().toISOString().split('T')[0]}
+                  {tr('التاريخ', 'Date')}: {new Date().toISOString().split('T')[0]}
                 </span>
               </div>
             </div>
@@ -87,45 +91,45 @@ export function InvoicePrintModal({ isOpen, onClose, booking }: InvoicePrintModa
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-900/60 print:bg-gray-50 border border-slate-800/80 print:border-gray-200 mb-6 text-xs">
               <div className="space-y-1.5">
                 <span className="font-bold text-indigo-400 print:text-black block mb-1">
-                  بيانات العميل:
+                  {tr('بيانات العميل', 'Client')}:
                 </span>
-                <div>اسم العميل: <strong className="text-white print:text-black">{booking.clientName}</strong></div>
-                <div>رقم الهاتف: <strong className="text-white print:text-black font-mono">{booking.clientPhone}</strong></div>
-                {booking.clientAddress && <div>العنوان: <span className="text-slate-300 print:text-gray-700">{booking.clientAddress}</span></div>}
+                <div>{tr('اسم العميل', 'Name')}: <strong className="text-white print:text-black">{booking.clientName}</strong></div>
+                <div>{tr('رقم الهاتف', 'Phone')}: <strong className="text-white print:text-black font-mono">{booking.clientPhone}</strong></div>
+                {booking.clientAddress && <div>{tr('العنوان', 'Address')}: <span className="text-slate-300 print:text-gray-700">{booking.clientAddress}</span></div>}
               </div>
 
               <div className="space-y-1.5">
                 <span className="font-bold text-indigo-400 print:text-black block mb-1">
-                  تفاصيل المناسبة:
+                  {tr('تفاصيل المناسبة', 'Event')}:
                 </span>
-                <div>نوع المناسبة: <strong className="text-white print:text-black">{booking.eventType === 'wedding' ? 'حفل زفاف (فرح)' : booking.eventType === 'engagement' ? 'حفل خطوبة' : booking.eventType === 'birthday' ? 'عيد ميلاد' : booking.eventType === 'conference' ? 'مؤتمر سنوي' : 'حفلة خاصة'}</strong></div>
-                <div>القاعة المحجوزة: <strong className="text-white print:text-black">{booking.hallName}</strong></div>
-                <div>تاريخ المناسبة: <strong className="text-white print:text-black font-mono">{booking.date}</strong> ({booking.startTime} - {booking.endTime})</div>
-                <div>عدد المدعوين: <strong className="text-white print:text-black font-mono">{booking.guestCount} فرد</strong></div>
+                <div>{tr('نوع المناسبة', 'Event type')}: <strong className="text-white print:text-black">{eventTypeLabel(booking.eventType, isAr)}</strong></div>
+                <div>{tr('القاعة المحجوزة', 'Hall')}: <strong className="text-white print:text-black">{booking.hallName}</strong></div>
+                <div>{tr('تاريخ المناسبة', 'Date')}: <strong className="text-white print:text-black font-mono">{booking.date}</strong> ({booking.startTime} - {booking.endTime})</div>
+                <div>{tr('عدد المدعوين', 'Guests')}: <strong className="text-white print:text-black font-mono">{booking.guestCount} {tr('فرد', 'guests')}</strong></div>
               </div>
             </div>
 
             {/* Itemized Services Table */}
             <div className="mb-6 overflow-x-auto">
-              <table className="w-full text-xs text-right border-collapse">
+              <table className="w-full text-xs text-start border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800 print:border-gray-300 text-slate-400 print:text-gray-700 font-semibold">
-                    <th className="py-2.5 px-3">البند / الخدمة</th>
-                    <th className="py-2.5 px-3">الكمية</th>
-                    <th className="py-2.5 px-3">سعر الوحدة</th>
-                    <th className="py-2.5 px-3 text-left">الإجمالي</th>
+                    <th className="py-2.5 px-3">{tr('البند / الخدمة', 'Item / service')}</th>
+                    <th className="py-2.5 px-3">{tr('الكمية', 'Qty')}</th>
+                    <th className="py-2.5 px-3">{tr('سعر الوحدة', 'Unit price')}</th>
+                    <th className="py-2.5 px-3 text-end">{tr('الإجمالي', 'Total')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 print:divide-gray-200">
                   <tr>
                     <td className="py-3 px-3">
-                      <strong className="text-white print:text-black block">حجز القاعة الأساسي ({booking.hallName})</strong>
-                      <span className="text-[11px] text-slate-400 print:text-gray-500">يشمل الاستخدام الكامل للمرافق والتكييف والخدمات الأساسية</span>
+                      <strong className="text-white print:text-black block">{tr('حجز القاعة الأساسي', 'Hall booking')} ({booking.hallName})</strong>
+                      <span className="text-[11px] text-slate-400 print:text-gray-500">{tr('يشمل الاستخدام الكامل للمرافق والتكييف والخدمات الأساسية', 'Includes full use of facilities, air conditioning and basic services')}</span>
                     </td>
                     <td className="py-3 px-3 font-mono">1</td>
-                    <td className="py-3 px-3 font-mono">{booking.basePrice.toLocaleString()} ج.م</td>
-                    <td className="py-3 px-3 text-left font-mono font-bold text-white print:text-black">
-                      {booking.basePrice.toLocaleString()} ج.م
+                    <td className="py-3 px-3 font-mono">{egp(booking.basePrice)}</td>
+                    <td className="py-3 px-3 text-end font-mono font-bold text-white print:text-black">
+                      {egp(booking.basePrice)}
                     </td>
                   </tr>
 
@@ -135,9 +139,9 @@ export function InvoicePrintModal({ isOpen, onClose, booking }: InvoicePrintModa
                         <span className="text-slate-200 print:text-black font-medium">{srv.name}</span>
                       </td>
                       <td className="py-3 px-3 font-mono">{srv.quantity}</td>
-                      <td className="py-3 px-3 font-mono">{srv.unitPrice.toLocaleString()} ج.م</td>
-                      <td className="py-3 px-3 text-left font-mono font-bold text-white print:text-black">
-                        {srv.totalPrice.toLocaleString()} ج.م
+                      <td className="py-3 px-3 font-mono">{egp(srv.unitPrice)}</td>
+                      <td className="py-3 px-3 text-end font-mono font-bold text-white print:text-black">
+                        {egp(srv.totalPrice)}
                       </td>
                     </tr>
                   ))}
@@ -151,31 +155,31 @@ export function InvoicePrintModal({ isOpen, onClose, booking }: InvoicePrintModa
               <div className="text-xs text-slate-400 print:text-gray-600 max-w-sm space-y-1">
                 <div className="flex items-center gap-1.5 text-amber-300 print:text-black font-semibold">
                   <Shield className="w-4 h-4" />
-                  <span>تأمين القاعة: {booking.securityDeposit.toLocaleString()} جنيه</span>
+                  <span>{tr('تأمين القاعة', 'Hall security deposit')}: {egp(booking.securityDeposit)}</span>
                 </div>
                 <p className="text-[11px] leading-relaxed">
-                  * مبلغ التأمين محتجز ومسترد بالكامل فور انتهاء المناسبة وسلامة أجهزة الصوت والإضاءة والديكورات.
+                  {tr('* مبلغ التأمين محتجز ومسترد بالكامل فور انتهاء المناسبة وسلامة أجهزة الصوت والإضاءة والديكورات.', '* The security deposit is fully refunded after the event once sound, lighting and decor are checked.')}
                 </p>
               </div>
 
               {/* Tally Numbers */}
               <div className="w-full sm:w-64 space-y-2 text-xs">
                 <div className="flex justify-between text-slate-300 print:text-gray-800">
-                  <span>إجمالي قيمة الحجز:</span>
-                  <span className="font-mono font-bold">{booking.totalPrice.toLocaleString()} ج.م</span>
+                  <span>{tr('إجمالي قيمة الحجز', 'Booking total')}:</span>
+                  <span className="font-mono font-bold">{egp(booking.totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-emerald-400 print:text-green-700">
-                  <span>المدفوع حتى الآن:</span>
-                  <span className="font-mono font-bold">− {booking.paidAmount.toLocaleString()} ج.م</span>
+                  <span>{tr('المدفوع حتى الآن', 'Paid so far')}:</span>
+                  <span className="font-mono font-bold">− {egp(booking.paidAmount)}</span>
                 </div>
                 <div className="flex justify-between text-amber-300 print:text-amber-800">
-                  <span>التأمين (مسترد):</span>
-                  <span className="font-mono font-bold">+ {booking.securityDeposit.toLocaleString()} ج.م</span>
+                  <span>{tr('التأمين (مسترد)', 'Security deposit (refundable)')}:</span>
+                  <span className="font-mono font-bold">+ {egp(booking.securityDeposit)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-extrabold text-white print:text-black pt-2 border-t border-slate-800 print:border-gray-400">
-                  <span>المبلغ المتبقي للتحصيل:</span>
+                  <span>{tr('المبلغ المتبقي للتحصيل', 'Balance due')}:</span>
                   <span className="font-mono text-base text-rose-400 print:text-black">
-                    {booking.remainingAmount.toLocaleString()} ج.م
+                    {egp(booking.remainingAmount)}
                   </span>
                 </div>
               </div>
@@ -184,11 +188,11 @@ export function InvoicePrintModal({ isOpen, onClose, booking }: InvoicePrintModa
             {/* Signatures */}
             <div className="mt-8 pt-6 border-t border-slate-800/80 print:border-gray-300 grid grid-cols-2 gap-8 text-center text-xs text-slate-400 print:text-black">
               <div>
-                <span className="block mb-6 font-semibold">توقيع العميل المستلم:</span>
+                <span className="block mb-6 font-semibold">{tr('توقيع العميل المستلم', 'Client signature')}:</span>
                 <div className="w-36 h-0.5 bg-slate-700 print:bg-black mx-auto" />
               </div>
               <div>
-                <span className="block mb-6 font-semibold">ختم وتوقيع إدارة القاعات:</span>
+                <span className="block mb-6 font-semibold">{tr('ختم وتوقيع إدارة القاعات', 'Management stamp & signature')}:</span>
                 <div className="w-36 h-0.5 bg-slate-700 print:bg-black mx-auto" />
               </div>
             </div>

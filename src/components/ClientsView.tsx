@@ -12,8 +12,12 @@ import {
   FileText,
   X,
   Sparkles,
+  Plus,
 } from 'lucide-react';
-import { ClientProfile, Booking } from '../types/venueSystem';
+import { ClientProfile, Booking, Language } from '../types/venueSystem';
+import { makeTr } from '../utils/tr';
+import { RecordEditorModal, RowActions } from './RecordEditor';
+import { clientFields } from '../data/recordFields';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
 
@@ -21,13 +25,22 @@ interface ClientsViewProps {
   clients: ClientProfile[];
   bookings: Booking[];
   onSelectBookingForInvoice: (booking: Booking) => void;
+  language?: Language;
+  onSaveClient?: (client: ClientProfile) => void;
+  onDeleteClient?: (clientId: string) => void;
 }
 
 export function ClientsView({
   clients,
   bookings,
   onSelectBookingForInvoice,
+  language = 'ar',
+  onSaveClient,
+  onDeleteClient,
 }: ClientsViewProps) {
+  const { tr, egp } = makeTr(language);
+  const [editingClient, setEditingClient] = useState<ClientProfile | null>(null);
+  const newClient = (): ClientProfile => ({ id: `cl-${Date.now()}`, name: '', phone: '', address: '', totalBookingsCount: 0, totalSpent: 0, currentBalanceDue: 0, heldSecurityDeposit: 0, notes: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClientForStatement, setSelectedClientForStatement] = useState<ClientProfile | null>(null);
 
@@ -38,27 +51,28 @@ export function ClientsView({
   );
 
   return (
-    <div className="w-full space-y-6 pb-20 text-right">
+    <div className="w-full space-y-6 pb-20 text-start">
       {/* Top Search & Metrics */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-indigo-400" />
           <div>
-            <h2 className="text-base font-bold text-white">سجل العملاء وكشوف الحسابات</h2>
-            <p className="text-xs text-slate-400">متابعة أرصدة العملاء، الحجوزات السابقة، والتأمينات المستحقة</p>
+            <h2 className="text-base font-bold text-white">{tr('سجل العملاء وكشوف الحسابات', 'Clients & statements')}</h2>
+            <p className="text-xs text-slate-400">{tr('أرصدة العملاء وحجوزاتهم السابقة والتأمينات المستحقة', 'Client balances, past bookings and security deposits')}</p>
           </div>
         </div>
 
         <div className="relative flex-1 max-w-full md:max-w-md">
-          <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="بحث باسم العميل، رقم الهاتف، أو العنوان..."
+            placeholder={tr('ابحث باسم العميل أو الهاتف أو العنوان...', 'Search by name, phone or address...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pr-10 pl-4 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full ps-10 pe-4 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </div>
+        {onSaveClient && <button type="button" onClick={() => setEditingClient(newClient())} className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 py-2 text-xs font-semibold text-white"><Plus className="h-3.5 w-3.5" />{tr('إضافة عميل', 'Add client')}</button>}
       </div>
 
       {/* Clients Cards Grid */}
@@ -86,6 +100,8 @@ export function ClientsView({
                   </div>
                 </div>
 
+                <div className="flex flex-col items-end gap-2">
+                <RowActions language={language} onEdit={onSaveClient ? () => setEditingClient(client) : undefined} onDelete={onDeleteClient ? () => onDeleteClient(client.id) : undefined} />
                 <button
                   onClick={() => {
                     sound.click(600);
@@ -94,34 +110,35 @@ export function ClientsView({
                   className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  <span>كشف الحساب</span>
+                  <span>{tr('كشف الحساب', 'Statement')}</span>
                 </button>
+                </div>
               </div>
 
               {/* Financial Balance Summary */}
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/70">
-                  <span className="text-[10px] text-slate-500 block font-mono">إجمالي التعاملات</span>
+                  <span className="text-[10px] text-slate-500 block">{tr('إجمالي التعاملات', 'Total business')}</span>
                   <span className="font-mono font-bold text-white tabular-nums">
-                    {client.totalSpent.toLocaleString()} ج.م
+                    {egp(client.totalSpent)}
                   </span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/70">
-                  <span className="text-[10px] text-slate-500 block font-mono">المتبقي عليه</span>
+                  <span className="text-[10px] text-slate-500 block">{tr('المتبقي عليه', 'Balance due')}</span>
                   <span
                     className={`font-mono font-bold tabular-nums ${
                       hasDebt ? 'text-rose-400' : 'text-emerald-400'
                     }`}
                   >
-                    {hasDebt ? `${client.currentBalanceDue.toLocaleString()} ج.م` : 'خالص'}
+                    {hasDebt ? egp(client.currentBalanceDue) : tr('خالص', 'Settled')}
                   </span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/70">
-                  <span className="text-[10px] text-slate-500 block font-mono">التأمين المحتجز</span>
+                  <span className="text-[10px] text-slate-500 block">{tr('التأمين المحتجز', 'Security held')}</span>
                   <span className="font-mono font-bold text-amber-300 tabular-nums">
-                    {client.heldSecurityDeposit.toLocaleString()} ج.م
+                    {egp(client.heldSecurityDeposit)}
                   </span>
                 </div>
               </div>
@@ -129,8 +146,8 @@ export function ClientsView({
               {/* Client Notes & Bookings Count */}
               <div className="text-xs text-slate-400 space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span>عدد الحجوزات المسجلة: <strong className="text-white">{clientBookings.length}</strong></span>
-                  <span className="text-indigo-400">عميل نشط</span>
+                  <span>{tr('عدد الحجوزات', 'Bookings')}: <strong className="text-white">{clientBookings.length}</strong></span>
+                  <span className="text-indigo-400">{tr('عميل نشط', 'Active client')}</span>
                 </div>
                 {client.notes && (
                   <p className="text-[11px] text-slate-500 italic bg-slate-950/40 p-2 rounded-lg">
@@ -151,11 +168,13 @@ export function ClientsView({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-2xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 sm:p-8 text-right my-auto"
+              className="relative w-full max-w-2xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 sm:p-8 text-start my-auto"
             >
               <button
+                type="button"
+                aria-label={tr('إغلاق', 'Close')}
                 onClick={() => setSelectedClientForStatement(null)}
-                className="absolute top-5 left-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -163,15 +182,15 @@ export function ClientsView({
               <div className="border-b border-slate-800 pb-4 mb-4">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <FileText className="w-5 h-5 text-indigo-400" />
-                  <span>كشف حساب العميل التفصيلي</span>
+                  <span>{tr('كشف حساب العميل', 'Client statement')}</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  العميل: <strong className="text-white">{selectedClientForStatement.name}</strong> · هاتف: {selectedClientForStatement.phone}
+                  {tr('العميل', 'Client')}: <strong className="text-white">{selectedClientForStatement.name}</strong> · {tr('هاتف', 'Phone')}: <span dir="ltr">{selectedClientForStatement.phone}</span>
                 </p>
               </div>
 
               {/* Transactions History */}
-              <div className="space-y-3 mb-6 max-h-64 overflow-y-auto pr-1">
+              <div className="space-y-3 mb-6 max-h-64 overflow-y-auto pe-1">
                 {bookings
                   .filter((b) => b.clientName === selectedClientForStatement.name)
                   .map((bk) => (
@@ -186,13 +205,13 @@ export function ClientsView({
                           <span className="text-[10px] text-slate-500 font-mono">({bk.date})</span>
                         </div>
                         <span className="text-[11px] text-slate-400 block mt-1">
-                          الإجمالي: {bk.totalPrice.toLocaleString()} ج.م · المسدد: {bk.paidAmount.toLocaleString()} ج.م
+                          {tr('الإجمالي', 'Total')}: {egp(bk.totalPrice)} · {tr('المسدد', 'Paid')}: {egp(bk.paidAmount)}
                         </span>
                       </div>
 
-                      <div className="text-left font-mono">
+                      <div className="text-end font-mono">
                         <span className="text-rose-400 font-bold block">
-                          {bk.remainingAmount > 0 ? `متبقي ${bk.remainingAmount.toLocaleString()} ج.م` : 'مسدد بالكامل'}
+                          {bk.remainingAmount > 0 ? `${tr('متبقي', 'Due')} ${egp(bk.remainingAmount)}` : tr('مسدد بالكامل', 'Paid in full')}
                         </span>
                         <button
                           onClick={() => {
@@ -201,7 +220,7 @@ export function ClientsView({
                           }}
                           className="text-[10px] text-indigo-400 hover:underline mt-0.5 cursor-pointer"
                         >
-                          عرض الفاتورة ←
+                          {tr('عرض الفاتورة ←', 'View invoice →')}
                         </button>
                       </div>
                     </div>
@@ -210,13 +229,14 @@ export function ClientsView({
 
               {/* Balance Totals Footer */}
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs font-mono">
-                <span>إجمالي المسحوبات: <strong>{selectedClientForStatement.totalSpent.toLocaleString()} ج.م</strong></span>
-                <span className="text-rose-400">الرصيد المدين المتبقي: <strong>{selectedClientForStatement.currentBalanceDue.toLocaleString()} ج.م</strong></span>
+                <span>{tr('إجمالي التعاملات', 'Total business')}: <strong>{egp(selectedClientForStatement.totalSpent)}</strong></span>
+                <span className="text-rose-400">{tr('الرصيد المتبقي', 'Balance due')}: <strong>{egp(selectedClientForStatement.currentBalanceDue)}</strong></span>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+      {editingClient && onSaveClient && <RecordEditorModal title={clients.some((c) => c.id === editingClient.id) ? tr('تعديل بيانات العميل', 'Edit client') : tr('إضافة عميل', 'Add client')} fields={clientFields} value={editingClient} language={language} onClose={() => setEditingClient(null)} onSave={(c) => { onSaveClient(c); setEditingClient(null); }} onDelete={onDeleteClient && clients.some((c) => c.id === editingClient.id) ? () => { onDeleteClient(editingClient.id); setEditingClient(null); } : undefined} />}
     </div>
   );
 }

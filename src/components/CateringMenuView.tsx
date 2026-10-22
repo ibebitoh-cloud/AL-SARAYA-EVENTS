@@ -17,6 +17,8 @@ import { Language, CateringItem, CateringPackage } from '../types/venueSystem';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
 import confetti from 'canvas-confetti';
+import { RecordEditorModal, RowActions, type FieldDef } from './RecordEditor';
+import { usePersistentState, isNonEmptyArray } from '../utils/usePersistentState';
 
 interface CateringMenuViewProps {
   language: Language;
@@ -130,11 +132,42 @@ const INITIAL_DISHES: CateringItem[] = [
   },
 ];
 
+const DISH_CATEGORY_OPTIONS = [
+  { value: 'appetizer', ar: 'مقبلات', en: 'Appetizer' }, { value: 'main', ar: 'أطباق رئيسية', en: 'Main course' },
+  { value: 'dessert', ar: 'حلويات', en: 'Dessert' }, { value: 'beverage', ar: 'مشروبات', en: 'Beverage' }, { value: 'live_station', ar: 'محطة طهي حي', en: 'Live station' },
+];
+const dishFields: FieldDef[] = [
+  { key: 'name', ar: 'الاسم (عربي)', en: 'Name (Arabic)', required: true },
+  { key: 'nameEn', ar: 'الاسم (إنجليزي)', en: 'Name (English)' },
+  { key: 'category', ar: 'الفئة', en: 'Category', type: 'select', options: DISH_CATEGORY_OPTIONS },
+  { key: 'costPerPlate', ar: 'تكلفة الطبق (ج.م)', en: 'Cost per plate (EGP)', type: 'number', min: 0 },
+  { key: 'description', ar: 'الوصف (عربي)', en: 'Description (Arabic)', type: 'textarea' },
+  { key: 'descriptionEn', ar: 'الوصف (إنجليزي)', en: 'Description (English)', type: 'textarea' },
+  { key: 'popular', ar: 'الأكثر طلباً', en: 'Most popular', type: 'checkbox' },
+];
+type PackageDraft = Omit<CateringPackage, 'items'> & { itemsText: string };
+const packageFields: FieldDef[] = [
+  { key: 'name', ar: 'اسم الباقة (عربي)', en: 'Package name (Arabic)', required: true },
+  { key: 'nameEn', ar: 'اسم الباقة (إنجليزي)', en: 'Package name (English)' },
+  { key: 'pricePerPerson', ar: 'سعر الفرد (ج.م)', en: 'Price per guest (EGP)', type: 'number', min: 0 },
+  { key: 'minGuests', ar: 'الحد الأدنى للضيوف', en: 'Minimum guests', type: 'number', min: 0 },
+  { key: 'coursesCount', ar: 'عدد الأطباق', en: 'Courses', type: 'number', min: 0 },
+  { key: 'includesLiveStations', ar: 'محطات الطهي الحي', en: 'Live stations', type: 'number', min: 0 },
+  { key: 'description', ar: 'الوصف (عربي)', en: 'Description (Arabic)', type: 'textarea' },
+  { key: 'descriptionEn', ar: 'الوصف (إنجليزي)', en: 'Description (English)', type: 'textarea' },
+  { key: 'itemsText', ar: 'الأصناف المشمولة (صنف في كل سطر)', en: 'Included items (one per line)', type: 'textarea' },
+];
+const toPackageDraft = ({ items, ...rest }: CateringPackage): PackageDraft => ({ ...rest, itemsText: items.join('\n') });
+const fromPackageDraft = ({ itemsText, ...rest }: PackageDraft): CateringPackage => ({ ...rest, items: itemsText.split('\n').map((x) => x.trim()).filter(Boolean) });
+
 export function CateringMenuView({ language }: CateringMenuViewProps) {
   const isAr = language === 'ar';
 
-  const [packages] = useState<CateringPackage[]>(INITIAL_PACKAGES);
-  const [dishes, setDishes] = useState<CateringItem[]>(INITIAL_DISHES);
+  const [packages, setPackages] = usePersistentState<CateringPackage[]>('saraya-catering-packages-v1', INITIAL_PACKAGES, isNonEmptyArray);
+  const [dishes, setDishes] = usePersistentState<CateringItem[]>('saraya-catering-dishes-v1', INITIAL_DISHES, isNonEmptyArray);
+  const [editingDish, setEditingDish] = useState<CateringItem | null>(null);
+  const [editingPackage, setEditingPackage] = useState<PackageDraft | null>(null);
+  const upsert = <T extends { id: string }>(list: T[], item: T) => list.some((x) => x.id === item.id) ? list.map((x) => x.id === item.id ? item : x) : [item, ...list];
   const [activeTab, setActiveTab] = useState<'packages' | 'dishes'>('packages');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -239,6 +272,7 @@ export function CateringMenuView({ language }: CateringMenuViewProps) {
             <Plus className="w-4 h-4" />
             <span>{isAr ? 'إضافة صنف جديد' : 'Add New Item'}</span>
           </motion.button>
+          <button type="button" onClick={() => setEditingPackage(toPackageDraft({ id: `pkg-${Date.now()}`, name: '', nameEn: '', pricePerPerson: 0, minGuests: 50, includesLiveStations: 0, coursesCount: 3, description: '', descriptionEn: '', items: [] }))} className="flex items-center gap-1.5 rounded-xl border border-amber-400/40 px-3.5 py-2 text-xs font-bold text-amber-300"><Plus className="h-4 w-4" />{isAr ? 'باقة جديدة' : 'New package'}</button>
         </div>
       </div>
 
@@ -260,6 +294,7 @@ export function CateringMenuView({ language }: CateringMenuViewProps) {
                       </span>
                       <h3 className="text-lg font-black text-white">{isAr ? pkg.name : pkg.nameEn}</h3>
                     </div>
+                    <RowActions language={language} onEdit={() => setEditingPackage(toPackageDraft(pkg))} onDelete={() => setPackages((prev) => prev.filter((x) => x.id !== pkg.id))} />
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 flex items-baseline justify-between">
@@ -357,11 +392,14 @@ export function CateringMenuView({ language }: CateringMenuViewProps) {
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                       {dish.category}
                     </span>
+                    <div className="flex items-center gap-1.5">
+                    <RowActions language={language} onEdit={() => setEditingDish(dish)} onDelete={() => setDishes((prev) => prev.filter((x) => x.id !== dish.id))} />
                     {dish.popular && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
                         {isAr ? 'الأكثر طلباً' : 'Most Popular'}
                       </span>
                     )}
+                    </div>
                   </div>
 
                   <h4 className="text-sm font-bold text-white">{isAr ? dish.name : dish.nameEn}</h4>
@@ -464,6 +502,8 @@ export function CateringMenuView({ language }: CateringMenuViewProps) {
           </div>
         )}
       </AnimatePresence>
+      {editingDish && <RecordEditorModal title={isAr ? 'تعديل الصنف' : 'Edit item'} fields={dishFields} value={editingDish} language={language} onClose={() => setEditingDish(null)} onSave={(d) => { setDishes((prev) => upsert(prev, d)); setEditingDish(null); }} onDelete={() => { setDishes((prev) => prev.filter((x) => x.id !== editingDish.id)); setEditingDish(null); }} />}
+      {editingPackage && <RecordEditorModal title={packages.some((p) => p.id === editingPackage.id) ? (isAr ? 'تعديل الباقة' : 'Edit package') : (isAr ? 'باقة جديدة' : 'New package')} fields={packageFields} value={editingPackage} language={language} onClose={() => setEditingPackage(null)} onSave={(p) => { setPackages((prev) => upsert(prev, fromPackageDraft(p))); setEditingPackage(null); }} onDelete={packages.some((p) => p.id === editingPackage.id) ? () => { setPackages((prev) => prev.filter((x) => x.id !== editingPackage.id)); setEditingPackage(null); } : undefined} />}
     </div>
   );
 }

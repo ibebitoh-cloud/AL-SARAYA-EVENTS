@@ -15,7 +15,10 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import { Booking, BookingStatus, EventType } from '../types/venueSystem';
+import { Booking, BookingStatus, EventType, Hall, Language } from '../types/venueSystem';
+import { RecordEditorModal, RowActions } from './RecordEditor';
+import { bookingFields } from '../data/recordFields';
+import { makeTr, eventTypeLabel } from '../utils/tr';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
 import { eventDetailsSummary } from '../data/eventTypes';
@@ -29,6 +32,10 @@ interface BookingsViewProps {
   onUpdateBookingStatus: (bookingId: string, status: BookingStatus) => void;
   /** Operations staff: selling price total only (no profit calculator, payments or deposits). */
   sellingPricesOnly?: boolean;
+  language?: Language;
+  halls?: Hall[];
+  onEditBooking?: (booking: Booking) => void;
+  onDeleteBooking?: (bookingId: string) => void;
 }
 
 export function BookingsView({
@@ -38,7 +45,13 @@ export function BookingsView({
   onSelectBookingForInvoice,
   onUpdateBookingStatus,
   sellingPricesOnly = false,
+  language = 'ar',
+  halls = [],
+  onEditBooking,
+  onDeleteBooking,
 }: BookingsViewProps) {
+  const { isAr, tr, egp } = makeTr(language);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
@@ -59,44 +72,31 @@ export function BookingsView({
   const getStatusBadge = (status: BookingStatus) => {
     switch (status) {
       case 'confirmed':
-        return { label: 'مؤكد', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
+        return { label: tr('مؤكد', 'Confirmed'), color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
       case 'tentative':
-        return { label: 'مبدئي', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
+        return { label: tr('مبدئي', 'Tentative'), color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
       case 'completed':
-        return { label: 'مكتمل ومسلّم', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' };
+        return { label: tr('مكتمل ومسلّم', 'Completed'), color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' };
       case 'cancelled':
-        return { label: 'ملغي', color: 'bg-rose-500/20 text-rose-400 border-rose-500/30' };
+        return { label: tr('ملغي', 'Cancelled'), color: 'bg-rose-500/20 text-rose-400 border-rose-500/30' };
     }
   };
 
-  const getEventTypeLabel = (type: EventType) => {
-    switch (type) {
-      case 'wedding':
-        return 'حفل زفاف (فرح)';
-      case 'engagement':
-        return 'حفل خطوبة';
-      case 'birthday':
-        return 'عيد ميلاد';
-      case 'conference':
-        return 'مؤتمر / ندوة';
-      case 'party':
-        return 'حفلة تخرج / خاصة';
-    }
-  };
+  const getEventTypeLabel = (type: EventType) => eventTypeLabel(type, isAr);
 
   return (
-    <div className="w-full space-y-6 pb-20 text-right">
+    <div className="w-full space-y-6 pb-20 text-start">
       {/* Top Filter and Search Bar */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-full md:max-w-md">
-          <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="بحث برقم الحجز، اسم العميل، رقم الهاتف، أو القاعة..."
+            placeholder={tr('ابحث برقم الحجز أو اسم العميل أو الهاتف أو القاعة...', 'Search by booking code, client, phone or hall...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pr-10 pl-4 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full ps-10 pe-4 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </div>
 
@@ -105,10 +105,10 @@ export function BookingsView({
           {/* Status selector */}
           <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
             {[
-              { id: 'all', label: 'الكل' },
-              { id: 'confirmed', label: 'مؤكد' },
-              { id: 'tentative', label: 'مبدئي' },
-              { id: 'completed', label: 'مكتمل' },
+              { id: 'all', label: tr('الكل', 'All') },
+              { id: 'confirmed', label: tr('مؤكد', 'Confirmed') },
+              { id: 'tentative', label: tr('مبدئي', 'Tentative') },
+              { id: 'completed', label: tr('مكتمل', 'Completed') },
             ].map((st) => (
               <button
                 key={st.id}
@@ -136,7 +136,7 @@ export function BookingsView({
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md transition-all cursor-pointer whitespace-nowrap active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>تسجيل حجز جديد</span>
+            <span>{tr('تسجيل حجز جديد', 'New booking')}</span>
           </button>
         </div>
       </div>
@@ -165,8 +165,13 @@ export function BookingsView({
                       {badge.label}
                     </span>
                     <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
-                      {getEventTypeLabel(bk.eventType)}
+                      {bk.source === 'website_quick' ? tr('النوع يُحدد بالاتصال', 'Type to confirm by phone') : getEventTypeLabel(bk.eventType)}
                     </span>
+                    {(bk.source === 'website' || bk.source === 'website_quick') && (
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold border border-amber-400/40 bg-amber-400/10 text-amber-200">
+                        {bk.source === 'website_quick' ? tr('طلب سريع من الموقع: اتصل بالعميل', 'Quick website request: call back') : tr('طلب من الموقع', 'Website request')}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 pt-1">
@@ -175,23 +180,24 @@ export function BookingsView({
                       <span className="font-mono text-slate-300">{bk.clientPhone}</span>
                     </span>
                     <span>·</span>
-                    <span>القاعة: <strong className="text-white">{bk.hallName}</strong></span>
+                    <span>{tr('القاعة', 'Hall')}: <strong className="text-white">{bk.hallName}</strong></span>
                     <span>·</span>
                     <span className="font-mono text-slate-300">{bk.date} ({bk.startTime} - {bk.endTime})</span>
                     <span>·</span>
-                    <span>{bk.guestCount} فرد</span>
+                    <span>{bk.guestCount} {tr('فرد', 'guests')}</span>
                   </div>
-                  {(eventDetailsSummary(bk.eventType, bk.eventDetails) || bk.packageName || bk.locationId) && (
+                  {(eventDetailsSummary(bk.eventType, bk.eventDetails, isAr) || bk.packageName || bk.locationId) && (
                     <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                      {eventDetailsSummary(bk.eventType, bk.eventDetails) && <span className="text-amber-200">{eventDetailsSummary(bk.eventType, bk.eventDetails)}</span>}
-                      {bk.locationId && <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">{locationName(bk.locationId, true)}</span>}
+                      {eventDetailsSummary(bk.eventType, bk.eventDetails, isAr) && <span className="text-amber-200">{eventDetailsSummary(bk.eventType, bk.eventDetails, isAr)}</span>}
+                      {bk.locationId && <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">{locationName(bk.locationId, isAr)}</span>}
                       {bk.packageName && <span className="px-2 py-0.5 rounded-md bg-indigo-950/60 border border-indigo-800/50 text-indigo-300">{bk.packageName}</span>}
                     </div>
                   )}
                 </div>
 
                 {/* Right Quick Action Buttons */}
-                <div className="flex items-center gap-2 self-end lg:self-center">
+                <div className="flex flex-wrap items-center gap-2 self-end lg:self-center">
+                  <RowActions language={language} onEdit={onEditBooking ? () => setEditingBooking(bk) : undefined} onDelete={onDeleteBooking ? () => onDeleteBooking(bk.id) : undefined} />
                   {!sellingPricesOnly && <button
                     onClick={() => {
                       sound.click(600);
@@ -200,7 +206,7 @@ export function BookingsView({
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 text-emerald-300 text-xs font-semibold transition-all cursor-pointer"
                   >
                     <Calculator className="w-3.5 h-3.5" />
-                    <span>حساب ربح المناسبة</span>
+                    <span>{tr('حساب ربح المناسبة', 'Event profit')}</span>
                   </button>}
 
                   <button
@@ -211,7 +217,7 @@ export function BookingsView({
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition-all cursor-pointer"
                   >
                     <Receipt className="w-3.5 h-3.5" />
-                    <span>الفاتورة الرسمية</span>
+                    <span>{tr('الفاتورة الرسمية', 'Invoice')}</span>
                   </button>
                 </div>
               </div>
@@ -219,53 +225,53 @@ export function BookingsView({
               {/* Financial & Services Breakdown Row */}
               <div className={`mt-4 pt-1 grid gap-3 text-xs ${sellingPricesOnly ? 'grid-cols-1 sm:max-w-xs' : 'grid-cols-2 sm:grid-cols-5'}`}>
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-mono">إجمالي الحجز + الخدمات</span>
+                  <span className="text-[10px] text-slate-400 block">{tr('إجمالي الحجز والخدمات', 'Booking + services')}</span>
                   <span className="text-sm font-bold font-mono text-white tabular-nums">
-                    {bk.totalPrice.toLocaleString()} ج.م
+                    {egp(bk.totalPrice)}
                   </span>
-                  <span className="text-[10px] text-slate-500 block">شامل {bk.services.length} خدمات</span>
+                  <span className="text-[10px] text-slate-500 block">{tr(`شامل ${bk.services.length} خدمات`, `${bk.services.length} services included`)}</span>
                 </div>
 
                 {!sellingPricesOnly && <>
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-mono">العربون المسدد</span>
+                  <span className="text-[10px] text-slate-400 block">{tr('العربون المسدد', 'Deposit paid')}</span>
                   <span className="text-sm font-bold font-mono text-emerald-400 tabular-nums">
-                    {bk.deposit.toLocaleString()} ج.م
+                    {egp(bk.deposit)}
                   </span>
-                  <span className="text-[10px] text-slate-500 block">عند التعاقد</span>
+                  <span className="text-[10px] text-slate-500 block">{tr('عند التعاقد', 'At signing')}</span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-mono">إجمالي المدفوع</span>
+                  <span className="text-[10px] text-slate-400 block">{tr('إجمالي المدفوع', 'Total paid')}</span>
                   <span className="text-sm font-bold font-mono text-emerald-300 tabular-nums">
-                    {bk.paidAmount.toLocaleString()} ج.م
+                    {egp(bk.paidAmount)}
                   </span>
                   <span className="text-[10px] text-slate-500 block">
-                    {Math.round((bk.paidAmount / bk.totalPrice) * 100)}% من القيمة
+                    {bk.totalPrice > 0 ? Math.round((bk.paidAmount / bk.totalPrice) * 100) : 0}% {tr('من القيمة', 'of total')}
                   </span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-mono">المتبقي للتحصيل</span>
+                  <span className="text-[10px] text-slate-400 block">{tr('المتبقي للتحصيل', 'Balance due')}</span>
                   <span
                     className={`text-sm font-bold font-mono tabular-nums ${
                       isSettled ? 'text-emerald-400' : 'text-rose-400'
                     }`}
                   >
-                    {isSettled ? 'خالص بالكامل' : `${bk.remainingAmount.toLocaleString()} ج.م`}
+                    {isSettled ? tr('خالص بالكامل', 'Paid in full') : egp(bk.remainingAmount)}
                   </span>
                   <span className="text-[10px] text-slate-500 block">
-                    {isSettled ? 'لا توجد متأخرات' : 'يستحق قبل الموعد'}
+                    {isSettled ? tr('لا توجد متأخرات', 'Nothing outstanding') : tr('يستحق قبل الموعد', 'Due before the event')}
                   </span>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-mono">التأمين المحتجز</span>
+                  <span className="text-[10px] text-slate-400 block">{tr('التأمين المحتجز', 'Security deposit')}</span>
                   <span className="text-sm font-bold font-mono text-amber-300 tabular-nums">
-                    {bk.securityDeposit.toLocaleString()} ج.م
+                    {egp(bk.securityDeposit)}
                   </span>
                   <span className="text-[10px] text-slate-500 block">
-                    {bk.securityDepositStatus === 'refunded' ? 'تم الرد' : 'محتجز بالخزينة'}
+                    {bk.securityDepositStatus === 'refunded' ? tr('تم الرد', 'Refunded') : tr('محتجز بالخزينة', 'Held')}
                   </span>
                 </div>
                 </>}
@@ -274,7 +280,7 @@ export function BookingsView({
               {/* Notes Strip */}
               {bk.notes && (
                 <div className="mt-3 p-2 rounded-lg bg-indigo-950/30 border border-indigo-900/40 text-xs text-indigo-300">
-                  ملاحظات: {bk.notes}
+                  {tr('ملاحظات', 'Notes')}: {bk.notes}
                 </div>
               )}
             </TiltCard>
@@ -284,11 +290,12 @@ export function BookingsView({
         {filteredBookings.length === 0 && (
           <div className="py-16 text-center bg-slate-900/40 rounded-2xl border border-slate-800">
             <Calendar className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-300 font-medium text-sm">لا توجد حجوزات مطابقة للبحث</p>
-            <p className="text-slate-500 text-xs mt-1">جرّب تغيير فلاتر البحث أو سجّل حجزاً جديداً.</p>
+            <p className="text-slate-300 font-medium text-sm">{tr('لا توجد حجوزات مطابقة', 'No matching bookings')}</p>
+            <p className="text-slate-500 text-xs mt-1">{tr('جرّب تغيير البحث أو الفلاتر، أو سجّل حجزاً جديداً.', 'Try a different search or filter, or add a new booking.')}</p>
           </div>
         )}
       </div>
+      {editingBooking && onEditBooking && <RecordEditorModal title={`${tr('تعديل الحجز', 'Edit booking')} ${editingBooking.code}`} fields={bookingFields(halls)} value={editingBooking} language={language} onClose={() => setEditingBooking(null)} onSave={(b) => { onEditBooking(b); setEditingBooking(null); }} onDelete={onDeleteBooking ? () => { onDeleteBooking(editingBooking.id); setEditingBooking(null); } : undefined} />}
     </div>
   );
 }

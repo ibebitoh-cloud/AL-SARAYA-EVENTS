@@ -25,6 +25,8 @@ interface NewBookingModalProps {
   /** Limited staff user (operations agent): sees selling prices only, records a tentative booking without payments. */
   hideFinancials?: boolean;
   language?: Language;
+  /** Values carried over from the short booking form. */
+  prefill?: { clientName?: string; clientPhone?: string; date?: string; hallId?: string; hallName?: string };
 }
 
 const inputCls = 'w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500';
@@ -34,6 +36,7 @@ const sectionCls = 'p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 s
 export function NewBookingModal({
   isOpen, onClose, halls, servicesCatalogue, priceBook, existingBookings, onCreateBooking,
   preselectedHallId, customerMode = false, hideFinancials = false, language = 'ar',
+  prefill,
 }: NewBookingModalProps) {
   const isAr = language === 'ar';
   const tr = (ar: string, en: string) => (isAr ? ar : en);
@@ -71,13 +74,20 @@ export function NewBookingModal({
     setClientName(''); setClientPhone(''); setClientAddress(''); setNotes(''); setDate(''); setCustomHallName(''); setSubmittedCode('');
     setLocationId(hallLocation(hall)); setHallId(hall?.id || ''); setBasePrice(hall?.basePrice || 0);
     setStatus(noPayments ? 'tentative' : 'confirmed');
+    if (prefill) {
+      setClientName(prefill.clientName || ''); setClientPhone(prefill.clientPhone || ''); setDate(prefill.date || '');
+      const prefillHall = halls.find((h) => h.id === prefill.hallId);
+      if (prefillHall) { setHallId(prefillHall.id); setLocationId(hallLocation(prefillHall)); setBasePrice(prefillHall.basePrice); }
+      else if (prefill.hallName?.trim()) { setHallId(CUSTOMER_VENUE_ID); setCustomHallName(prefill.hallName.trim()); setBasePrice(0); }
+    }
   }, [isOpen, preselectedHallId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isOpen) return null;
 
   const isCustomHall = hallId === CUSTOM_HALL_ID || hallId === CUSTOMER_VENUE_ID;
   const isCustomerVenue = hallId === CUSTOMER_VENUE_ID;
-  const showLocationPrices = true;
+  // Customers never see prices: the team prices the request after talking to them.
+  const showLocationPrices = !customerMode;
   const locationHalls = halls.filter((h) => hallLocation(h) === locationId);
   const currentHall = halls.find((h) => h.id === hallId);
   const bookedHallName = isCustomHall ? customHallName.trim() : (currentHall?.name || '');
@@ -146,9 +156,9 @@ export function NewBookingModal({
     e.preventDefault();
     if (!eventType || !clientName.trim() || !clientPhone.trim() || !bookedHallName || !date || missingRequired || conflictingBooking) return;
     sound.success();
-    const code = uniqueBookingCode(existingBookings);
     const cleanDetails = Object.fromEntries(Object.entries(details).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v));
-    onCreateBooking({
+    const code = uniqueBookingCode(existingBookings);
+    const newBooking: Booking = {
       id: `bk-${Date.now()}`,
       code,
       clientName: clientName.trim(),
@@ -172,7 +182,9 @@ export function NewBookingModal({
       assignedStaff: [],
       suppliesCost: 2000,
       directExpenses: 1000,
-    });
+      source: customerMode ? 'website' : 'staff',
+    };
+    onCreateBooking(newBooking);
     // Customers get a confirmation screen; staff go straight back to their list.
     if (customerMode) setSubmittedCode(code);
     else onClose();
@@ -315,7 +327,7 @@ export function NewBookingModal({
                     <input type="number" min="1" value={guestCount} onChange={(e) => setGuestCount(Number(e.target.value) || 0)} className={`${inputCls} font-mono`} />
                   </div>
                 </div>
-                {customerMode && isCustomerVenue && <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-3"><label className={labelCls}>{tr('اختر تسعير الخدمات', 'Choose service pricing location')}</label><div className="grid grid-cols-2 gap-2">{LOCATIONS.map((loc) => <button key={loc.id} type="button" onClick={() => setLocationId(loc.id)} className={`rounded-lg border px-3 py-2 text-xs font-bold ${locationId === loc.id ? 'border-amber-300 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-900 text-slate-300'}`}>{isAr ? loc.nameAr : loc.nameEn}</button>)}</div><p className="mt-2 text-[10px] text-slate-400">{tr('ستظهر أسعار الموقع المختار فقط. يمكنك تغيير الاختيار لعرض تسعير الموقع الآخر.', 'Only prices for the selected location are shown. Switch locations to view the other pricing.')}</p></div>}
+                {customerMode && isCustomerVenue && <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-3"><label className={labelCls}>{tr('أقرب فرع لك', 'Nearest branch')}</label><div className="grid grid-cols-2 gap-2">{LOCATIONS.map((loc) => <button key={loc.id} type="button" onClick={() => setLocationId(loc.id)} className={`rounded-lg border px-3 py-2 text-xs font-bold ${locationId === loc.id ? 'border-amber-300 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-900 text-slate-300'}`}>{isAr ? loc.nameAr : loc.nameEn}</button>)}</div><p className="mt-2 text-[10px] text-slate-400">{tr('الفرع الذي سيتابع مناسبتك. سيرسل لك فريقنا التكلفة بعد مراجعة طلبك.', 'The branch that will handle your event. Our team will send you the cost after reviewing your request.')}</p></div>}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div><label className={labelCls}>{tr('تاريخ المناسبة', 'Event date')}</label><input type="date" required min={customerMode ? new Date().toISOString().split('T')[0] : undefined} value={date} onChange={(e) => setDate(e.target.value)} className={`${inputCls} font-mono`} /></div>
                   <div><label className={labelCls}>{tr('وقت البداية', 'Start time')}</label><input type="time" required value={startTime} onChange={(e) => setStartTime(e.target.value)} className={`${inputCls} font-mono`} /></div>
@@ -352,6 +364,7 @@ export function NewBookingModal({
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-indigo-400">5. {tr('خدمات وإضافات', 'Services & add-ons')}</h4>
                   {!customerMode && <span className="text-xs font-mono text-emerald-400 font-bold">{tr('الباقة والخدمات', 'Package & services')}: {egp(servicesTotal)}</span>}
+                  {customerMode && <span className="text-[10px] text-slate-500">{tr('يرسل لك فريقنا التكلفة بعد مراجعة طلبك', 'Our team sends you the cost after reviewing your request')}</span>}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pe-1">
                   {servicesCatalogue.map((srv) => {
