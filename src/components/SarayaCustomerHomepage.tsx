@@ -4,6 +4,7 @@ import { Calendar, Heart, Sparkles, Cake, Presentation, ArrowRight, ArrowLeft, U
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 import { RevealText } from './ui/reveal-text';
+import { BrandLogo } from './BrandLogo';
 import { SERVICE_KEYS, SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
 
 interface SarayaCustomerHomepageProps {
@@ -141,7 +142,7 @@ export function SarayaCustomerHomepage({ halls, photos, language, onOpenBookingM
       {section("about", <>
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <motion.div {...reveal()} className={`${card} aspect-[4/5] sm:aspect-[4/3] lg:aspect-[4/5]`}>
-            {aboutPhoto && <img src={aboutPhoto} alt={t('about.title')} loading="lazy" className="h-full w-full object-cover" />}
+            <div className="flex h-full w-full items-center justify-center p-10 sm:p-14"><BrandLogo variant="full" tone="dark" className="h-auto max-h-full w-full max-w-sm object-contain" /></div>
           </motion.div>
           <motion.div {...reveal(0.1)} className="text-center lg:text-start">
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#b45309] sm:text-sm">{t('about.kicker')}</p>
