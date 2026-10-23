@@ -421,7 +421,8 @@ export default function App() {
     {!isInternalManagementScreen ? <BeamWordmarkFooter
       className="mt-12 w-full"
       dir={isAr ? 'rtl' : 'ltr'}
-      logoSrc="/brand/elsaraya-logo-white.png" brand={companyProfile.nameEn}
+      logoSrc="/brand/elsaraya-logo-black.png" brand={companyProfile.nameEn}
+      background="#fff8e4" ink="#451a03" muted="#78350f" accent="#b45309"
       bottom={<a href="tel:+201146475759" aria-label="Powered by DALI STUDIO"><DaliCredit contact /></a>}
       company={isAr ? companyProfile.nameAr : companyProfile.nameEn}
       socials={[
