@@ -8,10 +8,11 @@ const CSS = `
 .dali-credit{display:inline-flex;flex-direction:column;align-items:center;gap:4px;font-family:'Readex Pro',sans-serif;vertical-align:middle;text-decoration:none}
 .dali-mark{display:inline-flex;align-items:center;gap:8px}
 .dali-logo{width:20px;height:20px;flex-shrink:0;object-fit:contain}
-.dali-name{font-weight:700;font-size:13px;letter-spacing:.3em;text-transform:uppercase}
-.dali-credit[data-tone='gold'] .dali-name{background:linear-gradient(135deg,#E9CF94 0%,#C49A52 50%,#8C6A2E 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.dali-credit[data-tone='white'] .dali-name{color:#F4F1EA}
-.dali-credit[data-tone='dark'] .dali-name{color:#0D0D0F}
+.dali-name{font-weight:700;font-size:13px;letter-spacing:.3em;text-transform:uppercase;display:inline-flex;gap:.45em}
+.dali-gold{background:linear-gradient(135deg,#E9CF94 0%,#C49A52 50%,#8C6A2E 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.dali-credit[data-tone='white'] .dali-ink{color:#F4F1EA}
+.dali-credit[data-tone='dark'] .dali-ink{color:#0D0D0F}
+.dali-credit[data-tone='gold'] .dali-ink{color:#C49A52}
 .dali-tag{font-size:9px;font-weight:500;letter-spacing:.3em;text-transform:uppercase;opacity:.6}
 .dali-credit[data-tone='dark'] .dali-tag{color:#0D0D0F}
 .dali-credit:not([data-tone='dark']) .dali-tag{color:#F4F1EA}
@@ -30,8 +31,8 @@ export function DaliCredit({ tone = 'white', lead = true, tagline = true, contac
       <style>{CSS}</style>
       {lead && <span className="dali-lead">Powered by</span>}
       <span className="dali-mark">
-        <img src={MARKS[tone]} alt="" aria-hidden="true" className="dali-logo" />
-        <span className="dali-name">DALI STUDIO</span>
+        <img src={MARKS.gold} alt="" aria-hidden="true" className="dali-logo" />
+        <span className="dali-name"><span className="dali-gold">DALI</span><span className="dali-ink">STUDIO</span></span>
       </span>
       {tagline && <span className="dali-tag">IDEAS INTO DIGITAL</span>}
       {contact && <span className="dali-lead">Mohamed Alaa · +20 114 647 5759</span>}
@@ -39,7 +40,7 @@ export function DaliCredit({ tone = 'white', lead = true, tagline = true, contac
   );
 }
 
-/** Only the D, for tight spots such as the bottom of a popup. */
+/** Only the D, for tight spots. */
 export function DaliMark({ tone = 'white', className = '' }: { tone?: Tone; className?: string }) {
   return <img src={MARKS[tone]} alt="DALI STUDIO" title="Powered by DALI STUDIO" className={className} draggable={false} />;
 }
@@ -52,7 +53,7 @@ const isPopupOpen = () => Array.from(document.querySelectorAll<HTMLElement>('.fi
 });
 
 /**
- * The D centred at the bottom of the screen while any popup is open, and a dark
+ * "Powered by DALI STUDIO" centred at the bottom of the screen while any popup is open, and a dark
  * "Powered by DALI STUDIO" line at the bottom of every printed page.
  */
 export function DaliOverlayCredit() {
@@ -70,7 +71,8 @@ export function DaliOverlayCredit() {
       <div data-dali-ignore className="pointer-events-none fixed inset-x-0 bottom-2 z-[1000] flex justify-center print:hidden">
         <span dir="ltr" className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/55 px-2.5 py-1 backdrop-blur-md">
           <span className="text-[8px] font-semibold uppercase tracking-[0.24em] text-[#F4F1EA]/60">Powered by</span>
-          <DaliMark className="h-3.5 w-3.5" />
+          <DaliMark tone="gold" className="h-3.5 w-3.5" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.24em]"><span className="bg-gradient-to-br from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] bg-clip-text text-transparent">Dali</span> <span className="text-[#F4F1EA]">Studio</span></span>
         </span>
       </div>
     )}
