@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Volume2,
   VolumeX,
@@ -10,6 +10,14 @@ import {
   Minimize2,
   Instagram,
   Music2,
+  PartyPopper,
+  Building2,
+  Sparkles,
+  Ruler,
+  Images,
+  Cuboid,
+  Info,
+  Phone,
 } from 'lucide-react';
 import { Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
@@ -27,6 +35,8 @@ interface SarayaBrandHeaderProps {
   instagramUrl?: string;
   tiktokUrl?: string;
   onExitManagementMode: () => void;
+  /** The public section on screen (events, venues, …), highlighted in the phone link row. */
+  activeSection?: string;
 }
 
 export function SarayaBrandHeader({
@@ -41,6 +51,7 @@ export function SarayaBrandHeader({
   instagramUrl,
   tiktokUrl,
   onExitManagementMode,
+  activeSection,
 }: SarayaBrandHeaderProps) {
   const isAr = language === 'ar';
   const [soundEnabled, setSoundEnabled] = useState(sound.enabled);
@@ -72,15 +83,26 @@ export function SarayaBrandHeader({
   };
 
   const navLinks = [
-    { id: 'events', labelAr: 'المناسبات', labelEn: 'Events' },
-    { id: 'venues', labelAr: 'القاعات', labelEn: 'Venues' },
-    { id: 'services', labelAr: 'الخدمات', labelEn: 'Services' },
-    { id: 'planner', labelAr: 'صمم حفلَك', labelEn: 'Planner' },
-    { id: 'gallery', labelAr: 'معرض الصور', labelEn: 'Gallery' },
-    { id: '3d-tour', labelAr: 'المحاكاة 3D', labelEn: '3D Tour' },
-    { id: 'about', labelAr: 'عن السرايا', labelEn: 'About' },
-    { id: 'contact', labelAr: 'تواصل معنا', labelEn: 'Contact' },
+    { id: 'events', labelAr: 'المناسبات', labelEn: 'Events', icon: PartyPopper },
+    { id: 'venues', labelAr: 'القاعات', labelEn: 'Venues', icon: Building2 },
+    { id: 'services', labelAr: 'الخدمات', labelEn: 'Services', icon: Sparkles },
+    { id: 'planner', labelAr: 'صمم حفلَك', labelEn: 'Planner', icon: Ruler },
+    { id: 'gallery', labelAr: 'معرض الصور', labelEn: 'Gallery', icon: Images },
+    { id: '3d-tour', labelAr: 'المحاكاة 3D', labelEn: '3D Tour', icon: Cuboid },
+    { id: 'about', labelAr: 'عن السرايا', labelEn: 'About', icon: Info },
+    { id: 'contact', labelAr: 'تواصل معنا', labelEn: 'Contact', icon: Phone },
   ];
+  // Keeps the highlighted tab in view when the phone link row is wider than the screen.
+  const linkRowRef = useRef<HTMLDivElement>(null);
+  const activeChipRef = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    // Wait a frame so a language switch has flipped the row direction first.
+    const frame = requestAnimationFrame(() => {
+      if (activeChipRef.current) activeChipRef.current.scrollIntoView({ block: 'nearest', inline: 'center' });
+      else linkRowRef.current?.scrollTo({ left: 0 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeSection, language]);
 
   const socialHref = (value: string | undefined, base: string) => {
     const url = (value || '').trim();
@@ -108,6 +130,19 @@ export function SarayaBrandHeader({
       {isAr ? link.labelAr : link.labelEn}
     </a>
   ));
+
+  // Phones and tablets: icon tabs in one swipeable row, the current section filled in brown.
+  const mobileLinkItems = navLinks.map((link) => {
+    const Icon = link.icon;
+    const active = link.id === activeSection;
+    return (
+      <a key={link.id} ref={active ? activeChipRef : undefined} href={`?section=${link.id}`} onClick={(e) => { e.preventDefault(); go(link.id); }} aria-current={active ? 'page' : undefined}
+        className={`flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[13px] font-bold transition-colors ${active ? 'bg-[#78350f] text-[#fef3c7] shadow-[0_4px_12px_-4px_rgba(120,53,15,0.6)]' : 'border border-[#78350f]/10 bg-white/70 text-[#78350f]/80 hover:bg-white hover:text-[#78350f]'}`}>
+        <Icon className="h-4 w-4 shrink-0" aria-hidden />
+        {isAr ? link.labelAr : link.labelEn}
+      </a>
+    );
+  });
 
   const toolItems = (
     <>
@@ -161,8 +196,8 @@ export function SarayaBrandHeader({
       </div>
 
       <div className="border-t border-[#b45309]/10 xl:hidden">
-        <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto px-4 py-2.5 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {linkItems}
+        <div ref={linkRowRef} className="mx-auto flex max-w-7xl snap-x items-center gap-2 overflow-x-auto scroll-px-4 px-4 py-2 sm:px-6 [mask-image:linear-gradient(to_right,transparent,#000_16px,#000_calc(100%-16px),transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:snap-start">
+          {mobileLinkItems}
           <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-[#b45309]/20" />
           {toolItems}
         </div>
