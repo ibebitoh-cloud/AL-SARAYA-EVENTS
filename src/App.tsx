@@ -30,6 +30,8 @@ import BeamWordmarkFooter from './components/ui/beam-wordmark-footer';
 import { DaliCredit, DaliOverlayCredit } from './components/DaliCredit';
 import { BrandLogo } from './components/BrandLogo';
 import { HoneyEmberBackground } from './components/ui/honey-ember-background';
+import { BottomNavBar } from './components/ui/bottom-nav-bar';
+import { Building2, CalendarPlus, Images, PartyPopper, Phone, Sparkles } from 'lucide-react';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
 import { ALSARAYA_PHOTOS, VenuePhoto } from './data/venueImages';
 const CustomerSectionView = lazy(() => import('./components/CustomerSectionView').then((m) => ({ default: m.CustomerSectionView })));
@@ -386,6 +388,8 @@ export default function App() {
   const isAr = language === 'ar';
   // Keeps a phone number on one line and in left-to-right order inside Arabic text.
   const ltrNumber = (value: string) => `\u2066${value.replace(/ /g, '\u00a0')}\u2069`;
+  // Phones get a floating bottom bar on the public website.
+  const showBottomNav = !isInternalManagementScreen && !portalLoginOpen;
   return (<div className={`min-h-screen w-full max-w-full overflow-x-clip flex flex-col selection:bg-indigo-500 selection:text-white relative box-border font-sans transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
     {/* The home page sits on a full-screen animated honey background. */}
     {currentTab === 'home' && !portalLoginOpen && <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true"><HoneyEmberBackground className="h-full w-full" /></div>}
@@ -502,6 +506,18 @@ export default function App() {
     <Suspense fallback={null}>{selectedBookingForProfit && <EventProfitCalculatorModal key={selectedBookingForProfit.id} isOpen={!!selectedBookingForProfit && !portalUser?.sellingPricesOnly && portalUser?.role !== 'finance'} onClose={() => setSelectedBookingForProfit(null)} booking={selectedBookingForProfit} onUpdateBookingCosts={handleUpdateBookingCosts} language={language} />}
     {selectedBookingForInvoice && <InvoicePrintModal key={selectedBookingForInvoice.id} isOpen onClose={() => setSelectedBookingForInvoice(null)} booking={selectedBookingForInvoice} language={language} company={companyProfile} />}</Suspense>
     <Suspense fallback={null}>{isOnboardingOpen && <OnboardingFlow isOpen language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}</Suspense>
+    {/* Room under the footer so the bar never covers its last lines; same cream as the footer. */}
+    {showBottomNav && <div aria-hidden className="h-[calc(80px+env(safe-area-inset-bottom))] w-full shrink-0 bg-[#fff8e4] md:hidden" />}
+    {showBottomNav && <BottomNavBar stickyBottom className="md:hidden" ariaLabel={isAr ? 'التنقل السريع' : 'Quick navigation'}
+      activeId={currentTab.startsWith('public_') ? currentTab.slice('public_'.length) : undefined}
+      items={[
+        { id: 'events', label: isAr ? 'المناسبات' : 'Events', icon: PartyPopper, onSelect: () => navigateSection('events') },
+        { id: 'venues', label: isAr ? 'القاعات' : 'Venues', icon: Building2, onSelect: () => navigateSection('venues') },
+        { id: 'services', label: isAr ? 'الخدمات' : 'Services', icon: Sparkles, onSelect: () => navigateSection('services') },
+        { id: 'gallery', label: isAr ? 'معرض الصور' : 'Gallery', icon: Images, onSelect: () => navigateSection('gallery') },
+        { id: 'contact', label: isAr ? 'تواصل معنا' : 'Contact', icon: Phone, onSelect: () => navigateSection('contact') },
+        { id: 'book', label: isAr ? 'احجز مناسبتك' : 'Book Your Event', icon: CalendarPlus, onSelect: () => openCustomerBooking(), highlight: true },
+      ]} />}
     <DaliOverlayCredit />
   </div>);
 }
