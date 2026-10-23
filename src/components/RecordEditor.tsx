@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Pencil, Save, Trash2, Upload, X } from 'lucide-react';
 import type { Language } from '../types/venueSystem';
+import { startLoading } from '../utils/loadingTracker';
 
 /** One editable field in a record form. Labels are kept in both languages. */
 export interface FieldDef {
@@ -25,28 +26,31 @@ const inputClass = 'mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 
  */
 export const readImageFile = (file: File, onDone: (dataUrl: string) => void) => {
   if (!file.type.startsWith('image/')) return;
+  const doneLoading = startLoading('upload');
+  const finish = (dataUrl: string) => { doneLoading(); onDone(dataUrl); };
   const reader = new FileReader();
+  reader.onerror = doneLoading;
   reader.onload = () => {
     const original = String(reader.result);
-    if (file.type === 'image/svg+xml' || file.type === 'image/gif') { onDone(original); return; }
+    if (file.type === 'image/svg+xml' || file.type === 'image/gif') { finish(original); return; }
     const img = new Image();
     img.onload = () => {
       const scale = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
-      if (scale === 1 && file.size < 400_000) { onDone(original); return; }
+      if (scale === 1 && file.size < 400_000) { finish(original); return; }
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(img.naturalWidth * scale);
       canvas.height = Math.round(img.naturalHeight * scale);
       const ctx = canvas.getContext('2d');
-      if (!ctx) { onDone(original); return; }
+      if (!ctx) { finish(original); return; }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       if (file.type === 'image/png' || file.type === 'image/webp') {
         const webp = canvas.toDataURL('image/webp', 0.9);
-        onDone(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png'));
+        finish(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png'));
         return;
       }
-      onDone(canvas.toDataURL('image/jpeg', 0.82));
+      finish(canvas.toDataURL('image/jpeg', 0.82));
     };
-    img.onerror = () => onDone(original);
+    img.onerror = () => finish(original);
     img.src = original;
   };
   reader.readAsDataURL(file);
