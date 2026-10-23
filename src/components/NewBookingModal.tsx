@@ -6,7 +6,8 @@ import { sound } from '../utils/soundEffects';
 import { EVENT_TYPES, eventTypeConfig } from '../data/eventTypes';
 import { LOCATIONS, hallLocation } from '../data/locations';
 import { packagesFor, packagePriceAt, servicePriceAt } from '../data/pricing';
-import { findBookingConflict, uniqueBookingCode } from '../utils/bookingRules';
+import { findBookingConflicts, uniqueBookingCode } from '../utils/bookingRules';
+import { ConflictWarning, makeConflictOverride, overrideReasonOk } from './ConflictWarning';
 
 const CUSTOM_HALL_ID = 'custom-hall';
 const CUSTOMER_VENUE_ID = 'customer-venue';
@@ -24,6 +25,10 @@ interface NewBookingModalProps {
   customerMode?: boolean;
   /** Limited staff user (operations agent): sees selling prices only, records a tentative booking without payments. */
   hideFinancials?: boolean;
+  /** Staff user allowed to save over a double-booking warning (never in customer mode). */
+  canOverrideConflict?: boolean;
+  /** Signed-in user, recorded on an override. */
+  currentUser?: { id: string; name: string } | null;
   language?: Language;
 }
 
@@ -33,7 +38,7 @@ const sectionCls = 'p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 s
 
 export function NewBookingModal({
   isOpen, onClose, halls, servicesCatalogue, priceBook, existingBookings, onCreateBooking,
-  preselectedHallId, customerMode = false, hideFinancials = false, language = 'ar',
+  preselectedHallId, customerMode = false, hideFinancials = false, canOverrideConflict = false, currentUser, language = 'ar',
 }: NewBookingModalProps) {
   const isAr = language === 'ar';
   const tr = (ar: string, en: string) => (isAr ? ar : en);
@@ -44,6 +49,7 @@ export function NewBookingModal({
   // Step 1: the operation type. Everything after it depends on the type.
   const [eventType, setEventType] = useState<EventType | null>(null);
   const [details, setDetails] = useState<Record<string, string>>({});
+  const [overrideReason, setOverrideReason] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientAddress, setClientAddress] = useState('');
@@ -106,9 +112,13 @@ export function NewBookingModal({
   };
   const chooseCustomerVenue = () => { setHallId(CUSTOMER_VENUE_ID); setCustomHallName(''); setBasePrice(0); };
 
-  const conflictingBooking = findBookingConflict(existingBookings, {
+  const conflicts = findBookingConflicts(existingBookings, {
     hallId: isCustomHall ? undefined : hallId, hallName: bookedHallName, date, startTime, endTime,
   });
+  const conflictingBooking = conflicts[0];
+  const mayOverride = canOverrideConflict && !customerMode;
+  // A clash blocks saving unless an authorised user gives a reason.
+  const conflictBlocks = !!conflictingBooking && !(mayOverride && overrideReasonOk(overrideReason));
 
   const toggleService = (srv: ServiceDefinition) => {
     sound.tick();
@@ -145,7 +155,7 @@ export function NewBookingModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!eventType || !clientName.trim() || !clientPhone.trim() || !bookedHallName || !date || missingRequired || conflictingBooking) return;
+    if (!eventType || !clientName.trim() || !clientPhone.trim() || !bookedHallName || !date || missingRequired || conflictBlocks) return;
     sound.success();
     const cleanDetails = Object.fromEntries(Object.entries(details).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v));
     const code = uniqueBookingCode(existingBookings);
@@ -174,6 +184,7 @@ export function NewBookingModal({
       suppliesCost: 2000,
       directExpenses: 1000,
       source: customerMode ? 'website' : 'staff',
+      ...(conflictingBooking ? { conflictOverride: makeConflictOverride(conflicts, overrideReason, currentUser) } : {}),
     };
     onCreateBooking(newBooking);
     // Customers get a confirmation screen; staff go straight back to their list.
@@ -183,7 +194,7 @@ export function NewBookingModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+      <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }}
           dir={isAr ? 'rtl' : 'ltr'} role="dialog" aria-modal="true" aria-labelledby="new-booking-title"
@@ -241,17 +252,15 @@ export function NewBookingModal({
                 </button>
               </div>
 
-              {conflictingBooking && (
+              {conflictingBooking && (customerMode ? (
                 <div className="p-3.5 rounded-2xl bg-rose-950/50 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2.5">
                   <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
                   <div>
                     <strong className="block text-rose-300 font-bold">{tr('هذا الموعد غير متاح في القاعة المختارة', 'This time is not available in the selected hall')}</strong>
-                    <span>{customerMode
-                      ? tr(`القاعة محجوزة في هذا اليوم من ${conflictingBooking.startTime} إلى ${conflictingBooking.endTime}. يرجى اختيار موعد أو قاعة أخرى.`, `The hall is booked that day from ${conflictingBooking.startTime} to ${conflictingBooking.endTime}. Please choose another time or hall.`)
-                      : tr(`القاعة محجوزة باسم (${conflictingBooking.clientName}) من ${conflictingBooking.startTime} إلى ${conflictingBooking.endTime}. غيّر الموعد أو القاعة للحفظ.`, `Already booked for ${conflictingBooking.clientName} from ${conflictingBooking.startTime} to ${conflictingBooking.endTime}. Change the time or hall to save.`)}</span>
+                    <span>{tr(`القاعة محجوزة في هذا اليوم من ${conflictingBooking.startTime} إلى ${conflictingBooking.endTime}. يرجى اختيار موعد أو قاعة أخرى.`, `The hall is booked that day from ${conflictingBooking.startTime} to ${conflictingBooking.endTime}. Please choose another time or hall.`)}</span>
                   </div>
                 </div>
-              )}
+              ) : <ConflictWarning conflicts={conflicts} canOverride={mayOverride} reason={overrideReason} onReasonChange={setOverrideReason} language={language} halls={halls} />)}
 
               {/* 1. Type-specific details (bride & groom for weddings/engagements, company for conferences...) */}
               <div className={sectionCls}>
@@ -419,9 +428,9 @@ export function NewBookingModal({
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-3 pt-3 border-t border-slate-800">
-                {conflictingBooking && <span className="me-auto text-[11px] font-semibold text-rose-300">{tr('الموعد متعارض مع حجز آخر في نفس القاعة.', 'This time clashes with another booking in the same hall.')}</span>}
+                {conflictBlocks && <span className="me-auto text-[11px] font-semibold text-rose-300">{tr('الموعد متعارض مع حجز آخر في نفس القاعة.', 'This time clashes with another booking in the same hall.')}</span>}
                 <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white cursor-pointer">{tr('إلغاء', 'Cancel')}</button>
-                <button type="submit" disabled={!!conflictingBooking} className="px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-600/30 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="submit" disabled={conflictBlocks} className="px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-600/30 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">
                   {customerMode ? tr('إرسال طلب الحجز', 'Send booking request') : hideFinancials ? tr('حفظ كحجز مبدئي', 'Save as tentative') : tr('حفظ وتسجيل الحجز', 'Save booking')}
                 </button>
               </div>

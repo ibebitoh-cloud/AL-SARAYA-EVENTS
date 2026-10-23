@@ -77,7 +77,7 @@ export function QuickBookingModal({ halls, existingBookings, language, preselect
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-md sm:p-5" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-md sm:p-5" onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         dir={isAr ? 'rtl' : 'ltr'} role="dialog" aria-modal="true" aria-labelledby="quick-booking-title"

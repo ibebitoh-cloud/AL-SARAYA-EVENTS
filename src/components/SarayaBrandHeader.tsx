@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
+import { BrandLogo } from './BrandLogo';
 
 interface SarayaBrandHeaderProps {
   language: Language;
@@ -126,10 +127,10 @@ export function SarayaBrandHeader({
         <a
           href="#hero"
           onClick={(e) => { e.preventDefault(); sound.swoosh(); go('hero'); }}
-          className="group flex shrink-0 items-center gap-2 font-serif text-base font-black uppercase tracking-[0.18em] text-[#78350f] sm:text-xl"
+          aria-label="ELSARAYA EVENTS"
+          className="group flex shrink-0 items-center"
         >
-          <span className="h-2 w-2 rounded-full bg-[#f59e0b] shadow-[0_0_10px_rgba(245,158,11,0.9)] transition-transform group-hover:scale-125" />
-          ELSARAYA EVENTS
+          <BrandLogo tone="dark" className="h-8 w-auto transition-transform duration-300 group-hover:scale-[1.03] sm:h-9" />
         </a>
 
         <nav className="hidden items-center gap-5 xl:flex">{linkItems}</nav>

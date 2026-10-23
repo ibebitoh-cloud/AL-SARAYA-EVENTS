@@ -137,7 +137,8 @@ export const DICTIONARY: Record<Language, Translations> = {
       engagement: 'حفل خطوبة',
       birthday: 'عيد ميلاد',
       conference: 'مؤتمر ومعرض',
-      party: 'حفلة خاصة وسهرة',
+      corporate: 'فعالية شركات',
+      party: 'مناسبة أخرى',
     },
 
     bookingStatuses: {
@@ -232,8 +233,9 @@ export const DICTIONARY: Record<Language, Translations> = {
       wedding: 'Royal Wedding Gala',
       engagement: 'Engagement Soiree',
       birthday: 'Birthday Celebration',
-      conference: 'Corporate Conference',
-      party: 'Private Reception',
+      conference: 'Conference / Summit',
+      corporate: 'Corporate Event',
+      party: 'Other Event',
     },
 
     bookingStatuses: {

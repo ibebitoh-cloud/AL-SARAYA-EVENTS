@@ -52,7 +52,7 @@ export const EVENT_TYPES: EventTypeConfig[] = [
     ],
   },
   {
-    id: 'conference', ar: 'مؤتمر / ندوة', en: 'Conference', emoji: '🎤', descAr: 'مؤتمرات وفعاليات شركات', descEn: 'Corporate events & seminars',
+    id: 'conference', ar: 'مؤتمر / قمة', en: 'Conference / Summit', emoji: '🎤', descAr: 'مؤتمرات وقمم وندوات', descEn: 'Conferences, summits & seminars',
     defaultGuests: 150, defaultStart: '09:00', defaultEnd: '16:00',
     fields: [
       { key: 'companyName', labelAr: 'اسم الشركة / الجهة', labelEn: 'Company / organisation', required: true },
@@ -61,7 +61,16 @@ export const EVENT_TYPES: EventTypeConfig[] = [
     ],
   },
   {
-    id: 'party', ar: 'حفلة خاصة / تخرج', en: 'Private party', emoji: '🎉', descAr: 'تخرج أو حفلة خاصة', descEn: 'Graduation or private party',
+    id: 'corporate', ar: 'فعالية شركات', en: 'Corporate event', emoji: '🏢', descAr: 'حفلات وإطلاق منتجات واجتماعات شركات', descEn: 'Company parties, launches & meetings',
+    defaultGuests: 120, defaultStart: '18:00', defaultEnd: '22:00',
+    fields: [
+      { key: 'companyName', labelAr: 'اسم الشركة', labelEn: 'Company', required: true },
+      { key: 'eventTitle', labelAr: 'اسم الفعالية', labelEn: 'Event name' },
+      { key: 'contactPerson', labelAr: 'المسؤول عن التنسيق', labelEn: 'Coordinator' },
+    ],
+  },
+  {
+    id: 'party', ar: 'مناسبة أخرى', en: 'Other event', emoji: '🎉', descAr: 'حفلة خاصة أو تخرج أو أي مناسبة أخرى', descEn: 'Private party, graduation or anything else',
     defaultGuests: 120, defaultStart: '19:00', defaultEnd: '23:00',
     fields: [
       { key: 'occasion', labelAr: 'المناسبة', labelEn: 'Occasion', placeholderAr: 'تخرج / ذكرى سنوية...', required: true },

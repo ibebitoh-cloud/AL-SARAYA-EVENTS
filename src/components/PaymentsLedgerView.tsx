@@ -217,7 +217,7 @@ export function PaymentsLedgerView({
 
       {/* New Payment Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 text-start">
             <h3 className="text-base font-bold text-white mb-4">{tr('إصدار سند قبض / دفعة نقدية', 'New receipt')}</h3>
 
