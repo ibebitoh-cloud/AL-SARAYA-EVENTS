@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { RotateCcw, RotateCw } from 'lucide-react';
+import { DaliLoader } from './DaliLoader';
 
 type LayoutItem = {
   id: string;
@@ -529,7 +530,7 @@ export function EventLayout3D({ items, width, depth, language, mode, selectedId,
         <button type="button" title={language === 'ar' ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={language === 'ar' ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, -15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
         <button type="button" title={language === 'ar' ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={language === 'ar' ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
       </div>}
-      {!ready && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400 bg-slate-950/90">{language === 'ar' ? 'جاري تحميل المحرك ثلاثي الأبعاد…' : 'Loading 3D engine…'}</div>}
+      {!ready && <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(13,13,15,.9)' }}><DaliLoader language={language} label={language === 'ar' ? 'جارٍ تحميل المجسم ثلاثي الأبعاد' : 'Loading 3D view'} /></div>}
       <div className="absolute left-3 top-3 rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-2 text-[10px] text-slate-300">
         {mode === 'pov'
           ? (language === 'ar' ? (povLocked ? 'داخل المكان · WASD للحركة · Esc للخروج' : 'اضغط داخل الشاشة للدخول · WASD للحركة') : (povLocked ? 'Inside · WASD to move · Esc to exit' : 'Click to enter · WASD to move'))

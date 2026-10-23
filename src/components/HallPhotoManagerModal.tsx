@@ -21,6 +21,7 @@ import { Hall, Language } from '../types/venueSystem';
 import { VenuePhoto } from '../data/venueImages';
 import { sound } from '../utils/soundEffects';
 import confetti from 'canvas-confetti';
+import { startLoading } from '../utils/loadingTracker';
 
 interface HallPhotoManagerModalProps {
   isOpen: boolean;
@@ -120,6 +121,8 @@ export function HallPhotoManagerModal({
     if (!file) return;
 
     const reader = new FileReader();
+    const doneLoading = startLoading('upload');
+    reader.onloadend = doneLoading;
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
       if (dataUrl) {

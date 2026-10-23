@@ -25,8 +25,43 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Readex+Pro:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- The DALI STUDIO "D" loader. These styles are here, not in index.css, so the same spinning D
+         shows while the app downloads; src/components/DaliLoader.tsx uses them after that. -->
+    <script>try{document.documentElement.dataset.theme=localStorage.getItem('saraya-theme')==='light'?'light':'dark'}catch(e){}</script>
+    <style>
+      .dali-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 12px;font-family:'Readex Pro','Cairo',sans-serif;--dl-size:56px}
+      .dali-loader[data-size='sm']{--dl-size:36px;gap:10px;padding:12px}
+      .dali-loader[data-size='lg']{--dl-size:76px;gap:18px}
+      .dali-loader-mark{position:relative;display:block;width:var(--dl-size);height:var(--dl-size);perspective:600px}
+      .dali-loader-mark::before{content:'';position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,rgba(233,207,148,.35) 0%,rgba(196,154,82,.12) 45%,transparent 70%);animation:dali-glow 1.8s ease-in-out infinite}
+      .dali-loader-mark img,.dali-spin-icon img{position:relative;display:block;width:100%;height:100%;object-fit:contain;user-select:none;animation:dali-spin 1.8s cubic-bezier(.65,0,.35,1) infinite;filter:drop-shadow(0 6px 14px rgba(140,106,46,.45))}
+      .dali-spin-icon{perspective:200px}
+      .dali-spin-icon img{animation-duration:1.2s;filter:none}
+      .dali-loader-label{display:inline-flex;align-items:baseline;font-size:13px;font-weight:600;color:#E9CF94}
+      .dali-loader[data-size='sm'] .dali-loader-label{font-size:11px}
+      .dali-loader[lang='en'] .dali-loader-label{letter-spacing:.28em;text-transform:uppercase;font-size:11px}
+      .dali-loader-dots i{font-style:normal;animation:dali-dot 1.4s infinite both}
+      .dali-loader-dots i:nth-child(2){animation-delay:.2s}
+      .dali-loader-dots i:nth-child(3){animation-delay:.4s}
+      .dali-loader-veil{background:rgba(13,13,15,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+      html[data-theme='light'] .dali-loader-label{color:#8C6A2E}
+      html[data-theme='light'] .dali-loader-veil{background:rgba(244,241,234,.8)}
+      .dali-splash{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:#0D0D0F;transition:opacity .45s ease}
+      html[data-theme='light'] .dali-splash{background:#F4F1EA}
+      .dali-splash.is-done{opacity:0;pointer-events:none}
+      @keyframes dali-spin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+      @keyframes dali-glow{0%,100%{opacity:.55;transform:scale(.9)}50%{opacity:1;transform:scale(1.05)}}
+      @keyframes dali-dot{0%,20%{opacity:0}40%,100%{opacity:1}}
+      @media (prefers-reduced-motion:reduce){.dali-loader-mark img,.dali-spin-icon img{animation:dali-spin 3.6s linear infinite}.dali-loader-mark::before{animation:none}}
+    </style>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+    <div id="dali-splash" class="dali-splash" data-dali-ignore>
+      <div class="dali-loader" data-size="lg" role="status" aria-live="polite" lang="ar" dir="rtl">
+        <span class="dali-loader-mark" aria-hidden="true"><img src="/brand/dali-mark.png" alt="" /></span>
+        <span class="dali-loader-label">جارٍ التحميل<span class="dali-loader-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></span>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -8,6 +8,7 @@ import { Hall3DProfile } from '../types/venueSystem';
 import { BRAND_LOGOS } from './BrandLogo';
 import { RecordEditorModal, RowActions } from './RecordEditor';
 import { hallFields } from '../data/recordFields';
+import { trackLoading } from '../utils/loadingTracker';
 
 interface CompanyProfile {
   nameEn: string; nameAr: string; taglineEn: string; taglineAr: string;
@@ -58,7 +59,8 @@ export function CompanyProfileView({ language, halls, bookings, services, client
   const readPhotos = (files: FileList | null) => {
     if (!draftHall || !files?.length) return;
     const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
-    Promise.all(imageFiles.map((file) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); })))
+    if (!imageFiles.length) return;
+    trackLoading(Promise.all(imageFiles.map((file) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); }))), 'upload')
       .then((newPhotos) => setDraftHall((current) => current ? { ...current, galleryPhotos: [...(current.galleryPhotos || []), ...newPhotos], ...(!current.photoUrl && !current.photo ? { photoUrl: newPhotos[0], photo: newPhotos[0] } : {}) } : current))
       .catch(() => undefined);
   };
