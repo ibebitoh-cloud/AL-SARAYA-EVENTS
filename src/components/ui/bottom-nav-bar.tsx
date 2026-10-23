@@ -19,12 +19,15 @@ type BottomNavBarProps = {
   ariaLabel?: string;
   className?: string;
   stickyBottom?: boolean;
+  /** light: cream and amber. dark: night blue with gold, for the dark portal theme. */
+  tone?: 'light' | 'dark';
 };
 
-export function BottomNavBar({ items, activeId, ariaLabel = 'Bottom Navigation', className, stickyBottom = false }: BottomNavBarProps) {
+export function BottomNavBar({ items, activeId, ariaLabel = 'Bottom Navigation', className, stickyBottom = false, tone = 'light' }: BottomNavBarProps) {
   const [current, setCurrent] = useState(activeId);
   // Follow the page when it changes elsewhere (header links, logo, back to home).
   useEffect(() => setCurrent(activeId), [activeId]);
+  const dark = tone === 'dark';
 
   return (
     <motion.nav
@@ -33,7 +36,8 @@ export function BottomNavBar({ items, activeId, ariaLabel = 'Bottom Navigation',
       transition={{ type: 'spring', stiffness: 300, damping: 26 }}
       aria-label={ariaLabel}
       className={cn(
-        'flex h-[54px] max-w-[calc(100vw-24px)] items-center gap-0.5 rounded-full border border-amber-900/15 bg-[#fff8e4]/95 p-1.5 shadow-[0_12px_32px_-8px_rgba(69,26,3,0.45)] backdrop-blur-md',
+        'flex h-[54px] max-w-[calc(100vw-24px)] items-center gap-0.5 rounded-full border p-1.5 backdrop-blur-md',
+        dark ? 'border-amber-400/20 bg-slate-950/95 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.7)]' : 'border-amber-900/15 bg-[#fff8e4]/95 shadow-[0_12px_32px_-8px_rgba(69,26,3,0.45)]',
         stickyBottom && 'fixed inset-x-0 bottom-[calc(12px+env(safe-area-inset-bottom))] z-40 mx-auto w-fit',
         className,
       )}
@@ -59,8 +63,8 @@ export function BottomNavBar({ items, activeId, ariaLabel = 'Bottom Navigation',
               item.highlight
                 ? 'bg-[linear-gradient(135deg,#E9CF94,#C49A52_55%,#8C6A2E)] text-[#0D0D0F] shadow-[0_4px_12px_-2px_rgba(140,106,46,0.6)]'
                 : isActive
-                  ? 'bg-amber-600/15 text-amber-950'
-                  : 'text-amber-900/65 hover:bg-amber-900/5 hover:text-amber-950',
+                  ? dark ? 'bg-amber-400/15 text-amber-200' : 'bg-amber-600/15 text-amber-950'
+                  : dark ? 'text-slate-400 hover:bg-white/5 hover:text-amber-200' : 'text-amber-900/65 hover:bg-amber-900/5 hover:text-amber-950',
             )}
           >
             <Icon size={21} strokeWidth={2} aria-hidden className="shrink-0" />
