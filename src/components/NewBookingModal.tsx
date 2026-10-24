@@ -213,7 +213,7 @@ export function NewBookingModal({
             <div className="mt-6 flex flex-col items-center gap-3 py-6 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-500/15 text-emerald-300"><Check className="h-7 w-7" /></div>
               <h4 className="text-lg font-black text-white">{tr('تم إرسال طلبك بنجاح', 'Your request has been sent')}</h4>
-              <p className="max-w-sm text-sm leading-6 text-slate-400">{tr('سيتواصل معك فريق السرايا قريباً لتأكيد الموعد والتفاصيل.', 'The Saraya team will contact you shortly to confirm the date and details.')}</p>
+              <p className="max-w-sm text-sm leading-6 text-slate-400">{tr('سيتواصل معك فريق السرايا قريباً لتأكيد الموعد والتفاصيل.', 'The ELSARAYA team will contact you shortly to confirm the date and details.')}</p>
               <p className="text-xs text-slate-500">{tr('رقم الطلب', 'Request number')}: <span dir="ltr" className="font-mono font-bold text-amber-300">{submittedCode}</span></p>
               <button type="button" onClick={onClose} className="mt-2 rounded-xl bg-amber-400 px-6 py-2.5 text-sm font-bold text-slate-950 hover:bg-amber-300">{tr('تم', 'Done')}</button>
             </div>
