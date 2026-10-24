@@ -288,7 +288,7 @@ export function CompanyShowcaseView({
               className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 flex items-center gap-2 cursor-pointer"
             >
               <Calendar className="w-4 h-4 text-amber-300" />
-              <span>{isAr ? 'تسجيل حجز جديد بالسرايا' : 'Book at AlSaraya Now'}</span>
+              <span>{isAr ? 'تسجيل حجز جديد بالسرايا' : 'Book at ELSARAYA Now'}</span>
             </motion.button>
 
             <motion.button
@@ -322,7 +322,7 @@ export function CompanyShowcaseView({
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 uppercase tracking-wider">
               <Building2 className="w-4 h-4" />
-              <span>{isAr ? 'صروح قصر السرايا المعمارية الأربعة' : 'AlSaraya Four Architectural Masterpieces'}</span>
+              <span>{isAr ? 'صروح قصر السرايا المعمارية الأربعة' : 'ELSARAYA: Four Architectural Masterpieces'}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white mt-1">
               {isAr ? 'مواصفات وتفاصيل قاعات السرايا' : 'Detailed Specs & Hall Profiles'}

@@ -192,7 +192,7 @@ export function PhotoLibraryPage({ language, photos, bookings, onSavePhotos }: P
       <header className="flex flex-col gap-4 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-slate-900 to-slate-950 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
         <div className="flex items-start gap-3">
           <div className="rounded-xl bg-amber-400/10 p-3 text-amber-300"><Images className="h-7 w-7" /></div>
-          <div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400">SARAYA MEDIA VAULT</p>
+          <div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400">{isAr ? 'أرشيف صور السرايا' : 'ELSARAYA MEDIA VAULT'}</p>
             <h1 className="mt-1 text-2xl font-black text-white sm:text-3xl">{isAr ? 'مكتبة صور المناسبات' : 'Event Photo Library'}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{isAr ? 'صفحة مستقلة؛ أنشئ ألبوماً باسم كل مناسبة واجمع صورها فيه، مع مراجعة الصور قبل النشر.' : 'A dedicated page to create a separate named album for each event and review its photos before publishing.'}</p>
           </div>

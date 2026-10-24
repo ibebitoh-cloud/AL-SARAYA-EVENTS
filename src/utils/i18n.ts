@@ -170,13 +170,13 @@ export const DICTIONARY: Record<Language, Translations> = {
   en: {
     appName: 'ELSARAYA EVENTS | Luxury Weddings & Venues',
     appSub: 'Egypt’s Premier Luxury Hall Management & Wedding Production',
-    erpBadge: 'Saraya Luxury Edition',
+    erpBadge: 'ELSARAYA Luxury Edition',
     langName: 'English',
     otherLangName: 'العربية',
 
     tabs: {
-      home: 'Saraya Event Website',
-      company: 'About AlSaraya & Halls',
+      home: 'ELSARAYA Website',
+      company: 'About ELSARAYA & Halls',
       dashboard: 'Dashboard',
       bookings: 'Bookings',
       agenda: 'Calendar Agenda',
@@ -194,7 +194,7 @@ export const DICTIONARY: Record<Language, Translations> = {
     },
 
     tabCategories: {
-      overview: 'AlSaraya Showcase & Halls',
+      overview: 'ELSARAYA Showcase & Halls',
       operations: 'Event Operations & Staging',
       finance: 'Finance, Stock & Analytics',
     },

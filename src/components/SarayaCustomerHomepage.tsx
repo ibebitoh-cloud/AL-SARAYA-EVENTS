@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'motion/react';
 import { Calendar, Heart, Sparkles, Cake, Presentation, ArrowRight, ArrowLeft, Users, MapPin, Building2, Award, PenTool, Truck, Palette, Mic2, ClipboardCheck } from 'lucide-react';
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
-import { RevealText } from './ui/reveal-text';
+import { HeroFilm } from './HeroFilm';
 import { BrandLogo } from './BrandLogo';
 import { SERVICE_KEYS, SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
 
@@ -47,15 +47,6 @@ export function SarayaCustomerHomepage({ halls, photos, language, onOpenBookingM
     seen.add(source);
     return true;
   });
-  // Wedding and party photos that fill the letters on hover: two wedding shots, then a party shot.
-  const weddingPhotos = displayPhotos.filter((p) => ['wedding', 'kosha', 'ballroom', 'engagement', 'dining'].includes(p.category)).map((p) => p.src);
-  const partyPhotos = displayPhotos.filter((p) => ['birthday', 'party'].includes(p.category)).map((p) => p.src);
-  const letterPhotos: string[] = [];
-  for (let w = 0, pa = 0; w < weddingPhotos.length || pa < partyPhotos.length;) {
-    if (w < weddingPhotos.length) letterPhotos.push(weddingPhotos[w++]);
-    if (w < weddingPhotos.length) letterPhotos.push(weddingPhotos[w++]);
-    if (pa < partyPhotos.length) letterPhotos.push(partyPhotos[pa++]);
-  }
   const photoFor = (categories: readonly string[], index = 0) => {
     const matches = displayPhotos.filter((p) => categories.includes(p.category));
     return (matches[index] ?? matches[0] ?? displayPhotos[index % Math.max(1, displayPhotos.length)])?.src || '';
@@ -107,18 +98,7 @@ export function SarayaCustomerHomepage({ halls, photos, language, onOpenBookingM
     <main dir={isAr ? 'rtl' : 'ltr'} className="w-full">
       {/* First screen: the name, one line, one button and the occasions. */}
       <section id="hero" className="flex min-h-[calc(100svh-5.5rem)] flex-col items-center justify-center px-1 py-14 text-center sm:px-6">
-        <motion.p {...fadeIn(0.1)} className="mb-5 text-sm font-bold uppercase tracking-[0.35em] text-[#b45309] sm:mb-7 sm:text-base">
-          {t('hero.kicker')}
-        </motion.p>
-        <h1 aria-label={t('hero.word')}>
-          <RevealText
-            text={t('hero.word')}
-            textColor="text-[#451a03]"
-            overlayColor="text-[#d97706]"
-            fontSize="text-[clamp(3.4rem,17.5vw,15rem)]"
-            letterImages={letterPhotos}
-          />
-        </h1>
+        <HeroFilm word={t('hero.word')} replayLabel={isAr ? 'إعادة التشغيل' : 'Replay'} />
         <motion.p {...fadeIn(1.5)} className="mt-7 max-w-3xl font-serif text-2xl leading-snug text-[#78350f] sm:mt-10 sm:text-4xl">
           {t('hero.title1')} <span className="text-[#b45309]">{t('hero.title2')}</span>
         </motion.p>

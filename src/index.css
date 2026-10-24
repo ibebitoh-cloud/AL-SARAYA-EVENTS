@@ -889,3 +889,4 @@ html[data-theme="light"] textarea::placeholder {
   body:has(.invoice-print-root) .invoice-print-root * { visibility: visible; }
   .invoice-print-root { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: #fff !important; backdrop-filter: none; }
 }
+

@@ -182,7 +182,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1 min-w-0">
                   <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 font-semibold">
-                    {srv.category}
+                    {categories.find((c) => c.id === srv.category)?.label ?? srv.category}
                   </span>
                   <h3 className="text-sm font-bold text-white mt-1 leading-snug">{srv.name}</h3>
                 </div>
@@ -266,6 +266,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                     <option value="photography">{tr('تصوير', 'Photography')}</option>
                     <option value="screen">{tr('شاشات', 'Screens')}</option>
                     <option value="hospitality">{tr('تنظيم وضيافة', 'Event staff & hospitality')}</option>
+                    <option value="tables_chairs">{tr('طاولات وكراسي', 'Tables & chairs')}</option>
                   </select>
                 </div>
 

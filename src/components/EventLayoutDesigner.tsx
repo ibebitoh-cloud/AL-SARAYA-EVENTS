@@ -458,7 +458,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   const title = isAr ? 'مصمم مخطط المناسبة' : 'Event Layout Designer';
-  const subtitle = isAr ? 'خطط أي مناسبة في قاعة السرايا أو في موقع العميل خلال دقائق.' : 'Plan any event at a Saraya venue or at the client’s location in minutes.';
+  const subtitle = isAr ? 'خطط أي مناسبة في قاعة السرايا أو في موقع العميل خلال دقائق.' : 'Plan any event at an ELSARAYA venue or at the client’s location in minutes.';
 
   return (
     <section className="space-y-4" dir={isAr ? 'rtl' : 'ltr'}>
@@ -490,7 +490,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             <div>
               <BrandLogo className="mb-1 h-6 w-auto" />
               <h2 className="text-xl sm:text-2xl font-bold text-white">{projectName || eventName}</h2>
-              <p className="text-sm text-slate-400 mt-1">{guests} {isAr ? 'ضيف' : 'guests'} · {locationKind === 'client' ? (isAr ? 'موقع العميل' : 'Client Location') : (isAr ? 'قاعة السرايا' : 'Saraya Venue')}</p>
+              <p className="text-sm text-slate-400 mt-1">{guests} {isAr ? 'ضيف' : 'guests'} · {locationKind === 'client' ? (isAr ? 'موقع العميل' : 'Client Location') : (isAr ? 'قاعة السرايا' : 'ELSARAYA Venue')}</p>
             </div>
             <button type="button" onClick={() => setClientView(false)} className="p-2 rounded-lg bg-slate-800 text-slate-200"><X className="w-4 h-4" /></button>
           </div>
@@ -521,7 +521,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
             <label className="block text-[11px] text-slate-400 mt-3 mb-1">{isAr ? 'المكان' : 'Location'}</label>
             <select value={locationKind} onChange={(e) => setLocationKind(e.target.value as LocationKind)} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white">
-              <option value="saraya">{isAr ? 'قاعة السرايا' : 'Saraya Venue'}</option>
+              <option value="saraya">{isAr ? 'قاعة السرايا' : 'ELSARAYA Venue'}</option>
               <option value="client">{isAr ? 'موقع العميل' : 'Client Location'}</option>
               <option value="custom">{isAr ? 'مساحة مخصصة' : 'Custom Space'}</option>
             </select>
@@ -629,7 +629,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="text-[10px] text-slate-500">{isAr ? 'ملخص' : 'Summary'}</div>
               <div className="mt-2 text-xs text-slate-300">{guests} {isAr ? 'ضيف' : 'guests'}</div>
               <div className="text-xs text-slate-300">{tableCount} {isAr ? 'طاولة تقريباً' : 'tables approx.'}</div>
-              <div className="text-xs text-slate-300">{locationKind === 'client' ? (isAr ? 'موقع العميل' : 'Client location') : (isAr ? 'قاعة السرايا' : 'Saraya venue')}</div>
+              <div className="text-xs text-slate-300">{locationKind === 'client' ? (isAr ? 'موقع العميل' : 'Client location') : (isAr ? 'قاعة السرايا' : 'ELSARAYA venue')}</div>
             </div>
           </aside>
         </div>
