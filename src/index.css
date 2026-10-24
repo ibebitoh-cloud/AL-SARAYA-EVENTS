@@ -890,15 +890,3 @@ html[data-theme="light"] textarea::placeholder {
   .invoice-print-root { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: #fff !important; backdrop-filter: none; }
 }
 
-/* Home hero word: metallic gold letters with a brown 3D edge and a slow shine. */
-.hero-gold-foil {
-  background: linear-gradient(100deg, #8C6A2E 0%, #E9CF94 22%, #FFF6DC 30%, #C49A52 45%, #8C6A2E 62%, #E9CF94 80%, #C49A52 100%) 0 0 / 300% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  filter: drop-shadow(0 1px 0 #5a3d14) drop-shadow(0 2px 0 #4a3010) drop-shadow(0 3px 0 #3b260c) drop-shadow(0 4px 0 #2e1d09) drop-shadow(0 14px 18px rgba(60, 30, 5, 0.4));
-  animation: hero-gold-shine 7s linear infinite;
-}
-@keyframes hero-gold-shine { to { background-position: 300% 0; } }
-@media (prefers-reduced-motion: reduce) { .hero-gold-foil { animation: none; } }
