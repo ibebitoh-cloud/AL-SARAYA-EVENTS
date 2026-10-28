@@ -1,4 +1,5 @@
 # Type-check and build every push and pull request, so a broken change shows up before it reaches main.
+# Installs with bun from bun.lock, the same way Cloudflare Workers Builds does.
 name: CI
 
 on:
@@ -11,10 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run build
