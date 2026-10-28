@@ -27,7 +27,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Readex+Pro:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- The DALI STUDIO "D" loader. These styles are here, not in index.css, so the same spinning D
          shows while the app downloads; src/components/DaliLoader.tsx uses them after that. -->
-    <script>try{document.documentElement.dataset.theme=localStorage.getItem('saraya-theme')==='light'?'light':'dark'}catch(e){}</script>
+    <!-- The site always opens in the dark (black) theme; the light toggle only lasts for the current visit. -->
+    <script>document.documentElement.dataset.theme='dark';document.documentElement.style.colorScheme='dark';try{localStorage.removeItem('saraya-theme')}catch(e){}</script>
     <style>
       .dali-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 12px;font-family:'Readex Pro','Cairo',sans-serif;--dl-size:56px}
       .dali-loader[data-size='sm']{--dl-size:36px;gap:10px;padding:12px}
