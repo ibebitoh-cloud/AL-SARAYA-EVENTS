@@ -111,10 +111,8 @@ function ViewOnly({ language, children }: { language: Language; children: React.
 
 export default function App() {
   const [language, setLanguage] = useState<Language>('ar');
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    return (window.localStorage.getItem('saraya-theme') as 'dark' | 'light') || 'dark';
-  });
+  // Every visit starts dark; the light toggle is not saved, so the next open is dark again.
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [currentTab, setCurrentTab] = useState<VenueTab>(() => {
     if (typeof window === 'undefined') return 'home';
     const id = window.localStorage.getItem('saraya-portal-user-id') || 'guest';
@@ -128,7 +126,7 @@ export default function App() {
   const [portalWelcome, setPortalWelcome] = useState<SystemUser | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const footerRef = useRef<HTMLElement | null>(null);
-  useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; window.localStorage.setItem('saraya-theme', theme); }, [theme]);
+  useEffect(() => { document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; }, [theme]);
   useEffect(() => { document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = language; }, [language]);
   const toggleLanguage = () => setLanguage((prev) => (prev === 'ar' ? 'en' : 'ar'));
   useEffect(() => {
