@@ -32,7 +32,7 @@ export function CompanyProfileView({ language, halls, bookings, services, client
   const [draftCompany, setDraftCompany] = useState(companyProfile);
   const [draftHall, setDraftHall] = useState<Hall | null>(null);
   const [editing3DHall, setEditing3DHall] = useState<Hall | null>(null);
-  const stats = [
+  const stats: Array<[React.ComponentType<{ className?: string }>, string, number]> = [
     [Building2, ar ? 'القاعات' : 'Halls', halls.length], [CalendarDays, ar ? 'الحجوزات' : 'Bookings', bookings.length],
     [Users, ar ? 'العملاء' : 'Clients', clients.length], [BriefcaseBusiness, ar ? 'الخدمات' : 'Services', services.length],
     [Users, ar ? 'الموظفون' : 'Staff', staff.length], [Package, ar ? 'المخزون' : 'Inventory', inventory.length],

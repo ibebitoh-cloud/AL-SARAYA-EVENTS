@@ -319,3 +319,23 @@ export interface ClientProfile {
   heldSecurityDeposit: number; // التأمينات المحتجزة
   notes?: string;
 }
+
+export interface CoupleTestimonial {
+  id: string;
+  coupleNamesAr: string;
+  coupleNamesEn: string;
+  hallId: string;
+  hallNameAr: string;
+  hallNameEn: string;
+  eventDate: string;
+  eventType: 'wedding' | 'engagement' | 'party';
+  quoteAr: string;
+  quoteEn: string;
+  highlightAr: string;
+  highlightEn: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  duration: string;
+  rating: number;
+  guestsCount?: number;
+}
