@@ -97,6 +97,8 @@ export type BeamWordmarkFooterProps = {
   wordmark?: string
   /** A logo image to show in place of the giant wordmark (for example a transparent white PNG). */
   logoSrc?: string
+  /** Alt text for the logo image. Defaults to the wordmark. */
+  logoAlt?: string
   /** Copyright holder; defaults to `brand`. */
   company?: string
   year?: number
@@ -286,6 +288,7 @@ const Arrow = () => (
 export default function BeamWordmarkFooter({
   brand = "ELSARAYA EVENTS",
   logoSrc,
+  logoAlt,
   bottom,
   wordmark,
   company,
@@ -307,6 +310,9 @@ export default function BeamWordmarkFooter({
   className = "",
 }: BeamWordmarkFooterProps) {
   const word = (wordmark ?? brand).trim() || brand
+  // A logo that fails to load is hidden rather than shown as a broken-image box.
+  const [logoFailed, setLogoFailed] = React.useState(false)
+  React.useEffect(() => setLogoFailed(false), [logoSrc])
   const letters = React.useMemo(() => Array.from(word), [word])
 
   const rootRef = React.useRef<HTMLElement>(null)
@@ -583,9 +589,11 @@ export default function BeamWordmarkFooter({
       </div>
 
       {logoSrc ? (
+        logoFailed ? null : (
         <div className="bwf-word bwf-logo">
-          <img src={logoSrc} alt={word} className="bwf-logo-img" />
+          <img src={logoSrc} alt={logoAlt ?? word} className="bwf-logo-img" onError={() => setLogoFailed(true)} />
         </div>
+        )
       ) : (
       <div
         ref={wordRef}
