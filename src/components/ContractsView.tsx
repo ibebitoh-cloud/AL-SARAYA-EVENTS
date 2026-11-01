@@ -29,7 +29,7 @@ type Status = ContractAgreement['status'];
 const INITIAL_CONTRACTS: ContractAgreement[] = [
   {
     id: 'cnt-1', contractNumber: 'CTR-2026-101', bookingCode: 'BK-2026-101', clientName: 'أحمد محمود السعيد', clientPhone: '01023456789',
-    clientNationalId: '29304151201934', hallName: 'قاعة آركين', date: '2026-11-16', timeSlot: '18:00 – 23:30',
+    clientNationalId: '29304151201934', hallName: 'قاعة اركان', date: '2026-11-16', timeSlot: '18:00 – 23:30',
     totalAmount: 130000, depositAmount: 30000, securityDeposit: 5000, status: 'signed', signedDate: '2026-09-01', termsApproved: true,
   },
 ];

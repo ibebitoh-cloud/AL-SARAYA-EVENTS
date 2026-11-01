@@ -60,7 +60,7 @@ export const hallFields: FieldDef[] = [
   { key: 'capacity', ar: 'السعة', en: 'Capacity', type: 'number', min: 1 },
   { key: 'areaSqMeters', ar: 'المساحة م²', en: 'Area m²', type: 'number', min: 0 },
   { key: 'basePrice', ar: 'السعر الأساسي (ج.م)', en: 'Base price (EGP)', type: 'number', min: 0 },
-  { key: 'locationId', ar: 'الموقع', en: 'Location', type: 'select', options: [opt('arcane', 'فندق آركين', 'Arcane Hotel'), opt('porto', 'بورتو سعيد', 'Porto Said')] },
+  { key: 'locationId', ar: 'الموقع', en: 'Location', type: 'select', options: [opt('arcane', 'فندق اركان', 'Arcane Hotel'), opt('porto', 'بورتو سعيد', 'Porto Said')] },
   { key: 'cityAr', ar: 'المدينة (عربي)', en: 'City (Arabic)' },
   { key: 'city', ar: 'المدينة (إنجليزي)', en: 'City (English)' },
   { key: 'description', ar: 'الوصف (عربي)', en: 'Description (Arabic)', type: 'textarea' },

@@ -15,7 +15,7 @@ const SERVICES: Record<string, [string, number, number]> = {
 };
 
 const HALLS: Record<string, [string, 'arcane' | 'porto']> = {
-  'arcane-hall': ['قاعة آركين', 'arcane'],
+  'arcane-hall': ['قاعة اركان', 'arcane'],
   'arcane-pool': ['حمام السباحة', 'arcane'],
   'porto-veina': ['قاعة فيينا', 'porto'],
   'porto-roof': ['الروف', 'porto'],

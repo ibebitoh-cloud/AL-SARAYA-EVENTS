@@ -1,7 +1,7 @@
 import type { Hall, LocationId } from '../types/venueSystem';
 
 export const LOCATIONS: { id: LocationId; nameAr: string; nameEn: string }[] = [
-  { id: 'arcane', nameAr: 'فندق آركين', nameEn: 'Arcane Hotel' },
+  { id: 'arcane', nameAr: 'فندق اركان', nameEn: 'Arcane Hotel' },
   { id: 'porto', nameAr: 'بورتو سعيد', nameEn: 'Porto Said' },
 ];
 

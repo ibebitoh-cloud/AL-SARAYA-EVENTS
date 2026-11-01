@@ -85,6 +85,16 @@ const uniqueEventPhotos = (items: VenuePhoto[]) => {
 };
 
 // De-duplicate at the application boundary so every screen receives the same clean booking list.
+// The venue is "اركان", never "آركين": fix the old spelling in data saved before the rename.
+if (typeof window !== 'undefined') {
+  for (const key of ['saraya-halls-v2', 'saraya-bookings-v3', 'saraya-contracts-v1', 'saraya-company-profile', 'saraya-clients-v1', 'saraya-prepared-operations-v1', 'saraya-payments-v2', 'saraya-expenses-v2', 'saraya-site-content-v1']) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw && raw.includes('آركين')) window.localStorage.setItem(key, raw.split('آركين').join('اركان'));
+    } catch {}
+  }
+}
+
 const dedupeBookings = (items: Booking[]) => {
   const seenIds = new Set<string>();
   const seenCodes = new Set<string>();
@@ -264,7 +274,7 @@ export default function App() {
   const [siteContent, setSiteContent] = usePersistentState<SiteContent>('saraya-site-content-v1', DEFAULT_SITE_CONTENT, (saved) => Boolean(saved && typeof saved === 'object' && 'texts' in saved));
   const [editPermissions, setEditPermissions] = usePersistentState<EditPermissions>('saraya-edit-permissions-v1', DEFAULT_EDIT_PERMISSIONS, (saved) => Boolean(saved && typeof saved === 'object'));
   const [companyProfile, setCompanyProfile] = useState(() => {
-    const defaults = { nameEn: 'ELSARAYA EVENTS', nameAr: 'السرايا للمناسبات', taglineEn: 'Luxury Weddings & Venues', taglineAr: 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر', businessEn: 'Wedding halls, events & event management', businessAr: 'قاعات أفراح ومناسبات وإدارة فعاليات', locationsEn: 'Arcane Hotel · Porto Said', locationsAr: 'فندق آركين · بورتو سعيد', phone: '+20 2 2795 0000', whatsapp: '+20 100 123 4567', email: '', instagramUrl: '', tiktokUrl: '', facebookUrl: '', logo: 'black' as 'black' | 'white' };
+    const defaults = { nameEn: 'ELSARAYA EVENTS', nameAr: 'السرايا للمناسبات', taglineEn: 'Luxury Weddings & Venues', taglineAr: 'السرايا للمناسبات وقاعات الأفراح الملكية في مصر', businessEn: 'Wedding halls, events & event management', businessAr: 'قاعات أفراح ومناسبات وإدارة فعاليات', locationsEn: 'Arcane Hotel · Porto Said', locationsAr: 'فندق اركان · بورتو سعيد', phone: '+20 2 2795 0000', whatsapp: '+20 100 123 4567', email: '', instagramUrl: '', tiktokUrl: '', facebookUrl: '', logo: 'black' as 'black' | 'white' };
     if (typeof window === 'undefined') return defaults;
     try {
       const saved = { ...defaults, ...(JSON.parse(window.localStorage.getItem('saraya-company-profile') || '') || {}) };

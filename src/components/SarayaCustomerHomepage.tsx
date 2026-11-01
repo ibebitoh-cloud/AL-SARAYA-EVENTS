@@ -101,11 +101,11 @@ const HERO_HALL_SLIDES = [
   {
     id: 'arcane-hall',
     image: ballroomImg,
-    titleAr: 'قاعة آركين الكبرى',
+    titleAr: 'قاعة اركان الكبرى',
     titleEn: 'Arcane Grand Ballroom',
     subtitleAr: 'ثريات كريستال عملاقة وممر عروسين ملكي محاط بالزهور البيضاء',
     subtitleEn: 'Grand crystal chandeliers & a white marble aisle flanked with fresh florals',
-    capacity: '400 ضيف · فندق آركين',
+    capacity: '400 ضيف · فندق اركان',
     capacityEn: '400 Guests · Arcane Hotel',
     featureAr: 'عزل صوتي فندقي 65dB',
     featureEn: '65dB Acoustic Isolation',
@@ -446,7 +446,7 @@ export function SarayaCustomerHomepage({
           kicker: isAr ? 'القاعات والمساحات' : 'Palatial Venues',
           title: isAr ? 'ست قاعات فندقية فاخرة في موقعين متميزين' : 'Six Prestigious Venues Across Two Iconic Destinations',
           text: isAr
-            ? 'فندق آركين وبورتو سعيد — قاعات مغلقة مجهزة بالكامل ومساحات مفتوحة ساحرة على البحر والحدائق.'
+            ? 'فندق اركان وبورتو سعيد — قاعات مغلقة مجهزة بالكامل ومساحات مفتوحة ساحرة على البحر والحدائق.'
             : 'Arcane Hotel & Porto Said — fully fitted royal ballrooms and breathtaking open-air seafront terraces.',
           link: onNavigate ? { id: 'venues', label: isAr ? 'استعراض كافة القاعات' : 'Explore all venues' } : undefined,
         })}

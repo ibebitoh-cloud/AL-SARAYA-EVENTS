@@ -11,7 +11,7 @@ export const INITIAL_COUPLE_TESTIMONIALS: CoupleTestimonial[] = [
     coupleNamesAr: 'أحمد & ياسمين',
     coupleNamesEn: 'Ahmed & Yasmin',
     hallId: 'arcane-hall',
-    hallNameAr: 'قاعة آركين الكبرى · فندق آركين',
+    hallNameAr: 'قاعة اركان الكبرى · فندق اركان',
     hallNameEn: 'Arcane Grand Ballroom · Arcane Hotel',
     eventDate: 'سبتمبر 2025',
     eventType: 'wedding',
