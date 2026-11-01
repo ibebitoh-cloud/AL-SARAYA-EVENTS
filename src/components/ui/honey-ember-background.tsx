@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-// An opulent, cinematic ambient background for SARAYA EVENT.
+// An opulent, cinematic ambient background for ELSARAYA EVENTS.
 // Supports both Dark Mode (Imperial Midnight Obsidian & Gold Embers)
 // and Light Mode (Royal Alabaster & Warm Champagne Pearl).
 // Motion stops for visitors who prefer reduced motion.
