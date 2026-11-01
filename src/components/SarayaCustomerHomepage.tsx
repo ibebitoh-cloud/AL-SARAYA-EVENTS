@@ -315,7 +315,7 @@ export function SarayaCustomerHomepage({
           {t('hero.title1')} <span className="text-amber-400">{t('hero.title2')}</span>
         </motion.p>
         <motion.div {...fadeIn(1.7)} className="mt-9 sm:mt-12">
-          <button type="button" data-hero-book onClick={() => onOpenBookingModal()} className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-9 py-4 text-base font-bold text-slate-950 shadow-[0_14px_30px_-12px_rgba(245,158,11,0.6)] transition hover:-translate-y-0.5">
+          <button type="button" data-page-book onClick={() => onOpenBookingModal()} className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-9 py-4 text-base font-bold text-slate-950 shadow-[0_14px_30px_-12px_rgba(245,158,11,0.6)] transition hover:-translate-y-0.5">
             <Calendar className="h-5 w-5" />{t('hero.button')}
           </button>
         </motion.div>
@@ -715,6 +715,7 @@ export function SarayaCustomerHomepage({
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <button
               type="button"
+              data-page-book
               onClick={() => onOpenBookingModal()}
               className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-9 py-4 text-base font-bold text-slate-950 shadow-[0_12px_28px_-8px_rgba(245,158,11,0.6)] transition-all hover:scale-[1.02] hover:brightness-110 active:scale-95"
             >
