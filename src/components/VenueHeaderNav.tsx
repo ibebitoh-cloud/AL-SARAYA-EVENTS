@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import {
   LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
   ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, Settings2,
-  CalendarDays, Sparkles, Tags, Globe2, ShieldCheck, PanelLeftClose, PanelLeftOpen, LayoutGrid, X, ChevronRight, Home, Sun, Moon, Maximize2, Minimize2, LogOut, Compass,
+  CalendarDays, Sparkles, Tags, Globe2, ShieldCheck, X, ChevronLeft, ChevronRight, Home, Sun, Moon, Maximize2, Minimize2, LogOut, Compass,
 } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
@@ -140,23 +140,19 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
   const iconBtn = `flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition ${dark ? 'text-[#F4F1EA]/70 hover:bg-white/5 hover:text-[#E9CF94]' : 'text-slate-600 hover:bg-[#C49A52]/10 hover:text-[#8C6A2E]'}`;
   const goldActive = 'bg-[linear-gradient(135deg,#E9CF94,#C49A52_55%,#8C6A2E)] text-[#0D0D0F] shadow-sm shadow-[#8C6A2E]/30';
 
-  const modeLabels: Record<PortalNavMode, string> = {
-    full: isAr ? 'القائمة الكاملة' : 'Full menu',
-    compact: isAr ? 'قائمة مختصرة' : 'Compact menu',
-    rail: isAr ? 'أيقونات فقط' : 'Icons only',
+  // Size steps from widest to slimmest. The arrows move one step at a time, like most apps.
+  const ORDER: PortalNavMode[] = ['full', 'compact', 'rail'];
+  /** Two arrows on one line: shrink (points to the screen edge the menu sits on) and expand. */
+  const renderSizeArrows = (shown: PortalNavMode, tight: boolean) => {
+    const i = ORDER.indexOf(shown);
+    const btn = `flex h-7 items-center justify-center rounded-md transition disabled:cursor-default disabled:opacity-30 ${tight ? 'w-[22px]' : 'w-8'} ${dark ? 'text-[#F4F1EA]/70 enabled:hover:bg-white/5 enabled:hover:text-[#E9CF94]' : 'text-slate-600 enabled:hover:bg-[#C49A52]/10 enabled:hover:text-[#8C6A2E]'}`;
+    const shrink = isAr ? 'تصغير القائمة' : 'Collapse menu';
+    const grow = isAr ? 'توسيع القائمة' : 'Expand menu';
+    return <div className={`flex items-center gap-0.5 rounded-lg border p-0.5 ${divider}`}>
+      <button type="button" onClick={() => setMode(ORDER[i + 1])} disabled={i >= ORDER.length - 1} title={shrink} aria-label={shrink} className={btn}><ChevronLeft className="h-4 w-4 rtl:-scale-x-100" /></button>
+      <button type="button" onClick={() => setMode(ORDER[i - 1])} disabled={i <= 0} title={grow} aria-label={grow} className={btn}><ChevronRight className="h-4 w-4 rtl:-scale-x-100" /></button>
+    </div>;
   };
-  const modeIcons = { full: PanelLeftOpen, compact: LayoutGrid, rail: PanelLeftClose };
-  /** The three-size switch. `shown` is the size currently on screen. */
-  const renderModeSwitch = (shown: PortalNavMode, vertical: boolean) => <div role="radiogroup" aria-label={isAr ? 'حجم القائمة' : 'Menu size'} className={`flex gap-0.5 rounded-lg border p-0.5 ${divider} ${vertical ? 'flex-col' : ''}`}>
-    {(['full', 'compact', 'rail'] as const).map((mode) => {
-      const Icon = modeIcons[mode];
-      const on = shown === mode;
-      return <button key={mode} type="button" role="radio" aria-checked={on} onClick={() => setMode(mode)} title={modeLabels[mode]} aria-label={modeLabels[mode]}
-        className={`flex h-7 w-7 items-center justify-center rounded-md transition ${on ? goldActive : (dark ? 'text-[#F4F1EA]/60 hover:text-[#E9CF94]' : 'text-slate-500 hover:text-[#8C6A2E]')}`}>
-        <Icon className="h-3.5 w-3.5 rtl:-scale-x-100" />
-      </button>;
-    })}
-  </div>;
 
   const accountActions = <div className="grid grid-cols-2 gap-2">
     <button type="button" onClick={() => { setPhoneFullOpen(false); setProfileOpen(false); onGoToWebsite(); }} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11px] font-bold ${ghostBtn}`}><Home className="h-4 w-4" />{isAr ? 'الموقع' : 'Website'}</button>
@@ -195,7 +191,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
           {onPhone && <button type="button" onClick={() => setPhoneFullOpen(false)} aria-label={isAr ? 'إغلاق القائمة' : 'Close navigation'} className={iconBtn}><X className="h-4 w-4" /></button>}
         </div>
       </div>
-      <div className="mb-2 flex items-center justify-between gap-2"><span className={`text-[10px] font-bold ${muted}`}>{isAr ? 'حجم القائمة' : 'Menu size'}</span>{renderModeSwitch('full', false)}</div>
+      <div className="mb-2 flex items-center justify-between gap-2"><span className={`text-[10px] font-bold ${muted}`}>{isAr ? 'حجم القائمة' : 'Menu size'}</span>{renderSizeArrows('full', false)}</div>
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={onToggleTheme} title={themeLabel} className={`flex h-9 items-center justify-center gap-2 rounded-lg border text-[10px] font-bold ${ghostBtn}`}>{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span>{themeLabel}</span></button>
         <button type="button" onClick={toggleFullscreen} title={fullLabel} aria-pressed={isFullscreen} className={`flex h-9 items-center justify-center gap-2 rounded-lg border text-[10px] font-bold ${ghostBtn}`}>{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}<span>{isFullscreen ? (isAr ? 'تصغير' : 'Exit full') : (isAr ? 'ملء الشاشة' : 'Full screen')}</span></button>
@@ -215,10 +211,10 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
 
   /** The small menu (compact or icons only), always pinned. */
   const renderSmall = (mode: 'compact' | 'rail') => <>
-    <div className={`flex flex-col items-center gap-2 border-b px-1.5 py-3 ${divider}`}>
+    <div className={`flex flex-col items-center gap-2 border-b px-1 py-3 ${divider}`}>
       <BrandLogo variant="mark" className="h-6 w-auto" />
       {isDesktop && notificationBell}
-      {renderModeSwitch(mode, true)}
+      {renderSizeArrows(mode, true)}
     </div>
     <nav className={`flex-1 overflow-y-auto overscroll-contain px-1.5 py-2 ${mode === 'compact' ? 'space-y-2' : 'space-y-3'}`} aria-label={isAr ? 'التنقل بين شاشات الإدارة' : 'Admin navigation'}>
       {groupedItems.map((group, i) => <section key={group.title} aria-label={group.title} className={`space-y-1 ${i ? `border-t pt-2 ${divider}` : ''}`}>{group.items.map((item) => renderNavItem(item, mode))}</section>)}
