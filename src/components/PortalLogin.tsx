@@ -7,13 +7,11 @@ interface Props {
   language: Language;
   onLogin: (user: SystemUser) => void;
   onBack: () => void;
+  /** Accounts with the CEO's current price-visibility choices applied. */
+  users?: SystemUser[];
 }
 
-const ROLE_EN: Record<SystemUser['role'], string> = {
-  ceo: 'Full access', finance: 'Finance & accounts', operation: 'Operations management', operation_agent: 'Operations · selling prices only', customer: 'Customer view',
-};
-
-export function PortalLogin({ language, onLogin, onBack }: Props) {
+export function PortalLogin({ language, onLogin, onBack, users = SYSTEM_USERS }: Props) {
   const ar = language === 'ar';
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-10">
@@ -27,14 +25,14 @@ export function PortalLogin({ language, onLogin, onBack }: Props) {
           <p className="mt-2 text-xs text-slate-500">{ar ? 'نسخة العرض التجريبي — الدخول بدون كلمة مرور' : 'Demo version — no password needed'}</p>
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
-          {SYSTEM_USERS.map((user) => (
+          {users.map((user) => (
             <button key={user.id} type="button" onClick={() => onLogin(user)} className="group text-left rtl:text-right rounded-2xl border border-slate-800 bg-slate-900/70 hover:border-amber-400/40 hover:bg-slate-900 p-5 transition-all">
               <div className="flex items-center justify-between gap-3">
                 <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center"><UserRound className="w-5 h-5 text-amber-400" /></div>
                 <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-amber-400 transition-colors rtl:rotate-180" />
               </div>
               <div className="mt-4 text-base font-black text-white">{ar ? user.nameAr : user.name}</div>
-              <div className="mt-1 text-[11px] text-slate-500">{ar ? user.roleAr : ROLE_EN[user.role]}</div>
+              <div className="mt-1 text-[11px] text-slate-500">{ar ? user.roleAr : user.roleEn}</div>
             </button>
           ))}
         </div>

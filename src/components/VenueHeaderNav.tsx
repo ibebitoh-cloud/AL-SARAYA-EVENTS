@@ -144,7 +144,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     { title: isAr ? 'الإعدادات' : 'Setup', ids: ['price_lists', 'company', 'site_content', 'permissions'] },
   ].map((group) => ({ ...group, items: navItems.filter((item) => group.ids.includes(item.id)) })).filter((group) => group.items.length);
   const displayName = (isAr ? user.nameAr : user.name) || user.username;
-  const displayRole = (isAr ? user.roleAr : user.role) || (isAr ? 'مستخدم النظام' : 'System user');
+  const displayRole = (isAr ? user.roleAr : user.roleEn) || (isAr ? 'مستخدم النظام' : 'System user');
   const goTo = (tab: VenueTab) => {
     sound.swoosh();
     onTabChange(tab);
