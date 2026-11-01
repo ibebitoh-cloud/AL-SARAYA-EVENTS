@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
   ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, Settings2,
@@ -28,52 +28,73 @@ interface VenueHeaderNavProps {
 type NavItem = { id: VenueTab; label: string; icon: typeof LayoutDashboard };
 
 /**
- * The side menu has three sizes. It is pinned to the start side: right in Arabic, left in English.
- * - full: logo, group titles and full labels.
- * - compact: icon with a short label under it.
- * - rail: icons only (labels show as tooltips).
- * On phones, full opens over the page and closes back to the last small size.
+ * The side menu is pinned to the start side: right in Arabic, left in English. It is either
+ * full (logo, group titles, labels) or small. Small is icons with short labels on tablets and
+ * icons only on phones and wide desktops. A round arrow on the menu's edge switches between the
+ * two. On desktop, resting the mouse on the small menu opens the full one over the page (peek).
+ * On phones, full always opens over the page.
  */
 export type PortalNavMode = 'full' | 'compact' | 'rail';
 const NAV_MODE_KEY = 'saraya-portal-nav-mode';
 const WIDTHS = { desktop: { full: 256, compact: 96, rail: 64 }, phone: { compact: 76, rail: 56 } } as const;
-const readMode = (): PortalNavMode => {
-  try { const v = window.localStorage.getItem(NAV_MODE_KEY); return v === 'compact' || v === 'rail' || v === 'full' ? v : 'full'; } catch { return 'full'; }
+const readOpen = (): boolean => {
+  try { const v = window.localStorage.getItem(NAV_MODE_KEY); return !v || v === 'full'; } catch { return true; }
 };
-const useIsDesktop = () => {
-  const query = '(min-width: 1024px)';
+const useMedia = (query: string) => {
   const [match, setMatch] = useState(() => window.matchMedia(query).matches);
   useEffect(() => {
     const mq = window.matchMedia(query);
     const sync = () => setMatch(mq.matches);
+    sync();
     mq.addEventListener('change', sync);
     return () => mq.removeEventListener('change', sync);
-  }, []);
+  }, [query]);
   return match;
 };
 
 export function VenueHeaderNav({ currentTab, language, user, onTabChange, onToggleLanguage, onOpenTour, theme, onToggleTheme, onGoToWebsite, onLogout, notificationBell }: VenueHeaderNavProps) {
   const isAr = language === 'ar';
   const dark = theme === 'dark';
-  const isDesktop = useIsDesktop();
-  const [savedMode, setSavedMode] = useState<PortalNavMode>(readMode);
-  // The last small size, so a phone can close the full menu back to it.
-  const [lastSmall, setLastSmall] = useState<'compact' | 'rail'>(() => (readMode() === 'compact' ? 'compact' : 'rail'));
+  const isDesktop = useMedia('(min-width: 1024px)');
+  const isTablet = useMedia('(min-width: 640px) and (max-width: 1279px)');
+  const canHover = useMedia('(hover: hover) and (pointer: fine)');
+  // Full or small, remembered between visits (desktop only; phones always start small).
+  const [open, setOpen] = useState<boolean>(readOpen);
   const [phoneFullOpen, setPhoneFullOpen] = useState(false);
+  const [peek, setPeek] = useState(false);
+  const peekTimer = useRef<number | undefined>(undefined);
+  // After the edge arrow collapses the menu, wait for the mouse to leave before peeking again.
+  const peekBlocked = useRef(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
   // What is drawn as the pinned bar. Phones never pin the full menu: it opens over the page instead.
-  const pinnedMode: PortalNavMode = isDesktop ? savedMode : (savedMode === 'full' ? lastSmall : savedMode);
-  const pinnedWidth = isDesktop ? WIDTHS.desktop[pinnedMode] : WIDTHS.phone[pinnedMode === 'compact' ? 'compact' : 'rail'];
-  const setMode = (mode: PortalNavMode) => {
+  const smallMode: 'compact' | 'rail' = isTablet ? 'compact' : 'rail';
+  const pinnedMode: PortalNavMode = isDesktop && open ? 'full' : smallMode;
+  const pinnedWidth = isDesktop ? WIDTHS.desktop[pinnedMode] : WIDTHS.phone[smallMode];
+  const peeking = peek && isDesktop && canHover && pinnedMode !== 'full';
+  const shownMode: PortalNavMode = peeking ? 'full' : pinnedMode;
+  const toggleOpen = () => {
     sound.click(600);
     setProfileOpen(false);
-    if (mode !== 'full') setLastSmall(mode);
-    if (!isDesktop && mode === 'full') { setPhoneFullOpen(true); return; }
-    setPhoneFullOpen(false);
-    setSavedMode(mode);
-    try { window.localStorage.setItem(NAV_MODE_KEY, mode); } catch { /* storage may be blocked */ }
+    window.clearTimeout(peekTimer.current);
+    setPeek(false);
+    if (!isDesktop) { setPhoneFullOpen((v) => !v); return; }
+    const next = !open;
+    if (!next) peekBlocked.current = true;
+    setOpen(next);
+    try { window.localStorage.setItem(NAV_MODE_KEY, next ? 'full' : 'small'); } catch { /* storage may be blocked */ }
   };
+  const onPeekEnter = () => {
+    if (!isDesktop || !canHover || pinnedMode === 'full' || peekBlocked.current) return;
+    window.clearTimeout(peekTimer.current);
+    peekTimer.current = window.setTimeout(() => setPeek(true), 180);
+  };
+  const onPeekLeave = () => {
+    peekBlocked.current = false;
+    window.clearTimeout(peekTimer.current);
+    peekTimer.current = window.setTimeout(() => setPeek(false), 220);
+  };
+  useEffect(() => () => window.clearTimeout(peekTimer.current), []);
   // The page content reads this width to sit beside the menu.
   useEffect(() => {
     document.documentElement.style.setProperty('--portal-nav-w', `${pinnedWidth}px`);
@@ -129,6 +150,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     onTabChange(tab);
     setPhoneFullOpen(false);
     setProfileOpen(false);
+    setPeek(false);
   };
   const currentLabel = allNavItems.find((item) => item.id === currentTab)?.label || (isAr ? 'شاشات الإدارة' : 'Management');
 
@@ -140,18 +162,14 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
   const iconBtn = `flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition ${dark ? 'text-[#F4F1EA]/70 hover:bg-white/5 hover:text-[#E9CF94]' : 'text-slate-600 hover:bg-[#C49A52]/10 hover:text-[#8C6A2E]'}`;
   const goldActive = 'bg-[linear-gradient(135deg,#E9CF94,#C49A52_55%,#8C6A2E)] text-[#0D0D0F] shadow-sm shadow-[#8C6A2E]/30';
 
-  // Size steps from widest to slimmest. The arrows move one step at a time, like most apps.
-  const ORDER: PortalNavMode[] = ['full', 'compact', 'rail'];
-  /** Two arrows on one line: shrink (points to the screen edge the menu sits on) and expand. */
-  const renderSizeArrows = (shown: PortalNavMode, tight: boolean) => {
-    const i = ORDER.indexOf(shown);
-    const btn = `flex h-7 items-center justify-center rounded-md transition disabled:cursor-default disabled:opacity-30 ${tight ? 'w-[22px]' : 'w-8'} ${dark ? 'text-[#F4F1EA]/70 enabled:hover:bg-white/5 enabled:hover:text-[#E9CF94]' : 'text-slate-600 enabled:hover:bg-[#C49A52]/10 enabled:hover:text-[#8C6A2E]'}`;
-    const shrink = isAr ? 'تصغير القائمة' : 'Collapse menu';
-    const grow = isAr ? 'توسيع القائمة' : 'Expand menu';
-    return <div className={`flex items-center gap-0.5 rounded-lg border p-0.5 ${divider}`}>
-      <button type="button" onClick={() => setMode(ORDER[i + 1])} disabled={i >= ORDER.length - 1} title={shrink} aria-label={shrink} className={btn}><ChevronLeft className="h-4 w-4 rtl:-scale-x-100" /></button>
-      <button type="button" onClick={() => setMode(ORDER[i - 1])} disabled={i <= 0} title={grow} aria-label={grow} className={btn}><ChevronRight className="h-4 w-4 rtl:-scale-x-100" /></button>
-    </div>;
+  /** The round arrow on the menu's edge. It points to the screen edge when it will collapse the menu. */
+  const renderEdgeToggle = (isOpen: boolean) => {
+    const label = isOpen ? (isAr ? 'تصغير القائمة' : 'Collapse menu') : (isAr ? 'توسيع القائمة' : 'Expand menu');
+    const Icon = isOpen ? ChevronLeft : ChevronRight;
+    return <button type="button" onClick={toggleOpen} title={label} aria-label={label} aria-expanded={isOpen}
+      className={`absolute -end-3.5 top-[76px] z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-md transition hover:scale-110 ${dark ? 'border-[#C49A52]/40 bg-[#0D0D0F] text-[#E9CF94] shadow-black/40' : 'border-[#C49A52]/50 bg-white text-[#8C6A2E] shadow-[#8C6A2E]/20'}`}>
+      <Icon className="h-4 w-4 rtl:-scale-x-100" />
+    </button>;
   };
 
   const accountActions = <div className="grid grid-cols-2 gap-2">
@@ -191,7 +209,6 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
           {onPhone && <button type="button" onClick={() => setPhoneFullOpen(false)} aria-label={isAr ? 'إغلاق القائمة' : 'Close navigation'} className={iconBtn}><X className="h-4 w-4" /></button>}
         </div>
       </div>
-      <div className="mb-2 flex items-center justify-between gap-2"><span className={`text-[10px] font-bold ${muted}`}>{isAr ? 'حجم القائمة' : 'Menu size'}</span>{renderSizeArrows('full', false)}</div>
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={onToggleTheme} title={themeLabel} className={`flex h-9 items-center justify-center gap-2 rounded-lg border text-[10px] font-bold ${ghostBtn}`}>{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span>{themeLabel}</span></button>
         <button type="button" onClick={toggleFullscreen} title={fullLabel} aria-pressed={isFullscreen} className={`flex h-9 items-center justify-center gap-2 rounded-lg border text-[10px] font-bold ${ghostBtn}`}>{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}<span>{isFullscreen ? (isAr ? 'تصغير' : 'Exit full') : (isAr ? 'ملء الشاشة' : 'Full screen')}</span></button>
@@ -214,7 +231,6 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     <div className={`flex flex-col items-center gap-2 border-b px-1 py-3 ${divider}`}>
       <BrandLogo variant="mark" className="h-6 w-auto" />
       {isDesktop && notificationBell}
-      {renderSizeArrows(mode, true)}
     </div>
     <nav className={`flex-1 overflow-y-auto overscroll-contain px-1.5 py-2 ${mode === 'compact' ? 'space-y-2' : 'space-y-3'}`} aria-label={isAr ? 'التنقل بين شاشات الإدارة' : 'Admin navigation'}>
       {groupedItems.map((group, i) => <section key={group.title} aria-label={group.title} className={`space-y-1 ${i ? `border-t pt-2 ${divider}` : ''}`}>{group.items.map((item) => renderNavItem(item, mode))}</section>)}
@@ -229,9 +245,11 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
 
   return <>
     {/* Pinned to the logical start: right in Arabic, left in English, on every screen size. */}
-    <aside dir={isAr ? 'rtl' : 'ltr'} data-nav-mode={pinnedMode} style={{ width: pinnedWidth }}
-      className={`fixed start-0 top-0 z-[60] flex h-dvh flex-col border-e shadow-xl shadow-black/10 backdrop-blur-xl transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${surface}`}>
-      {pinnedMode === 'full' ? renderFull(false) : renderSmall(pinnedMode)}
+    <aside dir={isAr ? 'rtl' : 'ltr'} data-nav-mode={shownMode} data-peek={peeking || undefined} style={{ width: peeking ? WIDTHS.desktop.full : pinnedWidth }}
+      onMouseEnter={onPeekEnter} onMouseLeave={onPeekLeave}
+      className={`fixed start-0 top-0 flex h-dvh flex-col border-e backdrop-blur-xl transition-[width,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${peeking ? 'z-[66] shadow-2xl shadow-black/30' : 'z-[60] shadow-xl shadow-black/10'} ${surface}`}>
+      {shownMode === 'full' ? renderFull(false) : renderSmall(shownMode)}
+      {renderEdgeToggle(isDesktop ? open : false)}
     </aside>
 
     {/* Phones and tablets: a slim top bar beside the menu with the screen name and the bell. */}
@@ -244,6 +262,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
       <button type="button" data-dali-ignore aria-label={isAr ? 'إغلاق القائمة' : 'Close menu'} onClick={() => setPhoneFullOpen(false)} className="fixed inset-0 z-[64] cursor-default" style={{ background: 'rgba(13,13,15,0.55)' }} />
       <aside dir={isAr ? 'rtl' : 'ltr'} className={`fixed start-0 top-0 z-[65] flex h-dvh w-[min(86vw,320px)] flex-col border-e shadow-2xl ${dark ? 'border-[#C49A52]/20 bg-[#0D0D0F]' : 'border-[#C49A52]/25 bg-white'}`}>
         {renderFull(true)}
+        {renderEdgeToggle(true)}
       </aside>
     </>}
 
