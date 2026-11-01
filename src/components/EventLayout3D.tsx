@@ -293,6 +293,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           [D, 1, 0, W / 2 + 0.1, 0],
         ];
         placements.forEach(([len, nx, nz, x, z]) => {
+          if (!pro) return; // Basic: no walls, just the floor slab.
           const g = makeWall(len + (nx ? 0.4 : 0), nx, nz);
           g.position.set(x, 0, z);
           scene.add(g);
@@ -337,7 +338,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
             rail.position.set(x, 1.12, z); rail.rotation.y = turn ? Math.PI / 2 : 0; edge.add(rail);
           });
         }
-        scene.add(edge);
+        if (pro) scene.add(edge);
         const poleGeo = own(new THREE.CylinderGeometry(0.05, 0.06, 4.6, 8));
         const strands = pro ? Math.max(2, Math.floor(D / 6)) : 0;
         const bulbs: [number, number, number][] = [];
@@ -451,10 +452,9 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         ...[0.62, 0.74, 0.9].map((y) => tr(new THREE.BoxGeometry(0.38, 0.025, 0.02), 0, y, 0.19)),
       ]));
       // Basic tier chair: a seat block and a back slab, nothing else.
-      const basicChairGeo = own(mergeGeometries([
-        tr(new THREE.BoxGeometry(0.42, 0.46, 0.42), 0, 0.23, 0),
-        tr(new THREE.BoxGeometry(0.42, 0.42, 0.06), 0, 0.67, 0.18),
-      ]));
+      // Basic tier: a chair is a plain cube and a table is an 8-sided block.
+      const basicChairGeo = own(tr(new THREE.BoxGeometry(0.4, 0.45, 0.4), 0, 0.225, 0));
+      const basicTableGeo = own(new THREE.CylinderGeometry(1, 1, 1, 8));
       const chairCushionGeo = own(tr(new THREE.BoxGeometry(0.42, 0.05, 0.4), 0, 0.48, 0));
       const plateGeo = own(new THREE.CylinderGeometry(0.14, 0.14, 0.012, 20));
       const glassGeo = own(new THREE.CylinderGeometry(0.035, 0.028, 0.14, 10));
@@ -543,8 +543,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         if (item.type === 'table' && !pro) {
           // Basic: plain top on a single leg, plain chairs, no cloth, no settings.
           footprint = tableFootprint(item);
-          if (item.shape === 'rect') { box(group, w, 0.05, d, M.linen, 0, 0.75, 0, false); box(group, Math.max(0.2, w - 0.4), 0.72, 0.12, M.chair, 0, 0.36, 0, false); }
-          else { mesh(group, unitCyl, M.linen, [0, 0.75, 0], [w / 2, 0.05, w / 2], false); cyl(group, 0.07, 0.72, M.chair, 0, 0.36, 0, false); }
+          if (item.shape === 'rect') box(group, w, 0.75, d, M.linen, 0, 0.375, 0, false);
+          else mesh(group, basicTableGeo, M.linen, [0, 0.375, 0], [w / 2, 0.75, w / 2], false);
           addChairs(group, item);
           labelY = 1.2;
         } else if (item.type === 'table') {
@@ -573,9 +573,6 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         } else if (item.type === 'stage' && !pro) {
           const h = 0.6;
           box(group, w, h, d, M.stage, 0, h / 2, 0, false);
-          const backH = Math.min(3, (ceilingM || 6) - h - 0.4);
-          box(group, w, backH, 0.12, M.backdrop, 0, h + backH / 2, -d / 2 + 0.06, false);
-          labelY = h + backH + 0.5;
         } else if (item.type === 'stage') {
           const h = 0.6;
           box(group, w, h, d, M.stage, 0, h / 2);
@@ -600,9 +597,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           labelY = h + backH + 0.5;
         } else if (item.type === 'screen' && !pro) {
           const sh = Math.min(w * 9 / 16, (ceilingM || 8) - 1.8);
-          box(group, w, sh, 0.12, M.led, 0, 1.4 + sh / 2, 0, false);
-          for (const x of [-w / 2 + 0.3, w / 2 - 0.3]) box(group, 0.08, 1.4, 0.08, M.black, x, 0.7, 0, false);
-          labelY = 1.4 + sh + 0.4;
+          box(group, w, 1.4 + sh, 0.12, M.led, 0, (1.4 + sh) / 2, 0, false);
         } else if (item.type === 'screen') {
           const sh = Math.min(w * 9 / 16, (ceilingM || 8) - 1.8);
           const bottom = 1.4;
@@ -701,12 +696,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
 
         group.userData.footprint = footprint;
         if (!pro) {
-          // Basic: name only, for the main pieces; no table numbers, no sizes.
-          if (['stage', 'dance', 'screen', 'buffet', 'entrance', 'bar'].includes(item.type)) {
-            const label = makeLabel(isAr ? item.labelAr : item.labelEn, 15);
-            label.position.set(0, labelY, 0);
-            group.add(label); labelSprites.push(label);
-          }
+          // Basic: no labels at all.
         } else if (item.type === 'table') {
           const label = makeLabel(String(tableNumbers.get(item.id) || ''), 18, 'badge');
           label.position.set(0, labelY, 0);
