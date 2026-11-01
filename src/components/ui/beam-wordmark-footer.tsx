@@ -295,7 +295,7 @@ export default function BeamWordmarkFooter({
   columns = [],
   dir = "ltr",
   cut = 0.14,
-  background = "#080d17",
+  background = "#0d0d0f",
   ink = "#f4efe4",
   muted = "#94a3b8",
   accent = "#f5b942",

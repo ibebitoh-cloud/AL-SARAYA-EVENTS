@@ -464,7 +464,7 @@ export default function App() {
         ] },
       ]}
     /> :
-    <footer ref={footerRef} className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-[width,margin,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${theme === 'dark' ? 'border-white/10 bg-[#080d17]' : 'border-slate-200 bg-white'} ${isInternalManagementScreen ? `${sidebarVisible ? 'lg:w-[calc(100%-16rem)] lg:ms-64' : 'lg:w-full lg:ms-0'} lg:px-8` : ''}`}>
+    <footer ref={footerRef} className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-[width,margin,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${theme === 'dark' ? 'border-white/10 bg-[#0d0d0f]' : 'border-slate-200 bg-white'} ${isInternalManagementScreen ? `${sidebarVisible ? 'lg:w-[calc(100%-16rem)] lg:ms-64' : 'lg:w-full lg:ms-0'} lg:px-8` : ''}`}>
       <div className={`mx-auto ${isInternalManagementScreen ? 'w-full max-w-none' : 'max-w-7xl'}`}>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
           <div className="space-y-3">
@@ -516,7 +516,7 @@ export default function App() {
     {selectedBookingForInvoice && <InvoicePrintModal key={selectedBookingForInvoice.id} isOpen onClose={() => setSelectedBookingForInvoice(null)} booking={selectedBookingForInvoice} language={language} company={companyProfile} />}</Suspense>
     <Suspense fallback={null}>{isOnboardingOpen && <OnboardingFlow isOpen language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}</Suspense>
     {/* Room under the footer so the bar never covers its last lines; same colour as the portal footer. */}
-    {showBottomNav && <div aria-hidden className={`h-[calc(80px+env(safe-area-inset-bottom))] w-full shrink-0 lg:hidden ${theme === 'dark' ? 'bg-[#080d17]' : 'bg-white'}`} />}
+    {showBottomNav && <div aria-hidden className={`h-[calc(80px+env(safe-area-inset-bottom))] w-full shrink-0 lg:hidden ${theme === 'dark' ? 'bg-[#0d0d0f]' : 'bg-white'}`} />}
     {showBottomNav && <BottomNavBar stickyBottom tone={theme} className="lg:hidden" ariaLabel={isAr ? 'التنقل السريع' : 'Quick navigation'}
       activeId={currentTab}
       items={portalBottomTabs.map(([tab, arLabel, enLabel, icon]) => ({ id: tab, label: isAr ? arLabel : enLabel, icon, onSelect: () => { sound.click(650); setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); } }))} />}

@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Brand neutrals: the portal's "slate" greys become warm charcoal and black
+   (brand black #0D0D0F, ivory #F4F1EA, stone #B9B4AA) instead of navy. */
+@theme {
+  --color-slate-50: #f8f6f1;
+  --color-slate-100: #f1eee8;
+  --color-slate-200: #e2dfd8;
+  --color-slate-300: #ccc8bf;
+  --color-slate-400: #a8a39a;
+  --color-slate-500: #7d7972;
+  --color-slate-600: #57544f;
+  --color-slate-700: #3b3936;
+  --color-slate-800: #27262a;
+  --color-slate-900: #18181b;
+  --color-slate-950: #0d0d0f;
+  --color-indigo-950: #1c1810;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -12,7 +29,7 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(13, 13, 15, 0.6);
   }
   ::-webkit-scrollbar-thumb {
     background: rgba(99, 102, 241, 0.4);
@@ -78,15 +95,15 @@
    ========================================================= */
 :root {
   color-scheme: dark;
-  --saraya-page: #020617;
-  --saraya-surface: #0f172a;
-  --saraya-surface-2: #111827;
-  --saraya-surface-3: #1e293b;
-  --saraya-border: #334155;
+  --saraya-page: #0d0d0f;
+  --saraya-surface: #18181b;
+  --saraya-surface-2: #1d1c1f;
+  --saraya-surface-3: #27262a;
+  --saraya-border: #3b3936;
   --saraya-text: #f8fafc;
-  --saraya-muted: #94a3b8;
-  --saraya-input: #0f172a;
-  --saraya-hover: #1e293b;
+  --saraya-muted: #a8a39a;
+  --saraya-input: #141416;
+  --saraya-hover: #27262a;
 }
 
 html[data-theme="light"] {
