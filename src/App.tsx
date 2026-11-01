@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   INITIAL_BOOKINGS,
@@ -40,7 +40,7 @@ const CustomerSectionView = lazy(() => import('./components/CustomerSectionView'
 import { PortalLogin } from './components/PortalLogin';
 import { NotificationBell } from './components/NotificationBell';
 import { NOTIFICATIONS_KEY, StaffNotification, clearNotificationsForUser, notificationFor } from './data/notifications';
-import { SystemUser, canAccess, landingTab } from './data/systemProfiles';
+import { SystemUser, canAccess, landingTab, resolveSystemUser, removeStaleUserData, PRICE_VISIBILITY_KEY, type PriceVisibility, SYSTEM_USERS } from './data/systemProfiles';
 import { buildInitialPriceBook } from './data/pricing';
 const QuickBookingModal = lazy(() => import('./components/QuickBookingModal').then((m) => ({ default: m.QuickBookingModal })));
 const NewBookingModal = lazy(() => import('./components/NewBookingModal').then((m) => ({ default: m.NewBookingModal })));
@@ -130,10 +130,15 @@ export default function App() {
     const id = window.localStorage.getItem('saraya-portal-user-id') || 'guest';
     return (window.localStorage.getItem(`saraya-last-tab-${id}`) as VenueTab | null) || 'home';
   });
-  const [portalUser, setPortalUser] = useState<SystemUser | null>(() => {
+  const [portalUserId, setPortalUserId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
-    try { return JSON.parse(window.localStorage.getItem('saraya-portal-user') || 'null') as SystemUser | null; } catch { return null; }
+    removeStaleUserData();
+    try { return (JSON.parse(window.localStorage.getItem('saraya-portal-user') || 'null') as SystemUser | null)?.id ?? null; } catch { return null; }
   });
+  const [priceVisibility, setPriceVisibility] = usePersistentState<PriceVisibility>(PRICE_VISIBILITY_KEY, {}, (saved) => Boolean(saved && typeof saved === 'object' && !Array.isArray(saved)));
+  // Always rebuilt from the current account list, so a removed or renamed user never lingers from saved browser data.
+  const portalUser = useMemo(() => resolveSystemUser(portalUserId, priceVisibility), [portalUserId, priceVisibility]);
+  const setPortalUser = (user: SystemUser | null) => setPortalUserId(user?.id ?? null);
   const [portalLoginOpen, setPortalLoginOpen] = useState(false);
   const [portalWelcome, setPortalWelcome] = useState<SystemUser | null>(null);
   const footerRef = useRef<HTMLElement | null>(null);
@@ -191,6 +196,13 @@ export default function App() {
   }, [bookings]);
   // Staff alerts for website booking requests. Local only until there is a backend.
   const [notifications, setNotifications] = usePersistentState<StaffNotification[]>(NOTIFICATIONS_KEY, [], isNonEmptyArray);
+  // Drop read/cleared marks left by accounts that no longer exist.
+  useEffect(() => {
+    const ids = new Set(SYSTEM_USERS.map((u) => u.id));
+    const stale = (list?: string[]) => (list ?? []).some((id) => !ids.has(id));
+    if (!notifications.some((n) => stale(n.readBy) || stale(n.clearedBy))) return;
+    setNotifications((prev) => prev.map((n) => ({ ...n, readBy: n.readBy.filter((id) => ids.has(id)), clearedBy: (n.clearedBy ?? []).filter((id) => ids.has(id)) })));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Keep bookings and alerts in step across tabs of this browser, so a request sent from the website tab shows up in an open portal tab.
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
@@ -415,12 +427,12 @@ export default function App() {
     {!portalLoginOpen && portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && <VenueHeaderNav currentTab={currentTab} language={language} user={may('site_content') && !canAccess(portalUser, 'site_content') ? { ...portalUser, permissions: [...portalUser.permissions, 'site_content'] } : portalUser} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onTabChange={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onToggleLanguage={toggleLanguage} onOpenTour={() => setIsOnboardingOpen(true)} onGoToWebsite={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} notificationBell={tabAllowed('bookings') ? <NotificationBell notifications={notifications} userId={portalUser.id} language={language} onMarkAllRead={() => setNotifications((prev) => prev.map((n) => n.readBy.includes(portalUser.id) ? n : { ...n, readBy: [...n.readBy, portalUser.id] }))} onClear={(id) => setNotifications((prev) => clearNotificationsForUser(prev, portalUser.id, id ? [id] : undefined))} onOpen={(n) => { setNotifications((prev) => prev.map((x) => x.id === n.id && !x.readBy.includes(portalUser.id) ? { ...x, readBy: [...x.readBy, portalUser.id] } : x)); setCurrentTab('bookings'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /> : undefined} onLogout={() => { sound.swoosh(); setPortalUser(null); window.localStorage.removeItem('saraya-portal-user'); window.localStorage.removeItem('saraya-portal-user-id'); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
     {portalWelcome && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-md px-4" onClick={() => setPortalWelcome(null)}><motion.div initial={{opacity:0,scale:.96,y:10}} animate={{opacity:1,scale:1,y:0}} className="w-full max-w-md rounded-3xl border border-amber-400/20 bg-slate-900 p-8 text-center shadow-2xl"><div className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-400">WELCOME</div><h1 className="mt-3 text-3xl font-black text-white">{language === 'ar' ? `أهلاً بك، ${portalWelcome.nameAr}` : `Welcome, ${portalWelcome.name}`}</h1><p className="mt-2 text-xs text-slate-500">{language === 'ar' ? 'تم تسجيل دخولك إلى نظام الإدارة' : 'You are signed in to the management system'}</p><button onClick={() => setPortalWelcome(null)} className="mt-6 px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold">{language === 'ar' ? 'دخول النظام' : 'Enter system'}</button></motion.div></div>}
     <main style={isInternalManagementScreen ? portalBeside : undefined} className={`relative flex-1 w-full px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${isInternalManagementScreen ? 'lg:flex-none max-w-none pb-6 sm:px-4 lg:px-8 lg:pb-8 transition-[width,margin] duration-300 ease-out' : 'max-w-7xl mx-auto'}`}><AnimatePresence initial={false}><motion.div onTouchStart={handleScreenTouchStart} onTouchEnd={handleScreenTouchEnd} key={currentTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.08 }}><Suspense fallback={<DaliLoader language={language} className="min-h-[50vh]" />}>
-      {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? landingTab(user) : canAccess(user, 'dashboard') ? 'dashboard' : landingTab(user)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
+      {portalLoginOpen && <PortalLogin language={language} users={SYSTEM_USERS.map((u) => resolveSystemUser(u.id, priceVisibility)!).filter(Boolean)} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? landingTab(user) : canAccess(user, 'dashboard') ? 'dashboard' : landingTab(user)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
       {!portalLoginOpen && currentTab === 'home' && <SarayaCustomerHomepage halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} theme={theme} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenBookingModal={openCustomerBooking} onCreateBooking={handleCreateBooking} onOpenEventDesigner={() => setCurrentTab('event_designer')} onNavigate={navigateSection} content={siteContent} />}
       {currentTab.startsWith('public_') && <CustomerSectionView screen={({ public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour' } as const)[currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour']} halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} theme={theme} onOpenBooking={openCustomerBooking} content={siteContent} services={servicesCatalogue} inventory={inventory} onGoHome={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
       {currentTab === 'company' && canAccess(portalUser, 'company') && <CompanyProfileView language={language} isCEO={isCeo} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} companyProfile={companyProfile} onUpdateCompanyProfile={setCompanyProfile} onUpdateHall={handleUpdateHall} readOnly={!may('company')} onAddHall={may('company') ? handleAddHall : undefined} onDeleteHall={may('company') ? handleDeleteHall : undefined} />}
       {currentTab === 'site_content' && tabAllowed('site_content') && <SiteContentView language={language} content={siteContent} onSave={setSiteContent} onOpenTab={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onPreview={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
-      {currentTab === 'permissions' && isCeo && <PermissionsView language={language} permissions={editPermissions} onChange={setEditPermissions} />}
+      {currentTab === 'permissions' && isCeo && <PermissionsView language={language} permissions={editPermissions} onChange={setEditPermissions} priceVisibility={priceVisibility} onChangePriceVisibility={setPriceVisibility} />}
       {currentTab === 'photo_library' && canAccess(portalUser, 'photo_library') && viewOnly('photo_library', <PhotoLibraryPage language={language} photos={photos} bookings={bookings} onSavePhotos={handleSavePhotos} />)}
       {currentTab === 'package_builder' && canAccess(portalUser, 'package_builder') && viewOnly('bookings', <PackageBuilderView language={language} halls={halls} services={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} />)}
       {currentTab === 'price_lists' && canAccess(portalUser, 'price_lists') && viewOnly('price_lists', <PriceListsView halls={halls} services={servicesCatalogue} priceBook={priceBook} onUpdatePriceBook={setPriceBook} onUpdateHall={handleUpdateHall} language={language} isCEO={portalUser?.role === 'ceo'} pendingPriceBook={pendingFinancePriceBook} onSubmitApproval={setPendingFinancePriceBook} onApprovePending={() => { if (portalUser?.role === 'ceo' && pendingFinancePriceBook) { setPriceBook(pendingFinancePriceBook); setPendingFinancePriceBook(null); } }} onRejectPending={() => { if (portalUser?.role === 'ceo') setPendingFinancePriceBook(null); }} />)}
