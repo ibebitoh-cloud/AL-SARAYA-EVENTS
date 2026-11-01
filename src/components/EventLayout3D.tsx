@@ -1033,12 +1033,14 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       <div ref={hostRef} data-rotation-ui className="absolute inset-0" />
       {watermark && <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] overflow-hidden">
         {/* Dense tiled text so the whole 3D view is covered and no clean screenshot is possible. */}
+        <div className="absolute inset-0" style={{ WebkitMaskImage: 'radial-gradient(ellipse 42% 38% at 50% 58%, rgba(0,0,0,.35) 0%, rgba(0,0,0,.35) 55%, #000 100%)', maskImage: 'radial-gradient(ellipse 42% 38% at 50% 58%, rgba(0,0,0,.35) 0%, rgba(0,0,0,.35) 55%, #000 100%)' }}>
         <div className="absolute -inset-full flex flex-col justify-center gap-5" style={{ transform: 'rotate(-24deg)' }}>
           {Array.from({ length: 60 }, (_, row) => (
             <div key={row} className={`flex gap-8 whitespace-nowrap font-black tracking-[0.25em] ${row % 2 ? 'text-lg text-white/25 ps-24' : 'text-xl text-amber-200/35'}`}>
               {Array.from({ length: 14 }, (_, i) => <span key={i}>{row % 2 ? (isAr ? 'يتطلب اشتراك فعّال · غير قابل للاستخدام' : 'ACTIVE SUBSCRIPTION REQUIRED · NOT FOR USE') : watermark}</span>)}
             </div>
           ))}
+        </div>
         </div>
         <div className="absolute inset-x-3 top-16 flex justify-center">
           <div className="max-w-md rounded-xl border border-amber-400/40 bg-[#0D0D0F]/85 px-4 py-2.5 text-center backdrop-blur">

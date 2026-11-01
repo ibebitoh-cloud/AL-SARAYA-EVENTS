@@ -4,6 +4,8 @@ import type { Hall, Language } from '../types/venueSystem';
 import { EventLayoutDesigner } from './EventLayoutDesigner';
 import { BrandLogo } from './BrandLogo';
 import { PRO_3D, PRO_3D_STORAGE_KEY } from '../data/proFeatures';
+import previewPro from '../assets/images/studio3d/preview-pro.jpg';
+import previewBasic from '../assets/images/studio3d/preview-basic.jpg';
 
 type DemoState = { used: number; activeUntil?: number };
 
@@ -19,8 +21,10 @@ const writeDemo = (state: DemoState) => { try { window.localStorage.setItem(PRO_
 interface Props { language: Language; halls: Hall[]; onUpdateHall: (hall: Hall) => void; }
 
 /** 3D Studio Pro: the premium 3D designer. Runs as a limited demo until payment is completed and it is unlocked (src/data/proFeatures.ts). */
-export function Studio3DProView({ language, halls, onUpdateHall }: Props) {
-  const isAr = language === 'ar';
+export function Studio3DProView({ halls, onUpdateHall }: Props) {
+  // 3D Studio Pro always runs in English, even when the portal is in Arabic.
+  const language: Language = 'en';
+  const isAr = false;
   const [demo, setDemo] = useState<DemoState>(() => (typeof window === 'undefined' ? { used: 0 } : readDemo()));
   const [now, setNow] = useState(() => Date.now());
   const active = PRO_3D.unlocked || Boolean(demo.activeUntil && demo.activeUntil > now);
@@ -70,11 +74,23 @@ export function Studio3DProView({ language, halls, onUpdateHall }: Props) {
   ];
   const ended = demo.used > 0;
   return (
-    <section className="mx-auto max-w-3xl rounded-3xl border border-amber-400/30 bg-slate-900/80 p-6 sm:p-8" dir={isAr ? 'rtl' : 'ltr'}>
+    <section className="mx-auto max-w-4xl rounded-3xl border border-amber-400/30 bg-slate-900/80 p-6 sm:p-8" dir={isAr ? 'rtl' : 'ltr'}>
       <BrandLogo className="h-6 w-auto" />
       <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-[11px] font-black text-amber-200"><Sparkles className="h-3.5 w-3.5" />{isAr ? 'إضافة مميزة' : 'PREMIUM ADD-ON'}</div>
       <h1 className="mt-3 text-2xl font-black text-white sm:text-3xl">{isAr ? 'استوديو 3D برو' : '3D Studio Pro'}</h1>
       <p className="mt-2 text-sm leading-7 text-slate-300">{isAr ? 'اعرض على العميل حفلته قبل ما تحصل: القاعة بمقاساتها الحقيقية، بالديكور اللي اختاره، ويتجوّل جواها بنفسه.' : 'Show clients their event before it happens: the real-size venue, in the decor they choose, and let them walk through it.'}</p>
+      {/* Preview: what Pro looks like next to the basic Event Designer. */}
+      <figure className="mt-5">
+        <div className="relative overflow-hidden rounded-2xl border border-amber-400/40 bg-[#0D0D0F]">
+          <img src={previewPro} alt="3D Studio Pro view of a wedding layout" className="block aspect-[16/10] w-full object-cover" loading="lazy" />
+          <span className="absolute start-3 top-3 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] px-2.5 py-1 text-[10px] font-black tracking-widest text-[#0D0D0F]"><Sparkles className="h-3 w-3" />PRO</span>
+          <div className="absolute bottom-3 end-3 w-[34%] max-w-[220px] overflow-hidden rounded-xl border border-slate-600 bg-[#08111D] shadow-2xl">
+            <img src={previewBasic} alt="Basic 3D view of the same hall" className="block aspect-[4/3] w-full object-cover" loading="lazy" />
+            <span className="absolute start-2 top-2 rounded-md bg-[#172033] px-2 py-0.5 text-[9px] font-black tracking-widest text-[#CFE5FF]">BASIC</span>
+          </div>
+        </div>
+        <figcaption className="mt-2 text-[11px] text-slate-500">The same hall in the basic Event Designer (inset) and 3D Studio Pro with decor, lighting and real measurements.</figcaption>
+      </figure>
       <ul className="mt-5 grid gap-2 sm:grid-cols-2">
         {features.map(({ icon: Icon, en, ar }) => <li key={en} className="flex items-start gap-2.5 rounded-2xl border border-slate-800 bg-slate-950/60 p-3 text-xs leading-5 text-slate-200"><Icon className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />{isAr ? ar : en}</li>)}
       </ul>
