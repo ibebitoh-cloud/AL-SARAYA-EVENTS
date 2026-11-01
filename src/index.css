@@ -928,3 +928,7 @@ html[data-theme="light"] textarea::placeholder {
 }
 @keyframes hero-gold-shine { to { background-position: 300% 0; } }
 @media (prefers-reduced-motion: reduce) { .hero-gold-foil { animation: none; } }
+
+/* BrandLogo tone="auto": white logo in dark mode, gold logo in light mode. */
+html[data-theme="light"] .brand-logo-on-dark,
+html:not([data-theme="light"]) .brand-logo-on-light { display: none !important; }

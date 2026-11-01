@@ -1,13 +1,14 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
   ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, Settings2,
-  CalendarDays, Sparkles, Tags, Globe2, ShieldCheck, PanelRightClose, PanelRightOpen, X, ChevronRight, Menu, Home, Sun, Moon, Maximize2, Minimize2, LogOut,
+  CalendarDays, Sparkles, Tags, Globe2, ShieldCheck, X, ChevronLeft, ChevronRight, Home, Sun, Moon, Maximize2, Minimize2, LogOut, Compass,
 } from 'lucide-react';
 import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
 import { SystemUser, canAccess } from '../data/systemProfiles';
 import { BrandLogo } from './BrandLogo';
+import { DaliCredit, DaliMark } from './DaliCredit';
 
 interface VenueHeaderNavProps {
   currentTab: VenueTab;
@@ -16,7 +17,6 @@ interface VenueHeaderNavProps {
   onTabChange: (tab: VenueTab) => void;
   onToggleLanguage: () => void;
   onOpenTour: () => void;
-  onVisibilityChange: (visible: boolean) => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   onGoToWebsite: () => void;
@@ -27,12 +27,80 @@ interface VenueHeaderNavProps {
 
 type NavItem = { id: VenueTab; label: string; icon: typeof LayoutDashboard };
 
-export function VenueHeaderNav({ currentTab, language, user, onTabChange, onToggleLanguage, onOpenTour, onVisibilityChange, theme, onToggleTheme, onGoToWebsite, onLogout, notificationBell }: VenueHeaderNavProps) {
+/**
+ * The side menu is pinned to the start side: right in Arabic, left in English. It is either
+ * full (logo, group titles, labels) or small. Small is icons with short labels on tablets and
+ * icons only on phones and wide desktops. A round arrow on the menu's edge switches between the
+ * two. On desktop, resting the mouse on the small menu opens the full one over the page (peek).
+ * On phones, full always opens over the page.
+ */
+export type PortalNavMode = 'full' | 'compact' | 'rail';
+const NAV_MODE_KEY = 'saraya-portal-nav-mode';
+const WIDTHS = { desktop: { full: 256, compact: 96, rail: 64 }, phone: { compact: 76, rail: 56 } } as const;
+const readOpen = (): boolean => {
+  try { const v = window.localStorage.getItem(NAV_MODE_KEY); return !v || v === 'full'; } catch { return true; }
+};
+const useMedia = (query: string) => {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const sync = () => setMatch(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [query]);
+  return match;
+};
+
+export function VenueHeaderNav({ currentTab, language, user, onTabChange, onToggleLanguage, onOpenTour, theme, onToggleTheme, onGoToWebsite, onLogout, notificationBell }: VenueHeaderNavProps) {
   const isAr = language === 'ar';
-  const [isHidden, setIsHidden] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const dark = theme === 'dark';
+  const isDesktop = useMedia('(min-width: 1024px)');
+  const isTablet = useMedia('(min-width: 640px) and (max-width: 1279px)');
+  const canHover = useMedia('(hover: hover) and (pointer: fine)');
+  // Full or small, remembered between visits (desktop only; phones always start small).
+  const [open, setOpen] = useState<boolean>(readOpen);
+  const [phoneFullOpen, setPhoneFullOpen] = useState(false);
+  const [peek, setPeek] = useState(false);
+  const peekTimer = useRef<number | undefined>(undefined);
+  // After the edge arrow collapses the menu, wait for the mouse to leave before peeking again.
+  const peekBlocked = useRef(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
+  // What is drawn as the pinned bar. Phones never pin the full menu: it opens over the page instead.
+  const smallMode: 'compact' | 'rail' = isTablet ? 'compact' : 'rail';
+  const pinnedMode: PortalNavMode = isDesktop && open ? 'full' : smallMode;
+  const pinnedWidth = isDesktop ? WIDTHS.desktop[pinnedMode] : WIDTHS.phone[smallMode];
+  const peeking = peek && isDesktop && canHover && pinnedMode !== 'full';
+  const shownMode: PortalNavMode = peeking ? 'full' : pinnedMode;
+  const toggleOpen = () => {
+    sound.click(600);
+    setProfileOpen(false);
+    window.clearTimeout(peekTimer.current);
+    setPeek(false);
+    if (!isDesktop) { setPhoneFullOpen((v) => !v); return; }
+    const next = !open;
+    if (!next) peekBlocked.current = true;
+    setOpen(next);
+    try { window.localStorage.setItem(NAV_MODE_KEY, next ? 'full' : 'small'); } catch { /* storage may be blocked */ }
+  };
+  const onPeekEnter = () => {
+    if (!isDesktop || !canHover || pinnedMode === 'full' || peekBlocked.current) return;
+    window.clearTimeout(peekTimer.current);
+    peekTimer.current = window.setTimeout(() => setPeek(true), 180);
+  };
+  const onPeekLeave = () => {
+    peekBlocked.current = false;
+    window.clearTimeout(peekTimer.current);
+    peekTimer.current = window.setTimeout(() => setPeek(false), 220);
+  };
+  useEffect(() => () => window.clearTimeout(peekTimer.current), []);
+  // The page content reads this width to sit beside the menu.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--portal-nav-w', `${pinnedWidth}px`);
+  }, [pinnedWidth]);
+  useEffect(() => () => { document.documentElement.style.setProperty('--portal-nav-w', '0px'); }, []);
+  useEffect(() => { if (isDesktop) setPhoneFullOpen(false); }, [isDesktop]);
   useEffect(() => {
     const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener('fullscreenchange', syncFullscreen);
@@ -75,72 +143,136 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     { title: isAr ? 'التشغيل والمالية' : 'Operations & Finance', ids: ['inventory', 'staff', 'finance', 'payments', 'expenses', 'reports'] },
     { title: isAr ? 'الإعدادات' : 'Setup', ids: ['price_lists', 'company', 'site_content', 'permissions'] },
   ].map((group) => ({ ...group, items: navItems.filter((item) => group.ids.includes(item.id)) })).filter((group) => group.items.length);
-  const homeTab: VenueTab = canAccess(user, 'dashboard') ? 'dashboard' : (navItems[0]?.id || 'dashboard');
   const displayName = (isAr ? user.nameAr : user.name) || user.username;
   const displayRole = (isAr ? user.roleAr : user.role) || (isAr ? 'مستخدم النظام' : 'System user');
-  const toggleVisibility = () => {
-    const nextVisible = isHidden;
-    setIsHidden(!isHidden);
-    setMobileOpen(false);
-    onVisibilityChange(nextVisible);
-  };
   const goTo = (tab: VenueTab) => {
     sound.swoosh();
     onTabChange(tab);
-    setMobileOpen(false);
+    setPhoneFullOpen(false);
     setProfileOpen(false);
+    setPeek(false);
   };
   const currentLabel = allNavItems.find((item) => item.id === currentTab)?.label || (isAr ? 'شاشات الإدارة' : 'Management');
-  const accountActions = <div className="grid grid-cols-2 gap-2">
-    <button type="button" onClick={() => { setMobileOpen(false); setProfileOpen(false); onGoToWebsite(); }} className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 px-2 text-[11px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-amber-300"><Home className="h-4 w-4" />{isAr ? 'الموقع' : 'Website'}</button>
-    <button type="button" onClick={() => { setMobileOpen(false); setProfileOpen(false); onLogout(); }} className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-rose-500/30 px-2 text-[11px] font-bold text-rose-300 hover:bg-rose-500/10"><LogOut className="h-4 w-4 rtl:rotate-180" />{isAr ? 'تسجيل الخروج' : 'Log out'}</button>
-  </div>;
-  const renderNavItem = (item: NavItem) => {
-    const Icon = item.icon;
-    const active = currentTab === item.id;
-    return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined}
-      className={`flex min-h-9 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-xs font-semibold transition-colors ${active ? 'bg-amber-400 text-slate-950 shadow-sm' : (theme === 'dark' ? 'text-slate-300 hover:bg-slate-800 hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950')}`}>
-      <Icon className="h-4 w-4 shrink-0" /><span className="min-w-0 flex-1">{item.label}</span>
-      {active && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-70" />}
+
+  // Shared look, written per theme so light mode never inherits dark-only colours.
+  const surface = dark ? 'border-[#C49A52]/20 bg-[#0D0D0F]/95' : 'border-[#C49A52]/25 bg-white/95';
+  const divider = dark ? 'border-white/10' : 'border-slate-200';
+  const muted = dark ? 'text-[#B9B4AA]' : 'text-slate-500';
+  const ghostBtn = dark ? 'border-white/10 text-[#F4F1EA]/80 hover:border-[#C49A52]/50 hover:text-[#E9CF94]' : 'border-slate-200 text-slate-700 hover:border-[#C49A52]/60 hover:text-[#8C6A2E]';
+  const iconBtn = `flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition ${dark ? 'text-[#F4F1EA]/70 hover:bg-white/5 hover:text-[#E9CF94]' : 'text-slate-600 hover:bg-[#C49A52]/10 hover:text-[#8C6A2E]'}`;
+  const goldActive = 'bg-[linear-gradient(135deg,#E9CF94,#C49A52_55%,#8C6A2E)] text-[#0D0D0F] shadow-sm shadow-[#8C6A2E]/30';
+
+  /** The round arrow on the menu's edge. It points to the screen edge when it will collapse the menu. */
+  const renderEdgeToggle = (isOpen: boolean) => {
+    const label = isOpen ? (isAr ? 'تصغير القائمة' : 'Collapse menu') : (isAr ? 'توسيع القائمة' : 'Expand menu');
+    const Icon = isOpen ? ChevronLeft : ChevronRight;
+    return <button type="button" onClick={toggleOpen} title={label} aria-label={label} aria-expanded={isOpen}
+      className={`absolute -end-3.5 top-[76px] z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-md transition hover:scale-110 ${dark ? 'border-[#C49A52]/40 bg-[#0D0D0F] text-[#E9CF94] shadow-black/40' : 'border-[#C49A52]/50 bg-white text-[#8C6A2E] shadow-[#8C6A2E]/20'}`}>
+      <Icon className="h-4 w-4 rtl:-scale-x-100" />
     </button>;
   };
 
-  return <>
-    {/* Full-height control rail anchored to the logical start: right in Arabic, left in English. */}
-    <aside dir={isAr ? 'rtl' : 'ltr'} className={`fixed start-0 top-0 z-[60] hidden h-dvh w-64 flex-col border-e shadow-xl shadow-black/20 backdrop-blur-xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform lg:flex ${theme === 'dark' ? 'border-amber-500/20 bg-slate-950/95' : 'border-slate-200 bg-white/95'} ${isHidden ? (isAr ? 'translate-x-full' : '-translate-x-full') : 'translate-x-0'}`}>
-      <div className="border-b border-slate-800 p-3">
-        <div className="mb-2 flex items-center justify-between gap-2"><div className="min-w-0"><BrandLogo tone={theme === 'dark' ? 'white' : 'dark'} className="h-7 w-auto max-w-full" /><div className="mt-1.5 truncate text-[10px] text-slate-500">{isAr ? 'البوابة' : 'Portal'} · {displayName} · {displayRole}</div></div>
-        {notificationBell && <div className="ms-auto">{notificationBell}</div>}
-        <button type="button" onClick={toggleVisibility} aria-label={isAr ? 'إخفاء القائمة' : 'Hide navigation'} title={isAr ? 'إخفاء القائمة' : 'Hide navigation'} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-amber-300"><PanelRightClose className="h-4 w-4" /></button></div>
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={onToggleTheme} title={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light mode') : (isAr ? 'الوضع الليلي' : 'Night mode')} className="flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-amber-300">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span>{theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الليلي' : 'Dark theme')}</span></button>
-          <button type="button" onClick={toggleFullscreen} title={isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit fullscreen') : (isAr ? 'ملء الشاشة' : 'Full view')} aria-pressed={isFullscreen} className="flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-amber-300">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}<span>{isFullscreen ? (isAr ? 'تصغير' : 'Exit full') : (isAr ? 'ملء الشاشة' : 'Full screen')}</span></button>
+  const accountActions = <div className="grid grid-cols-2 gap-2">
+    <button type="button" onClick={() => { setPhoneFullOpen(false); setProfileOpen(false); onGoToWebsite(); }} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11px] font-bold ${ghostBtn}`}><Home className="h-4 w-4" />{isAr ? 'الموقع' : 'Website'}</button>
+    <button type="button" onClick={() => { setPhoneFullOpen(false); setProfileOpen(false); onLogout(); }} className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-rose-500/30 px-2 text-[11px] font-bold text-rose-500 hover:bg-rose-500/10"><LogOut className="h-4 w-4 rtl:rotate-180" />{isAr ? 'تسجيل الخروج' : 'Log out'}</button>
+  </div>;
+
+  const renderNavItem = (item: NavItem, mode: PortalNavMode) => {
+    const Icon = item.icon;
+    const active = currentTab === item.id;
+    const idle = dark ? 'text-[#F4F1EA]/75 hover:bg-white/5 hover:text-[#E9CF94]' : 'text-slate-700 hover:bg-[#C49A52]/10 hover:text-[#8C6A2E]';
+    if (mode === 'full') return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined}
+      className={`flex min-h-9 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-xs font-semibold transition-colors ${active ? goldActive : idle}`}>
+      <Icon className="h-4 w-4 shrink-0" /><span className="min-w-0 flex-1">{item.label}</span>
+      {active && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-70 rtl:rotate-180" />}
+    </button>;
+    if (mode === 'compact') return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} title={item.label}
+      className={`flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-center text-[10px] font-semibold leading-tight transition-colors ${active ? goldActive : idle}`}>
+      <Icon className="h-[18px] w-[18px] shrink-0" /><span className="line-clamp-2 w-full break-words">{item.label}</span>
+    </button>;
+    return <button key={item.id} type="button" onClick={() => goTo(item.id)} aria-current={active ? 'page' : undefined} title={item.label} aria-label={item.label}
+      className={`mx-auto flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${active ? goldActive : idle}`}>
+      <Icon className="h-[18px] w-[18px]" />
+    </button>;
+  };
+
+  const themeLabel = dark ? (isAr ? 'الوضع الفاتح' : 'Light theme') : (isAr ? 'الوضع الليلي' : 'Dark theme');
+  const fullLabel = isFullscreen ? (isAr ? 'الخروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Full screen');
+
+  /** The full menu: used pinned on desktop and over the page on phones. */
+  const renderFull = (onPhone: boolean) => <>
+    <div className={`border-b p-3 ${divider}`}>
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div className="min-w-0"><BrandLogo className="h-7 w-auto max-w-full" /><div className={`mt-1.5 truncate text-[10px] ${muted}`}>{isAr ? 'البوابة' : 'Portal'} · {displayName} · {displayRole}</div></div>
+        <div className="flex shrink-0 items-center gap-1">
+          {!onPhone && notificationBell}
+          {onPhone && <button type="button" onClick={() => setPhoneFullOpen(false)} aria-label={isAr ? 'إغلاق القائمة' : 'Close navigation'} className={iconBtn}><X className="h-4 w-4" /></button>}
         </div>
       </div>
-      <nav className="flex-1 space-y-3 overflow-y-auto overscroll-contain p-2.5" aria-label={isAr ? 'التنقل بين شاشات الإدارة' : 'Admin navigation'}>{groupedItems.map((group) => <section key={group.title}><h2 className="mb-1 px-2 text-[9px] font-black uppercase tracking-wider text-slate-500">{group.title}</h2><div className="space-y-0.5">{group.items.map(renderNavItem)}</div></section>)}</nav>
-      <div className="flex items-center gap-2 border-t border-slate-800 p-2.5">
-        <button type="button" onClick={onToggleLanguage} className="flex-1 rounded-lg border border-slate-800 px-3 py-2 text-[11px] font-bold text-slate-300 hover:border-amber-400/40 hover:text-white">{isAr ? 'EN · English' : 'العربية'}</button>
-        <button type="button" onClick={onOpenTour} className="rounded-lg px-3 py-2 text-[11px] font-semibold text-slate-400 hover:bg-slate-800 hover:text-white">{isAr ? 'الجولة' : 'Tour'}</button>
-        <button type="button" onClick={() => setProfileOpen((v) => !v)} aria-expanded={profileOpen} title={displayName} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-400/15 text-xs font-black text-amber-300"><UserRound className="h-4 w-4" /></button>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" onClick={onToggleTheme} title={themeLabel} className={`flex h-9 items-center justify-center gap-2 rounded-lg border text-[10px] font-bold ${ghostBtn}`}>{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}<span>{themeLabel}</span></button>
+        <button type="button" onClick={toggleFullscreen} title={fullLabel} aria-pressed={isFullscreen} className={`flex h-9 items-center justify-center gap-2 rounded-lg border text-[10px] font-bold ${ghostBtn}`}>{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}<span>{isFullscreen ? (isAr ? 'تصغير' : 'Exit full') : (isAr ? 'ملء الشاشة' : 'Full screen')}</span></button>
       </div>
+    </div>
+    <nav className="flex-1 space-y-3 overflow-y-auto overscroll-contain p-2.5" aria-label={isAr ? 'التنقل بين شاشات الإدارة' : 'Admin navigation'}>{groupedItems.map((group) => <section key={group.title}><h2 className={`mb-1 px-2 text-[9px] font-black uppercase tracking-wider ${muted}`}>{group.title}</h2><div className="space-y-0.5">{group.items.map((item) => renderNavItem(item, 'full'))}</div></section>)}</nav>
+    <div className={`space-y-2 border-t p-2.5 ${divider}`}>
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={onToggleLanguage} className={`flex-1 rounded-lg border px-3 py-2 text-[11px] font-bold ${ghostBtn}`}>{isAr ? 'EN · English' : 'العربية'}</button>
+        <button type="button" onClick={onOpenTour} className={`rounded-lg px-3 py-2 text-[11px] font-semibold ${dark ? 'text-[#F4F1EA]/70 hover:bg-white/5' : 'text-slate-600 hover:bg-slate-100'}`}>{isAr ? 'الجولة' : 'Tour'}</button>
+        {!onPhone && <button type="button" onClick={() => setProfileOpen((v) => !v)} aria-expanded={profileOpen} title={displayName} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#C49A52]/15 text-[#C49A52]"><UserRound className="h-4 w-4" /></button>}
+      </div>
+      {onPhone && accountActions}
+      <div className="flex justify-center pt-1"><DaliCredit tone={dark ? 'white' : 'dark'} tagline={false} className="origin-center scale-[0.8]" /></div>
+    </div>
+  </>;
+
+  /** The small menu (compact or icons only), always pinned. */
+  const renderSmall = (mode: 'compact' | 'rail') => <>
+    <div className={`flex flex-col items-center gap-2 border-b px-1 py-3 ${divider}`}>
+      <BrandLogo variant="mark" className="h-6 w-auto" />
+      {isDesktop && notificationBell}
+    </div>
+    <nav className={`flex-1 overflow-y-auto overscroll-contain px-1.5 py-2 ${mode === 'compact' ? 'space-y-2' : 'space-y-3'}`} aria-label={isAr ? 'التنقل بين شاشات الإدارة' : 'Admin navigation'}>
+      {groupedItems.map((group, i) => <section key={group.title} aria-label={group.title} className={`space-y-1 ${i ? `border-t pt-2 ${divider}` : ''}`}>{group.items.map((item) => renderNavItem(item, mode))}</section>)}
+    </nav>
+    <div className={`flex flex-col items-center gap-1 border-t px-1.5 py-2 ${divider}`}>
+      <button type="button" onClick={onToggleTheme} title={themeLabel} aria-label={themeLabel} className={iconBtn}>{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
+      <button type="button" onClick={onToggleLanguage} title={isAr ? 'English' : 'العربية'} aria-label={isAr ? 'English' : 'العربية'} className={`${iconBtn} text-[11px] font-black`}>{isAr ? 'EN' : 'ع'}</button>
+      <button type="button" onClick={() => setProfileOpen((v) => !v)} aria-expanded={profileOpen} title={displayName} aria-label={displayName} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#C49A52]/15 text-[#C49A52]"><UserRound className="h-4 w-4" /></button>
+      <span className="mt-1 flex flex-col items-center gap-0.5" title="Powered by DALI STUDIO"><DaliMark tone="gold" className="h-4 w-4" />{mode === 'compact' && <span dir="ltr" className={`text-[7px] font-bold tracking-[0.2em] ${muted}`}>DALI</span>}</span>
+    </div>
+  </>;
+
+  return <>
+    {/* Pinned to the logical start: right in Arabic, left in English, on every screen size. */}
+    <aside dir={isAr ? 'rtl' : 'ltr'} data-nav-mode={shownMode} data-peek={peeking || undefined} style={{ width: peeking ? WIDTHS.desktop.full : pinnedWidth }}
+      onMouseEnter={onPeekEnter} onMouseLeave={onPeekLeave}
+      className={`fixed start-0 top-0 flex h-dvh flex-col border-e backdrop-blur-xl transition-[width,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${peeking ? 'z-[66] shadow-2xl shadow-black/30' : 'z-[60] shadow-xl shadow-black/10'} ${surface}`}>
+      {shownMode === 'full' ? renderFull(false) : renderSmall(shownMode)}
+      {renderEdgeToggle(isDesktop ? open : false)}
     </aside>
 
-    {isHidden && <button type="button" onClick={toggleVisibility} title={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} aria-label={isAr ? 'إظهار القائمة الجانبية' : 'Show sidebar'} className="fixed start-0 top-20 z-[60] hidden rounded-e-xl border border-amber-500/25 bg-slate-950/95 p-3 text-amber-300 shadow-lg lg:block"><PanelRightOpen className="h-4 w-4" /></button>}
-
-    {/* Mobile/tablet: a slim sticky bar so the menu button never covers page content. */}
-    <div dir={isAr ? 'rtl' : 'ltr'} className={`sticky top-0 z-40 flex h-14 w-full items-center justify-between gap-3 border-b px-3 backdrop-blur-xl lg:hidden ${theme === 'dark' ? 'border-amber-500/20 bg-slate-950/95' : 'border-slate-200 bg-white/95'}`}>
-      <button type="button" onClick={() => setMobileOpen((v) => !v)} aria-expanded={mobileOpen} aria-label={isAr ? 'قائمة الشاشات' : 'Open screen navigation'} className="flex h-10 shrink-0 items-center gap-2 rounded-xl border border-amber-500/30 bg-slate-950/95 px-3 text-xs font-bold text-amber-300">
-        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}{isAr ? 'الشاشات' : 'Screens'}
-      </button>
-      <div className="flex min-w-0 items-center gap-3"><div className="min-w-0 text-end"><div className="truncate text-sm font-black text-white">{currentLabel}</div><div className="truncate text-[10px] text-slate-500">{displayName}</div></div>{notificationBell}</div>
+    {/* Phones and tablets: a slim top bar beside the menu with the screen name and the bell. */}
+    <div dir={isAr ? 'rtl' : 'ltr'} style={{ marginInlineStart: pinnedWidth, width: `calc(100% - ${pinnedWidth}px)` }} className={`sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b px-3 backdrop-blur-xl lg:hidden ${surface}`}>
+      <div className="min-w-0"><div className={`truncate text-sm font-black ${dark ? 'text-[#F4F1EA]' : 'text-slate-900'}`}>{currentLabel}</div><div className={`truncate text-[10px] ${muted}`}>{displayName}</div></div>
+      {notificationBell}
     </div>
-    {mobileOpen && <><button type="button" aria-label={isAr ? 'إغلاق القائمة' : 'Close menu'} onClick={() => setMobileOpen(false)} className="fixed inset-0 z-[60] bg-slate-950/50 lg:hidden" />
-      <aside dir={isAr ? 'rtl' : 'ltr'} className="fixed start-0 top-14 z-[65] flex h-[calc(100dvh-3.5rem)] w-[min(90vw,360px)] flex-col border-e border-amber-500/20 bg-slate-950 shadow-2xl lg:hidden">
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3"><div className="min-w-0"><BrandLogo className="h-7 w-auto max-w-full" /><div className="mt-1.5 truncate text-[10px] text-slate-500">{isAr ? 'البوابة' : 'Portal'} · {displayName} · {displayRole}</div></div><button type="button" onClick={() => setMobileOpen(false)} aria-label={isAr ? 'إغلاق القائمة' : 'Close navigation'} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X className="h-4 w-4" /></button></div>
-        <div className="grid grid-cols-2 gap-2 border-b border-slate-800 p-3"><button type="button" onClick={onToggleTheme} className="flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-2 text-[10px] font-bold text-slate-300">{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{isAr ? (theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الليلي') : (theme === 'dark' ? 'Light theme' : 'Dark theme')}</button><button type="button" onClick={toggleFullscreen} className="flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-2 text-[10px] font-bold text-slate-300">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}{isAr ? (isFullscreen ? 'تصغير' : 'ملء الشاشة') : (isFullscreen ? 'Exit full' : 'Full screen')}</button></div><nav className="flex-1 space-y-3 overflow-y-auto overscroll-contain p-2.5">{groupedItems.map((group) => <section key={group.title}><h2 className="mb-1 px-2 text-[9px] font-black uppercase tracking-wider text-slate-500">{group.title}</h2><div className="space-y-0.5">{group.items.map(renderNavItem)}</div></section>)}</nav>
-        <div className="flex gap-2 border-t border-slate-800 p-3"><button type="button" onClick={onToggleLanguage} className="flex-1 rounded-lg border border-slate-800 px-3 py-2 text-xs font-bold text-slate-300">{isAr ? 'EN · English' : 'العربية'}</button><button type="button" onClick={onOpenTour} className="rounded-lg px-3 py-2 text-xs text-slate-300 hover:bg-slate-800">{isAr ? 'الجولة' : 'Tour'}</button></div>
-        <div className="border-t border-slate-800 p-3">{accountActions}</div>
-      </aside></>}
-    {profileOpen && <div dir={isAr ? 'rtl' : 'ltr'} className="fixed start-4 bottom-16 z-[70] w-64 rounded-2xl border border-slate-700 bg-slate-950 p-4 shadow-2xl"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/15 text-sm font-black text-amber-300">{displayName.trim().slice(0,1)}</div><div className="min-w-0"><div className="truncate text-sm font-black text-white">{displayName}</div><div className="mt-1 truncate text-[11px] text-slate-400">{displayRole}</div><div className="mt-1 text-[10px] text-slate-500">@{user.username}</div></div></div><div className="mt-4">{accountActions}</div></div>}
+
+    {phoneFullOpen && !isDesktop && <>
+      <button type="button" data-dali-ignore aria-label={isAr ? 'إغلاق القائمة' : 'Close menu'} onClick={() => setPhoneFullOpen(false)} className="fixed inset-0 z-[64] cursor-default" style={{ background: 'rgba(13,13,15,0.55)' }} />
+      <aside dir={isAr ? 'rtl' : 'ltr'} className={`fixed start-0 top-0 z-[65] flex h-dvh w-[min(86vw,320px)] flex-col border-e shadow-2xl ${dark ? 'border-[#C49A52]/20 bg-[#0D0D0F]' : 'border-[#C49A52]/25 bg-white'}`}>
+        {renderFull(true)}
+        {renderEdgeToggle(true)}
+      </aside>
+    </>}
+
+    {profileOpen && <div dir={isAr ? 'rtl' : 'ltr'} style={{ insetInlineStart: pinnedWidth + 8 }} className={`fixed bottom-4 z-[70] w-64 rounded-2xl border p-4 shadow-2xl ${dark ? 'border-white/10 bg-[#0D0D0F]' : 'border-slate-200 bg-white'}`}>
+      <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#C49A52]/40 bg-[#C49A52]/15 text-sm font-black text-[#C49A52]">{displayName.trim().slice(0,1)}</div><div className="min-w-0"><div className={`truncate text-sm font-black ${dark ? 'text-[#F4F1EA]' : 'text-slate-900'}`}>{displayName}</div><div className={`mt-1 truncate text-[11px] ${muted}`}>{displayRole}</div><div className={`mt-1 text-[10px] ${muted}`}>@{user.username}</div></div></div>
+      {pinnedMode !== 'full' && <div className="mt-4 grid grid-cols-2 gap-2">
+        <button type="button" onClick={() => { setProfileOpen(false); onOpenTour(); }} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11px] font-bold ${ghostBtn}`}><Compass className="h-4 w-4" />{isAr ? 'الجولة' : 'Tour'}</button>
+        <button type="button" onClick={toggleFullscreen} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11px] font-bold ${ghostBtn}`}>{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}{isFullscreen ? (isAr ? 'تصغير' : 'Exit full') : (isAr ? 'ملء الشاشة' : 'Full screen')}</button>
+      </div>}
+      <div className="mt-2">{accountActions}</div>
+    </div>}
   </>;
 }
