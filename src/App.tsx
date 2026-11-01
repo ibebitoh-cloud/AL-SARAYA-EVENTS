@@ -52,6 +52,7 @@ const PriceListsView = lazy(() => import('./components/PriceListsView').then((m)
 const DashboardView = lazy(() => import('./components/DashboardView').then((m) => ({ default: m.DashboardView })));
 const BookingsView = lazy(() => import('./components/BookingsView').then((m) => ({ default: m.BookingsView })));
 const CalendarAgendaView = lazy(() => import('./components/CalendarAgendaView').then((m) => ({ default: m.CalendarAgendaView })));
+const Studio3DProView = lazy(() => import('./components/Studio3DProView').then((m) => ({ default: m.Studio3DProView })));
 const EventLayoutDesigner = lazy(() => import('./components/EventLayoutDesigner').then((m) => ({ default: m.EventLayoutDesigner })));
 const CateringMenuView = lazy(() => import('./components/CateringMenuView').then((m) => ({ default: m.CateringMenuView })));
 const ContractsView = lazy(() => import('./components/ContractsView').then((m) => ({ default: m.ContractsView })));
@@ -370,7 +371,7 @@ export default function App() {
   const tabAllowed = (tab: VenueTab) => tab === 'permissions' ? isCeo : canAccess(portalUser, tab) || (tab === 'site_content' && may('site_content'));
   const viewOnly = (area: EditArea, node: React.ReactNode) => may(area) ? node : <ViewOnly language={language}>{node}</ViewOnly>;
   const swipeStartX = useRef<number | null>(null);
-  const swipeableTabs: VenueTab[] = (['package_builder', 'price_lists', 'dashboard', 'bookings', 'agenda', 'company', 'event_designer', 'inventory', 'services', 'finance', 'catering', 'contracts', 'clients', 'payments', 'expenses', 'staff', 'reports', 'photo_library', 'site_content', 'permissions'] as VenueTab[]).filter(tabAllowed);
+  const swipeableTabs: VenueTab[] = (['package_builder', 'price_lists', 'dashboard', 'bookings', 'agenda', 'company', 'event_designer', 'studio_3d', 'inventory', 'services', 'finance', 'catering', 'contracts', 'clients', 'payments', 'expenses', 'staff', 'reports', 'photo_library', 'site_content', 'permissions'] as VenueTab[]).filter(tabAllowed);
   const handleScreenTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest('input, textarea, select, button, a, [role="button"], [data-no-screen-swipe]')) {
@@ -428,6 +429,7 @@ export default function App() {
       {currentTab === 'bookings' && canAccess(portalUser, 'bookings') && <BookingsView bookings={bookings} halls={halls} onOpenNewBooking={() => { if (may('bookings')) { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } }} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={(id, status) => { if (may('bookings')) handleUpdateBookingStatus(id, status); }} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)}  language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={portalUser?.role === 'ceo'} canOverrideConflict={may('booking_override')} currentUser={portalUser} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} />}
       {currentTab === 'agenda' && canAccess(portalUser, 'agenda') && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={may('bookings') ? () => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } : undefined} language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={isCeo} canOverrideConflict={may('booking_override')} currentUser={portalUser} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} />}
       {currentTab === 'event_designer' && canAccess(portalUser, 'event_designer') && <EventLayoutDesigner language={language} halls={halls} onUpdateHall={handleUpdateHall} />}
+      {currentTab === 'studio_3d' && canAccess(portalUser, 'studio_3d') && <Studio3DProView language={language} halls={halls} onUpdateHall={handleUpdateHall} />}
       {currentTab === 'catering' && canAccess(portalUser, 'catering') && viewOnly('catering', <CateringMenuView language={language} />)}
       {currentTab === 'contracts' && canAccess(portalUser, 'contracts') && viewOnly('contracts', <ContractsView bookings={bookings} language={language} canEdit={may('contracts')} company={companyProfile} />)}
       {currentTab === 'clients' && canAccess(portalUser, 'clients') && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)}  language={language} onSaveClient={may('clients') ? handleSaveClient : undefined} onDeleteClient={isCeo ? handleDeleteClient : undefined} />}
@@ -503,7 +505,7 @@ export default function App() {
               {isInternalManagementScreen && portalUser ? ([
                 ['package_builder', 'تصميم الحفلة', 'Event Planner'], ['price_lists', 'قوائم الأسعار', 'Price Lists'], ['dashboard', 'لوحة التحكم', 'Dashboard'], ['bookings', 'الحجوزات', 'Bookings'], ['agenda', 'التقويم', 'Calendar'],
                 ['photo_library', 'مكتبة الصور', 'Photo Library'], ['inventory', 'المخزون', 'Inventory'], ['company', 'ملف الشركة', 'Company Profile'], ['site_content', 'محتوى الموقع', 'Website Content'], ['permissions', 'صلاحيات التعديل', 'Edit Permissions'],
-                ['event_designer', 'مصمم المناسبات', 'Event Designer'], ['services', 'الخدمات', 'Services'], ['finance', 'المالية', 'Finance'],
+                ['event_designer', 'مصمم المناسبات', 'Event Designer'], ['studio_3d', 'استوديو 3D برو', '3D Studio Pro'], ['services', 'الخدمات', 'Services'], ['finance', 'المالية', 'Finance'],
                 ['catering', 'الضيافة', 'Catering'], ['contracts', 'العقود', 'Contracts'], ['clients', 'العملاء', 'Clients'],
                 ['payments', 'المدفوعات', 'Payments'], ['expenses', 'المصروفات', 'Expenses'], ['staff', 'الموظفون', 'Staff'], ['reports', 'التقارير', 'Reports'],
               ] as [VenueTab, string, string][]).filter(([tab]) => tabAllowed(tab)).map(([tab, arLabel, enLabel]) => <button key={tab} type="button" onClick={() => { sound.click(650); setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-current={currentTab === tab ? 'page' : undefined} className={currentTab === tab ? 'text-start font-bold text-amber-500' : 'text-start text-slate-500 transition-colors hover:text-amber-500'}>{language === 'ar' ? arLabel : enLabel}</button>) : <>

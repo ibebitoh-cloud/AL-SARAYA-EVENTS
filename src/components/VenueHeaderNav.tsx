@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  LayoutDashboard, Calendar, Building, Ruler, Package, Utensils, Wallet, Images,
+  LayoutDashboard, Calendar, Building, Ruler, Cuboid as Box3D, Package, Utensils, Wallet, Images,
   ClipboardList, Users, FileText, CreditCard, Receipt, UserRound, Settings2,
   CalendarDays, Sparkles, Tags, Globe2, ShieldCheck, X, ChevronLeft, ChevronRight, Home, Sun, Moon, Maximize2, Minimize2, LogOut, Compass,
 } from 'lucide-react';
@@ -119,6 +119,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     { id: 'clients', label: isAr ? 'العملاء' : 'Clients', icon: Users },
     { id: 'package_builder', label: isAr ? 'تخطيط المناسبة' : 'Event Planner', icon: Sparkles },
     { id: 'event_designer', label: isAr ? 'مصمم المناسبات' : 'Event Designer', icon: Ruler },
+    { id: 'studio_3d', label: isAr ? 'استوديو 3D برو' : '3D Studio Pro', icon: Box3D },
     { id: 'photo_library', label: isAr ? 'مكتبة الصور' : 'Photo Library', icon: Images },
     { id: 'contracts', label: isAr ? 'العقود' : 'Contracts', icon: FileText },
     { id: 'services', label: isAr ? 'الخدمات' : 'Services', icon: Utensils },
@@ -139,7 +140,7 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
   const groupedItems = [
     { title: isAr ? 'نظرة عامة' : 'Overview', ids: ['dashboard'] },
     { title: isAr ? 'الحجوزات والعملاء' : 'Bookings & Clients', ids: ['bookings', 'agenda', 'clients', 'contracts'] },
-    { title: isAr ? 'تخطيط وتجهيز المناسبة' : 'Event Planning', ids: ['package_builder', 'event_designer', 'photo_library', 'services', 'catering'] },
+    { title: isAr ? 'تخطيط وتجهيز المناسبة' : 'Event Planning', ids: ['package_builder', 'event_designer', 'studio_3d', 'photo_library', 'services', 'catering'] },
     { title: isAr ? 'التشغيل والمالية' : 'Operations & Finance', ids: ['inventory', 'staff', 'finance', 'payments', 'expenses', 'reports'] },
     { title: isAr ? 'الإعدادات' : 'Setup', ids: ['price_lists', 'company', 'site_content', 'permissions'] },
   ].map((group) => ({ ...group, items: navItems.filter((item) => group.ids.includes(item.id)) })).filter((group) => group.items.length);

@@ -31,6 +31,8 @@ type Props = {
   hall?: Partial<HallDimensions>;
   /** Decor style id (src/data/venueModel.ts). */
   decor?: string;
+  /** 'basic' = accurate sizes, Plan + 3D, plain finish. 'pro' = decor styles, walk-through, place settings, chandeliers and lighting. */
+  tier?: 'basic' | 'pro';
   /** Customer / presentation view: nothing can be dragged. */
   readOnly?: boolean;
   onSelect?: (id: string | null) => void;
@@ -45,15 +47,15 @@ const THREE_URL = 'three';
 const CONTROLS_URL = 'three/addons/controls/OrbitControls.js';
 const UTILS_URL = 'three/addons/utils/BufferGeometryUtils.js';
 
-const modeToView = (mode?: Props['mode']): View3D => (mode === 'pov' ? 'walk' : mode === 'plan' ? 'plan' : '3d');
+const modeToView = (mode?: Props['mode'], tier: Props['tier'] = 'basic'): View3D => (mode === 'pov' && tier === 'pro' ? 'walk' : mode === 'plan' ? 'plan' : '3d');
 
-export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, readOnly = false, selectedId, rotationMode = false, onSelect, onMove, onRotate, onViewChange }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, selectedId, rotationMode = false, onSelect, onMove, onRotate, onViewChange }: Props) {
   const isAr = language === 'ar';
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [view, setView] = useState<View3D>(() => modeToView(mode));
+  const [view, setView] = useState<View3D>(() => modeToView(mode, tier));
   const [measure, setMeasure] = useState(true);
   const itemsRef = useRef(items);
   itemsRef.current = items;
@@ -82,7 +84,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   const poolKey = hall?.pool ? `${hall.pool.widthM}x${hall.pool.depthM}-${hall.pool.side}` : '';
   const decorId = decorStyle(decor).id;
 
-  useEffect(() => { setView(modeToView(mode)); }, [mode]);
+  useEffect(() => { setView(modeToView(mode, tier)); }, [mode, tier]);
 
   useEffect(() => {
     let disposed = false;
@@ -104,7 +106,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
 
       const W = width;
       const D = depth;
-      const style = decorStyle(decorId);
+      const pro = tier === 'pro';
+      const style = pro ? decorStyle(decorId) : { ...decorStyle('classic_white'), centerpiece: 'none' as const };
       const coarse = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
       const host = hostRef.current;
       const scene = new THREE.Scene();
@@ -257,7 +260,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           trim.position.set(0, 1.0, 0.13); g.add(trim);
           const crown = new THREE.Mesh(own(new THREE.BoxGeometry(length, 0.12, 0.1)), trimMat);
           crown.position.set(0, wallH - 0.06, 0.12); g.add(crown);
-          const count = Math.max(2, Math.floor(length / 4));
+          const count = pro ? Math.max(2, Math.floor(length / 4)) : 0;
           const washGeo = own(new THREE.PlaneGeometry(1.4, Math.min(3.2, wallH * 0.75)));
           for (let i = 0; i < count; i++) {
             const wash = new THREE.Mesh(washGeo, washMat);
@@ -289,7 +292,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         const crystalGeo = own(new THREE.SphereGeometry(0.28, 16, 12));
         const crystalMat = std('#FFF3D6', 0.2, 0.1, { emissive: new THREE.Color('#FFD08A'), emissiveIntensity: 0.7, transparent: true, opacity: 0.9 });
         const spacing = 7;
-        const cols = Math.max(1, Math.round(W / spacing));
+        const cols = pro ? Math.max(1, Math.round(W / spacing)) : 0;
         const rows = Math.max(1, Math.round(D / spacing));
         for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) {
           const ch = new THREE.Group();
@@ -320,7 +323,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         }
         scene.add(edge);
         const poleGeo = own(new THREE.CylinderGeometry(0.05, 0.06, 4.6, 8));
-        const strands = Math.max(2, Math.floor(D / 6));
+        const strands = pro ? Math.max(2, Math.floor(D / 6)) : 0;
         const bulbs: [number, number, number][] = [];
         for (let s = 0; s < strands; s++) {
           const z = -D / 2 + (D / strands) * (s + 0.5);
@@ -456,6 +459,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const cyl = (parent: any, r: number, h: number, mat: any, x = 0, y = h / 2, z = 0, shadow = true) => mesh(parent, unitCyl, mat, [x, y, z], [r, h, r], shadow);
       const ball = (parent: any, r: number, mat: any, x: number, y: number, z: number) => mesh(parent, sphereGeo, mat, [x, y, z], [r, r, r], false);
       const flowerCluster = (parent: any, x: number, y: number, z: number, r: number) => {
+        if (!pro) return;
         ball(parent, r, M.flower, x, y, z);
         for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; ball(parent, r * 0.38, i % 2 ? M.flowerAccent : M.leaf, x + Math.cos(a) * r * 0.8, y - r * 0.25, z + Math.sin(a) * r * 0.8); }
       };
@@ -525,8 +529,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
             skirt.position.y = 0.37; skirt.castShadow = true; skirt.receiveShadow = true; group.add(skirt);
             mesh(group, unitCyl, M.runner, [0, 0.766, 0], [r * 0.45, 0.004, r * 0.45], false);
           }
-          addPlaceSettings(group, item, w, d);
-          addCenterpiece(group);
+          if (pro) { addPlaceSettings(group, item, w, d); addCenterpiece(group); }
           addChairs(group, item);
           labelY = style.centerpiece === 'tall' ? 2.1 : 1.3;
         } else if (item.type === 'chairs') {
@@ -950,7 +953,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       disposed = true;
       cleanup?.();
     };
-  }, [width, depth, language, ceilingM, outdoor, floorKind, poolKey, decorId]);
+  }, [width, depth, language, ceilingM, outdoor, floorKind, poolKey, decorId, tier]);
 
   useEffect(() => { engineRef.current?.rebuild?.(); }, [items]);
   useEffect(() => { engineRef.current?.applyView?.(view); onViewChange?.(view); }, [view, ready]);
@@ -966,7 +969,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
     { id: 'plan', icon: LayoutGrid, en: 'Plan', ar: 'مسقط' },
     { id: '3d', icon: Box, en: '3D', ar: '3D' },
     { id: 'walk', icon: Footprints, en: 'Walk', ar: 'تجوّل' },
-  ];
+  ].filter((b) => tier === 'pro' || b.id !== 'walk') as { id: View3D; icon: typeof Box; en: string; ar: string }[];
   const hint = view === 'walk'
     ? (isAr ? 'اسحب للنظر حولك · الأسهم أو WASD للمشي' : 'Drag to look around · arrows or WASD to walk')
     : view === 'plan'

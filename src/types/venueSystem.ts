@@ -24,6 +24,7 @@ export type VenueTab =
   | 'agenda'
   | 'floorplan'
   | 'event_designer'
+  | 'studio_3d'
   | 'live_stage'
   | 'catering'
   | 'contracts'
