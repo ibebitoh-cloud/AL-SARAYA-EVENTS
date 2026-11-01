@@ -54,7 +54,7 @@ export function Studio3DProView({ language, halls, onUpdateHall }: Props) {
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
             <span className="flex items-center gap-1 font-mono text-amber-100" dir="ltr"><Clock className="h-3.5 w-3.5" />{mm}:{ss}</span>
             <span>{isAr ? `الجلسات المتبقية: ${left}` : `${left} sessions left`}</span>
-            <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="rounded-lg bg-amber-400 px-2.5 py-1 font-black text-slate-950 hover:bg-amber-300">{isAr ? `أكمل الدفع للاستخدام · ${price}` : `Complete payment to use · ${price}`}</a>
+            <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="rounded-lg bg-amber-400 px-2.5 py-1 font-black text-slate-950 hover:bg-amber-300">{isAr ? 'فعّل الاشتراك للاستخدام' : 'Activate subscription to use'}</a>
           </div>
         </div>
         <EventLayoutDesigner language={language} halls={halls} onUpdateHall={onUpdateHall} edition="pro" canSave={false} demo />
@@ -85,15 +85,16 @@ export function Studio3DProView({ language, halls, onUpdateHall }: Props) {
           <button type="button" onClick={startSession} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300"><Sparkles className="h-4 w-4" />{isAr ? 'ابدأ جلسة تجربة' : 'Start demo session'}</button>
         </> : <>
           <div className="flex items-center gap-2 text-sm font-bold text-white"><Lock className="h-4 w-4 text-amber-300" />{isAr ? 'انتهت التجربة' : 'The demo has ended'}</div>
-          <p className="mt-1 text-xs text-slate-400">{isAr ? `استخدمت كل جلسات التجربة. أكمل الدفع (${price}) لتفعيل الخدمة.` : `All demo sessions are used. Complete the ${price} payment to activate the service.`}</p>
+          <p className="mt-1 text-xs text-slate-400">{isAr ? 'استخدمت كل جلسات التجربة. الخدمة غير قابلة للاستخدام بدون اشتراك فعّال.' : 'All demo sessions are used. The service can’t be used without an active subscription.'}</p>
         </>}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/30 bg-amber-400/5 p-3">
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{isAr ? 'خدمة أونلاين · تفعيل مطلوب' : 'Online service · activation required'}</div>
-            <div className="mt-0.5 text-lg font-black text-white" dir="ltr">{price} <span className="text-xs font-bold text-slate-400">{isAr ? 'لتفعيل الخدمة' : 'to activate'}</span></div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-amber-200"><Lock className="h-3.5 w-3.5" />{isAr ? 'خدمة أونلاين · الاشتراك غير مفعّل' : 'Online service · subscription not active'}</div>
+            <p className="mt-1 text-xs leading-5 text-slate-300">{isAr ? '3D Studio Pro غير قابل للاستخدام بدون اشتراك فعّال. التجربة للمعاينة فقط: لا حفظ ولا عرض للعملاء.' : '3D Studio Pro can’t be used without an active subscription. The demo is a preview only: no saving and no client presentation.'}</p>
           </div>
-          <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300"><CreditCard className="h-4 w-4" />{isAr ? 'أكمل الدفع للاستخدام' : 'Complete payment to use'}</a>
+          <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300"><CreditCard className="h-4 w-4" />{isAr ? 'فعّل الاشتراك' : 'Activate subscription'}</a>
         </div>
+        <p className="mt-2 text-[10px] text-slate-500">{isAr ? `الاشتراك ${price} · يتفعّل بعد إتمام الدفع.` : `Subscription ${price} · activates once payment is completed.`}</p>
       </div>
     </section>
   );

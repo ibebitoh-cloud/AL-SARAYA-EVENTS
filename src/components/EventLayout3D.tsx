@@ -1032,7 +1032,13 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       <div ref={hostRef} data-rotation-ui className="absolute inset-0" />
       {watermark && <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] overflow-hidden">
         <div className="absolute -inset-1/2 flex flex-wrap content-start gap-x-20 gap-y-16 opacity-[0.14]" style={{ transform: 'rotate(-24deg)' }}>
-          {Array.from({ length: 120 }, (_, i) => <span key={i} className="whitespace-nowrap text-3xl font-black tracking-[0.35em] text-amber-200">{watermark}</span>)}
+          {Array.from({ length: 90 }, (_, i) => <span key={i} className="whitespace-nowrap text-2xl font-black tracking-[0.3em] text-amber-200">{watermark}</span>)}
+        </div>
+        <div className="absolute inset-x-3 top-16 flex justify-center">
+          <div className="max-w-md rounded-xl border border-amber-400/40 bg-[#0D0D0F]/85 px-4 py-2.5 text-center backdrop-blur">
+            <div className="text-[11px] font-black tracking-widest text-amber-200">{isAr ? 'معاينة فقط · الاشتراك غير مفعّل' : 'PREVIEW ONLY · SUBSCRIPTION NOT ACTIVE'}</div>
+            <div className="mt-1 text-[10px] leading-4 text-slate-300">{isAr ? 'هذا العرض غير قابل للاستخدام مع العملاء بدون اشتراك 3D Studio Pro فعّال. الحفظ والعرض للعميل متوقفان.' : 'This view can’t be used with clients without an active 3D Studio Pro subscription. Saving and client presentation are locked.'}</div>
+          </div>
         </div>
       </div>}
       {!readOnly && view !== 'walk' && rotationMode && selectedId && items.some((item) => item.id === selectedId) && <div ref={rotationBarRef} data-rotation-ui className="pointer-events-auto absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" style={{ left: '50%', top: '50%' }} onPointerDown={(event) => event.stopPropagation()}>

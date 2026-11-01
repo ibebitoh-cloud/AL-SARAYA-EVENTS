@@ -475,7 +475,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => setLayoutMode('2d')} className={`px-3 py-2 rounded-lg text-xs font-bold border ${layoutMode === '2d' ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-950 text-slate-300 border-slate-700'}`}>{isAr ? 'مخطط 2D' : '2D Plan'}</button>
               <button type="button" onClick={() => setLayoutMode('3d')} className={`px-3 py-2 rounded-lg text-xs font-bold border ${layoutMode === '3d' ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-950 text-slate-300 border-slate-700'}`}>{pro ? (isAr ? '3D والتجوّل' : '3D & Walk') : '3D'}</button>
-              <button type="button" onClick={() => setClientView(true)} className="px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-white">{isAr ? 'عرض العميل' : 'Client View'}</button>
+              <button type="button" onClick={() => setClientView(true)} disabled={demo} title={demo ? (isAr ? 'العرض للعميل يتطلب اشتراك فعّال' : 'Client presentation needs an active subscription') : undefined} className="disabled:cursor-not-allowed disabled:opacity-40 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-white">{isAr ? 'عرض العميل' : 'Client View'}</button>
               {activeHall && <button type="button" onClick={saveAsPlan} disabled={!canSave} title={canSave ? undefined : (isAr ? "الحفظ متاح في النسخة الكاملة" : "Saving is in the full version")} className="disabled:cursor-not-allowed disabled:opacity-40 px-3 py-2 rounded-lg border border-amber-400/40 bg-amber-400/10 text-amber-200 text-xs font-bold flex items-center gap-1.5"><Files className="w-3.5 h-3.5" />{isAr ? 'حفظ كخطة' : 'Save as Plan'}</button>}
               <button type="button" onClick={saveDesign} disabled={!canSave} title={canSave ? undefined : (isAr ? "الحفظ متاح في النسخة الكاملة" : "Saving is in the full version")} className="disabled:cursor-not-allowed disabled:opacity-40 px-3 py-2 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5"><Save className="w-3.5 h-3.5" />{saved ? (isAr ? 'تم الحفظ' : 'Saved') : (isAr ? (activePlanId ? 'تحديث الخطة' : 'حفظ الافتراضي') : (activePlanId ? 'Update Plan' : 'Save Default'))}</button>
             </div>
@@ -503,7 +503,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </div>
           <div className="p-2 sm:p-4">
             <div className="mx-auto h-[70vh] min-h-[440px] max-w-6xl">
-              <EventLayout3D items={items} width={width} depth={depth} language={language} hall={scene3D} decor={decor} tier={edition} mode="overview" readOnly watermark={demo ? 'DEMO' : undefined} />
+              <EventLayout3D items={items} width={width} depth={depth} language={language} hall={scene3D} decor={decor} tier={edition} mode="overview" readOnly watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined} />
             </div>
             <p className="mx-auto mt-2 max-w-6xl px-1 text-[11px] leading-5 text-slate-500">{isAr ? 'تصور توضيحي بالمقاسات الحقيقية للقاعة والأثاث؛ الألوان والزهور النهائية يتم اختيارها مع فريق السرايا.' : 'Illustration at the real size of the venue and furniture; final colours and flowers are chosen with the ELSARAYA team.'}</p>
           </div>
@@ -605,7 +605,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   hall={scene3D}
                   decor={decor}
                   tier={edition}
-                  watermark={demo ? 'DEMO' : undefined}
+                  watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined}
                   mode="overview"
                   selectedId={selectedId}
                   rotationMode={rotationMode}
