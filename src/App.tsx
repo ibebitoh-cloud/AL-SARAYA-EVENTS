@@ -30,7 +30,7 @@ import BeamWordmarkFooter from './components/ui/beam-wordmark-footer';
 import { DaliCredit, DaliOverlayCredit } from './components/DaliCredit';
 import { SAMPLE_BOOKINGS, markSamplesMerged, mergeSampleEvents } from './data/sampleEvents';
 import { DaliLoader, DaliLoaderOverlay, GlobalDaliLoader } from './components/DaliLoader';
-import { BrandLogo } from './components/BrandLogo';
+import { BrandLogo, BRAND_LOGOS } from './components/BrandLogo';
 import { HoneyEmberBackground } from './components/ui/honey-ember-background';
 import { BottomNavBar } from './components/ui/bottom-nav-bar';
 import { Calendar, CalendarDays, Images, LayoutDashboard, Package, Receipt, Users, Wallet } from 'lucide-react';
@@ -279,7 +279,7 @@ export default function App() {
     try {
       const saved = { ...defaults, ...(JSON.parse(window.localStorage.getItem('saraya-company-profile') || '') || {}) };
       // The company is "ELSARAYA EVENTS"; replace the old default name if it was saved.
-      if (saved.nameEn === 'SARAYA EVENTS') saved.nameEn = defaults.nameEn;
+      if (/^\s*(al[\s-]*)?saraya[\s-]*events?\s*$/i.test(String(saved.nameEn || ''))) saved.nameEn = defaults.nameEn;
       return saved;
     } catch { return defaults; }
   });
@@ -441,7 +441,7 @@ export default function App() {
     {!isInternalManagementScreen ? <BeamWordmarkFooter
       className="mt-12 w-full"
       dir={isAr ? 'rtl' : 'ltr'}
-      logoSrc={theme === 'dark' ? '/brand/elsaraya-logo-white.png' : '/brand/elsaraya-logo-black.png'} brand={companyProfile.nameEn}
+      logoSrc={theme === 'dark' ? BRAND_LOGOS.full.white : '/brand/elsaraya-logo-black.png'} logoAlt="ELSARAYA EVENTS" brand={companyProfile.nameEn}
       background={theme === 'dark' ? '#070b12' : '#faf9f6'}
       ink={theme === 'dark' ? '#f8fafc' : '#0f172a'}
       muted={theme === 'dark' ? '#94a3b8' : '#64748b'}
