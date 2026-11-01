@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import {
   Volume2,
@@ -363,6 +364,8 @@ export function SarayaBrandHeader({
       {/* =========================================================================
           LUXURY MOBILE & TABLET DRAWER OVERLAY
           ========================================================================= */}
+      {/* Rendered into <body>: the header's backdrop blur would otherwise trap the fixed drawer inside the 80px bar. */}
+      {typeof document !== 'undefined' && createPortal(
       <AnimatePresence>
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-[100] lg:hidden">
@@ -581,7 +584,9 @@ export function SarayaBrandHeader({
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body,
+      )}
     </header>
   );
 }
