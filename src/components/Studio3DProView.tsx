@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Clock, Footprints, Lock, Palette, Presentation, Sparkles } from 'lucide-react';
+import { Box, Clock, CreditCard, Footprints, Lock, Palette, Presentation, Sparkles } from 'lucide-react';
 import type { Hall, Language } from '../types/venueSystem';
 import { EventLayoutDesigner } from './EventLayoutDesigner';
 import { BrandLogo } from './BrandLogo';
@@ -18,13 +18,14 @@ const writeDemo = (state: DemoState) => { try { window.localStorage.setItem(PRO_
 
 interface Props { language: Language; halls: Hall[]; onUpdateHall: (hall: Hall) => void; }
 
-/** 3D Studio Pro: the premium 3D designer. Runs as a limited demo until DALI STUDIO unlocks it (src/data/proFeatures.ts). */
+/** 3D Studio Pro: the premium 3D designer. Runs as a limited demo until payment is completed and it is unlocked (src/data/proFeatures.ts). */
 export function Studio3DProView({ language, halls, onUpdateHall }: Props) {
   const isAr = language === 'ar';
   const [demo, setDemo] = useState<DemoState>(() => (typeof window === 'undefined' ? { used: 0 } : readDemo()));
   const [now, setNow] = useState(() => Date.now());
   const active = PRO_3D.unlocked || Boolean(demo.activeUntil && demo.activeUntil > now);
   const left = Math.max(0, PRO_3D.demoSessions - demo.used);
+  const price = `$${PRO_3D.priceUsd}`;
 
   useEffect(() => {
     if (PRO_3D.unlocked || !demo.activeUntil) return;
@@ -53,18 +54,10 @@ export function Studio3DProView({ language, halls, onUpdateHall }: Props) {
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
             <span className="flex items-center gap-1 font-mono text-amber-100" dir="ltr"><Clock className="h-3.5 w-3.5" />{mm}:{ss}</span>
             <span>{isAr ? `الجلسات المتبقية: ${left}` : `${left} sessions left`}</span>
-            <span className="text-slate-500">{isAr ? 'الحفظ متاح في النسخة الكاملة' : 'Saving is in the full version'}</span>
+            <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="rounded-lg bg-amber-400 px-2.5 py-1 font-black text-slate-950 hover:bg-amber-300">{isAr ? 'فعّل الاشتراك للاستخدام' : 'Activate subscription to use'}</a>
           </div>
         </div>
-        <div className="relative">
-          <EventLayoutDesigner language={language} halls={halls} onUpdateHall={onUpdateHall} edition="pro" canSave={false} />
-          {/* DEMO watermark over the whole tool, including the 3D canvas and any screenshot of it. */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[25] overflow-hidden">
-            <div className="absolute -inset-1/2 flex flex-wrap content-start gap-x-24 gap-y-20 opacity-[0.10]" style={{ transform: 'rotate(-24deg)' }}>
-              {Array.from({ length: 160 }, (_, i) => <span key={i} className="whitespace-nowrap text-2xl font-black tracking-[0.3em] text-amber-200">DEMO · DALI STUDIO</span>)}
-            </div>
-          </div>
-        </div>
+        <EventLayoutDesigner language={language} halls={halls} onUpdateHall={onUpdateHall} edition="pro" canSave={false} demo />
       </div>
     );
   }
@@ -92,9 +85,16 @@ export function Studio3DProView({ language, halls, onUpdateHall }: Props) {
           <button type="button" onClick={startSession} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300"><Sparkles className="h-4 w-4" />{isAr ? 'ابدأ جلسة تجربة' : 'Start demo session'}</button>
         </> : <>
           <div className="flex items-center gap-2 text-sm font-bold text-white"><Lock className="h-4 w-4 text-amber-300" />{isAr ? 'انتهت التجربة' : 'The demo has ended'}</div>
-          <p className="mt-1 text-xs text-slate-400">{isAr ? 'استخدمت كل جلسات التجربة. لتفعيل النسخة الكاملة تواصل مع DALI STUDIO.' : 'All demo sessions are used. Contact DALI STUDIO to unlock the full version.'}</p>
+          <p className="mt-1 text-xs text-slate-400">{isAr ? 'استخدمت كل جلسات التجربة. الخدمة غير قابلة للاستخدام بدون اشتراك فعّال.' : 'All demo sessions are used. The service can’t be used without an active subscription.'}</p>
         </>}
-        <a href={PRO_3D.contactUrl} target="_blank" rel="noreferrer" className="mt-3 block text-xs font-bold text-amber-300 hover:text-amber-200">{isAr ? `لتفعيل النسخة الكاملة: DALI STUDIO ${PRO_3D.contactLabel}` : `Unlock the full version: DALI STUDIO ${PRO_3D.contactLabel}`}</a>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/30 bg-amber-400/5 p-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-amber-200"><Lock className="h-3.5 w-3.5" />{isAr ? 'خدمة أونلاين · الاشتراك غير مفعّل' : 'Online service · subscription not active'}</div>
+            <p className="mt-1 text-xs leading-5 text-slate-300">{isAr ? '3D Studio Pro غير قابل للاستخدام بدون اشتراك فعّال. التجربة للمعاينة فقط: لا حفظ ولا عرض للعملاء.' : '3D Studio Pro can’t be used without an active subscription. The demo is a preview only: no saving and no client presentation.'}</p>
+          </div>
+          <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300"><CreditCard className="h-4 w-4" />{isAr ? 'فعّل الاشتراك' : 'Activate subscription'}</a>
+        </div>
+        <p className="mt-2 text-[10px] text-slate-500">{isAr ? `الاشتراك ${price} · يتفعّل بعد إتمام الدفع.` : `Subscription ${price} · activates once payment is completed.`}</p>
       </div>
     </section>
   );

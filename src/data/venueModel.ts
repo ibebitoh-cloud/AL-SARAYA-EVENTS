@@ -158,7 +158,7 @@ export const WALL_MARGIN_M = 0.9;
 
 // ─── Decor styles ─────────────────────────────────────────────────────────────────────────
 
-export type DecorStyleId = 'royal_gold' | 'black_gold' | 'classic_white' | 'garden' | 'corporate';
+export type DecorStyleId = 'royal_gold' | 'black_gold' | 'classic_white' | 'garden' | 'corporate' | 'custom';
 
 export interface DecorStyle {
   id: DecorStyleId;
@@ -184,7 +184,28 @@ export const DECOR_STYLES: DecorStyle[] = [
   { id: 'corporate', en: 'Corporate', ar: 'رسمي (مؤتمرات)', linen: '#1A1A1D', runner: '#2A2A2E', chair: '#202023', chairFrame: '#3A3A3E', centerpiece: 'none', flower: '#FFFFFF', flowerAccent: '#C49A52', stage: '#1A1A1D', backdrop: '#0D0D0F', uplight: '#FFFFFF' },
 ];
 
-export const decorStyle = (id?: string | null) => DECOR_STYLES.find((s) => s.id === id) || DECOR_STYLES[0];
+/** The colours a planner can set in a custom style. */
+export const CUSTOM_DECOR_FIELDS = ['linen', 'runner', 'chair', 'chairFrame', 'flower', 'flowerAccent', 'stage', 'backdrop', 'uplight'] as const;
+export type CustomDecor = Pick<DecorStyle, typeof CUSTOM_DECOR_FIELDS[number] | 'centerpiece'>;
+const CUSTOM_PREFIX = 'custom:';
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** A custom style is saved in the same `decor` field as "custom:{json}" so plans keep it. */
+export const encodeCustomDecor = (custom: CustomDecor) => CUSTOM_PREFIX + JSON.stringify(custom);
+export const isCustomDecor = (id?: string | null) => Boolean(id && id.startsWith(CUSTOM_PREFIX));
+
+export const decorStyle = (id?: string | null): DecorStyle => {
+  if (id && id.startsWith(CUSTOM_PREFIX)) {
+    const base = DECOR_STYLES[0];
+    let saved: Partial<CustomDecor> = {};
+    try { saved = JSON.parse(id.slice(CUSTOM_PREFIX.length)) || {}; } catch {}
+    const style: DecorStyle = { ...base, id: 'custom', en: 'Custom', ar: 'مخصص' };
+    CUSTOM_DECOR_FIELDS.forEach((key) => { const v = saved[key]; if (typeof v === 'string' && HEX.test(v)) style[key] = v; });
+    if (saved.centerpiece && ['tall', 'low', 'candles', 'none'].includes(saved.centerpiece)) style.centerpiece = saved.centerpiece;
+    return style;
+  }
+  return DECOR_STYLES.find((s) => s.id === id) || DECOR_STYLES[0];
+};
 
 export const defaultDecorFor = (eventKind?: string): DecorStyleId => (eventKind === 'conference' || eventKind === 'summit' ? 'corporate' : 'royal_gold');
 

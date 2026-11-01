@@ -12,8 +12,10 @@ export const PRO_3D = {
   demoSessions: 5,
   /** Length of one demo session in minutes. */
   demoMinutes: 10,
-  contactUrl: 'https://instagram.com/dalistudioeg',
-  contactLabel: '@dalistudioeg',
+  /** One-time activation price shown on the screen. */
+  priceUsd: 250,
+  /** Where "Complete payment" goes. Replace with the real checkout link (Stripe, PayPal, Paymob...). */
+  paymentUrl: 'https://instagram.com/dalistudioeg',
 };
 
 export const PRO_3D_STORAGE_KEY = 'saraya-3d-studio-pro-demo-v1';
