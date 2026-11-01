@@ -11,12 +11,12 @@ import {
 
 // Al-Saraya's 6 venues across two locations: Arcane Hotel and Porto Said.
 // Capacity and base price are placeholders — update them from the portal (Company Profile) or here.
-const ARCANE = { city: 'Arcane Hotel', cityAr: 'فندق آركين', locationId: 'arcane' as const };
+const ARCANE = { city: 'Arcane Hotel', cityAr: 'فندق اركان', locationId: 'arcane' as const };
 const PORTO = { city: 'Porto Said', cityAr: 'بورتو سعيد', locationId: 'porto' as const };
 
 export const INITIAL_HALLS: Hall[] = [
   { id: 'arcane-pool', name: 'حمام السباحة', nameEn: 'Pool', ...ARCANE, capacity: 300, basePrice: 30000, color: '#0ea5e9' },
-  { id: 'arcane-hall', name: 'قاعة آركين', nameEn: 'Arcane Hall', ...ARCANE, capacity: 400, basePrice: 40000, color: '#6366f1' },
+  { id: 'arcane-hall', name: 'قاعة اركان', nameEn: 'Arcane Hall', ...ARCANE, capacity: 400, basePrice: 40000, color: '#6366f1' },
   { id: 'porto-veina', name: 'قاعة فيينا', nameEn: 'Veina Hall', ...PORTO, capacity: 400, basePrice: 40000, color: '#ec4899' },
   { id: 'porto-roof', name: 'الروف', nameEn: 'Roof', ...PORTO, capacity: 250, basePrice: 30000, color: '#eab308' },
   { id: 'porto-garden', name: 'الحديقة المفتوحة (أوبن إير)', nameEn: 'Open Air Garden', ...PORTO, capacity: 500, basePrice: 35000, color: '#10b981' },
@@ -121,7 +121,7 @@ export const INITIAL_BOOKINGS: Booking[] = [
     startTime: '18:00',
     endTime: '23:30',
     hallId: 'arcane-hall',
-    hallName: 'قاعة آركين',
+    hallName: 'قاعة اركان',
     locationId: 'arcane',
     guestCount: 450,
     basePrice: 45000,
@@ -227,7 +227,7 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     id: 'exp-2',
-    title: 'صيانة دورية لتكييفات قاعة آركين',
+    title: 'صيانة دورية لتكييفات قاعة اركان',
     category: 'maintenance',
     amount: 4500,
     date: '2026-10-03',
