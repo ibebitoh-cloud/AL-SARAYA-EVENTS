@@ -111,8 +111,10 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const coarse = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
       const host = hostRef.current;
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0d0d0f);
-      const fog = new THREE.Fog(0x0d0d0f, Math.max(W, D) * 2.2, Math.max(W, D) * 4.5);
+      // Basic keeps the original navy look; Pro uses the brand black and gold.
+      const bg = pro ? 0x0d0d0f : 0x08111d;
+      scene.background = new THREE.Color(bg);
+      const fog = new THREE.Fog(bg, Math.max(W, D) * 2.2, Math.max(W, D) * 4.5);
       scene.fog = fog;
 
       const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 800);
@@ -167,10 +169,10 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       if (!pro) {
         // Basic tier: a plain massing model in flat neutral colours, no gold, no textures, no glow.
         Object.assign(M, {
-          linen: std('#E4DFD5', 0.95), runner: std('#E4DFD5', 0.95), chair: std('#8F8A80', 0.95), chairFrame: std('#8F8A80', 0.95),
-          gold: std('#7C776E', 0.95), black: std('#3B3B40', 0.95), stage: std('#6F6A62', 0.95), backdrop: std('#8F8A80', 0.95),
-          sofa: std('#D6D1C6', 0.95), lens: std('#3B3B40', 0.95), flower: std('#9C978D', 0.95), flowerAccent: std('#9C978D', 0.95), leaf: std('#9C978D', 0.95),
-          silver: std('#9C978D', 0.95),
+          linen: std('#E8EDF4', 0.6), runner: std('#E8EDF4', 0.6), chair: std('#8A9AB8', 0.7), chairFrame: std('#8A9AB8', 0.7),
+          gold: std('#C9A45A', 0.4, 0.35), black: std('#171B22', 0.6), stage: std('#2C79B9', 0.5), backdrop: std('#6E7EA3', 0.6),
+          sofa: std('#E8EDF4', 0.6), lens: std('#171B22', 0.6), flower: std('#6E7EA3', 0.7), flowerAccent: std('#6E7EA3', 0.7), leaf: std('#6E7EA3', 0.7),
+          silver: std('#6E7EA3', 0.6),
         });
       }
       const ledTexture = canvasTexture(1024, 576, (ctx) => {
@@ -184,7 +186,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         ctx.fillText('ELSARAYA', 512, 260);
         ctx.font = '400 40px "Readex Pro", "Cairo", sans-serif'; ctx.fillStyle = '#F4F1EA'; ctx.fillText('EVENTS', 512, 350);
       });
-      M.led = pro ? std('#FFFFFF', 0.35, 0, { map: ledTexture, emissive: new THREE.Color('#FFFFFF'), emissiveMap: ledTexture, emissiveIntensity: 0.9 }) : std('#26262A', 0.9);
+      M.led = pro ? std('#FFFFFF', 0.35, 0, { map: ledTexture, emissive: new THREE.Color('#FFFFFF'), emissiveMap: ledTexture, emissiveIntensity: 0.9 }) : std('#171B22', 0.6);
 
       const danceTexture = canvasTexture(256, 256, (ctx) => {
         const dark = style.id === 'black_gold' || style.id === 'corporate';
@@ -192,7 +194,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         ctx.strokeStyle = dark ? 'rgba(196,154,82,.8)' : 'rgba(150,140,125,.55)'; ctx.lineWidth = 4;
         ctx.strokeRect(0, 0, 256, 256);
       });
-      M.dance = pro ? std('#FFFFFF', 0.12, 0.2, { map: danceTexture }) : std('#BDB7AC', 0.95);
+      M.dance = pro ? std('#FFFFFF', 0.12, 0.2, { map: danceTexture }) : std('#6E7EA3', 0.5);
 
       // ── Floor ──
       const floorTexture = (() => {
@@ -222,20 +224,20 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           ctx.strokeStyle = 'rgba(120,110,95,.45)'; ctx.lineWidth = 3; ctx.strokeRect(0, 0, 512, 512); ctx.beginPath(); ctx.moveTo(256, 0); ctx.lineTo(256, 512); ctx.moveTo(0, 256); ctx.lineTo(512, 256); ctx.stroke();
         }, [W / 2.4, D / 2.4]);
       })();
-      const basicFloor: Record<string, string> = { marble: '#CFCAC0', carpet: '#5E5650', wood: '#8A7560', deck: '#9A8670', grass: '#6F8065', terrace: '#9A958B' };
+      const basicFloor: Record<string, string> = { marble: '#242B36', carpet: '#242B36', wood: '#242B36', deck: '#2A3340', grass: '#2F4A3F', terrace: '#2A3340' };
       const floorMat = pro
         ? std('#FFFFFF', floorKind === 'marble' ? 0.28 : floorKind === 'carpet' || floorKind === 'grass' ? 0.95 : 0.7, 0, { map: floorTexture })
-        : std(basicFloor[floorKind] || '#CFCAC0', 0.95);
+        : std(basicFloor[floorKind] || '#242B36', 0.82, 0.05);
       const floor = new THREE.Mesh(own(new THREE.BoxGeometry(W, 0.1, D)), floorMat);
       floor.position.y = -0.05;
       floor.receiveShadow = true;
       scene.add(floor);
       // Surroundings so the hall does not float in a void.
-      const surround = new THREE.Mesh(own(new THREE.PlaneGeometry(W * 6, D * 6)), std(outdoor ? '#151512' : '#121214', 1));
+      const surround = new THREE.Mesh(own(new THREE.PlaneGeometry(W * 6, D * 6)), std(pro ? (outdoor ? '#151512' : '#121214') : '#0B1524', 1));
       surround.rotation.x = -Math.PI / 2; surround.position.y = -0.11; scene.add(surround);
 
       // ── Lights ──
-      scene.add(new THREE.HemisphereLight(0xfff1dc, 0x2a2420, outdoor ? 1.1 : 1.5));
+      scene.add(pro ? new THREE.HemisphereLight(0xfff1dc, 0x2a2420, outdoor ? 1.1 : 1.5) : new THREE.HemisphereLight(0xcfe5ff, 0x172033, 1.8));
       scene.add(new THREE.AmbientLight(0xffffff, 0.18));
       const key = new THREE.DirectionalLight(0xfff4e6, outdoor ? 1.6 : 2.0);
       key.position.set(W * 0.25, Math.max(W, D) * 1.1, D * 0.35);
@@ -259,7 +261,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const washMat = own(new THREE.MeshBasicMaterial({ map: washTexture, color: new THREE.Color(style.uplight), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
       if (!outdoor) {
         const wallH = Math.max(2.4, ceilingM);
-        const wallMat = std(pro ? '#CFC5B4' : '#B5B0A6', 0.9);
+        const wallMat = std(pro ? '#CFC5B4' : '#303846', pro ? 0.9 : 0.7);
         const trimMat = M.gold;
         const panelMat = std('#B8AC97', 0.8);
         const makeWall = (length: number, nx: number, nz: number) => {
@@ -297,7 +299,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           wallGroups.push({ group: g, nx, nz, offset: nx ? W / 2 : D / 2 });
         });
         // Base outline stays visible when a wall is cut away for the camera.
-        const base = new THREE.Mesh(own(new THREE.BoxGeometry(W + 0.4, 0.12, D + 0.4)), std('#3A352E', 0.9));
+        const base = new THREE.Mesh(own(new THREE.BoxGeometry(W + 0.4, 0.12, D + 0.4)), std(pro ? '#3A352E' : '#171B22', 0.9));
         base.position.y = -0.07; scene.add(base);
         // Chandeliers hung 1.2 m below the ceiling.
         const ringGeo = own(new THREE.TorusGeometry(0.55, 0.035, 8, 32));
@@ -382,7 +384,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         const radius = variant === 'badge' ? ch / 2 : 22;
         ctx.beginPath();
         ctx.moveTo(radius, 4); ctx.lineTo(cw - radius, 4); ctx.quadraticCurveTo(cw - 4, 4, cw - 4, radius); ctx.lineTo(cw - 4, ch - radius); ctx.quadraticCurveTo(cw - 4, ch - 4, cw - radius, ch - 4); ctx.lineTo(radius, ch - 4); ctx.quadraticCurveTo(4, ch - 4, 4, ch - radius); ctx.lineTo(4, radius); ctx.quadraticCurveTo(4, 4, radius, 4); ctx.closePath();
-        ctx.fillStyle = variant === 'dim' ? 'rgba(196,154,82,.95)' : pro ? 'rgba(13,13,15,.86)' : 'rgba(40,40,44,.8)';
+        ctx.fillStyle = variant === 'dim' ? 'rgba(196,154,82,.95)' : pro ? 'rgba(13,13,15,.86)' : 'rgba(8,17,29,.88)';
         ctx.fill();
         if (pro) { ctx.lineWidth = 4; ctx.strokeStyle = variant === 'dim' ? 'rgba(13,13,15,.6)' : 'rgba(233,207,148,.85)'; ctx.stroke(); }
         ctx.fillStyle = variant === 'dim' ? '#0D0D0F' : variant === 'badge' ? '#E9CF94' : '#F4F1EA';
@@ -417,8 +419,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         const major: number[] = [];
         for (let x = 0; x <= W + 1e-6; x += 1) (Math.round(x) % 5 === 0 ? major : minor).push(-W / 2 + x, 0.012, -D / 2, -W / 2 + x, 0.012, D / 2);
         for (let z = 0; z <= D + 1e-6; z += 1) (Math.round(z) % 5 === 0 ? major : minor).push(-W / 2, 0.012, -D / 2 + z, W / 2, 0.012, -D / 2 + z);
-        measureGroup.add(line(minor, !pro || floorKind === 'marble' || floorKind === 'terrace' ? '#5A5246' : '#E9CF94', pro ? 0.22 : 0.16));
-        measureGroup.add(line(major, pro ? '#C49A52' : '#5A5246', pro ? 0.5 : 0.22));
+        measureGroup.add(line(minor, !pro ? '#394352' : floorKind === 'marble' || floorKind === 'terrace' ? '#5A5246' : '#E9CF94', pro ? 0.22 : 0.9));
+        measureGroup.add(line(major, pro ? '#C49A52' : '#5C6675', pro ? 0.5 : 0.9));
       }
       if (pro) {
         const off = outdoor ? 1.2 : 0.9;
@@ -1048,7 +1050,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           ))}
         </div>
         <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-950/85 p-1 backdrop-blur">
-          <span className={`flex min-h-9 items-center gap-1 rounded-lg px-2.5 text-[10px] font-black tracking-widest ${tier === 'pro' ? 'bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] text-[#0D0D0F]' : 'bg-slate-800 text-slate-300'}`}>{tier === 'pro' ? <><Sparkles className="h-3.5 w-3.5" />PRO</> : (isAr ? 'أساسي' : 'BASIC')}</span>
+          <span className={`flex min-h-9 items-center gap-1 rounded-lg px-2.5 text-[10px] font-black tracking-widest ${tier === 'pro' ? 'bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] text-[#0D0D0F]' : 'bg-[#172033] text-[#CFE5FF]'}`}>{tier === 'pro' ? <><Sparkles className="h-3.5 w-3.5" />PRO</> : (isAr ? 'أساسي' : 'BASIC')}</span>
           {tier === 'pro' && <button type="button" onClick={() => setMeasure((m) => !m)} aria-pressed={measure} title={isAr ? 'المقاسات والأسماء' : 'Measurements & labels'} className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold ${measure ? 'bg-amber-400/15 text-amber-200' : 'text-slate-400 hover:bg-slate-800'}`}><Ruler className="h-3.5 w-3.5" /><span className="hidden sm:inline">{isAr ? 'المقاسات' : 'Measurements'}</span></button>}
           <button type="button" onClick={() => engineRef.current?.applyView?.(view)} title={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} aria-label={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-200 hover:bg-slate-800"><Scan className="h-4 w-4" /></button>
         </div>
