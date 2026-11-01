@@ -171,7 +171,7 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
             ))}
             <div className="text-center">
               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{isAr ? 'الأسعار حسب المناسبة. اطلب الحجز وسيتواصل معك فريقنا بالتفاصيل والتكلفة.' : 'Pricing depends on your event. Send a booking request and our team will contact you with details and the cost.'}</p>
-              <button type="button" onClick={() => onOpenBooking()} className={`mt-4 rounded-xl px-6 py-3 text-sm font-bold shadow-md transition-all ${isDark ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:brightness-110' : 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'}`}>{isAr ? 'ابدأ الحجز' : 'Start a Booking'}</button>
+              <button data-page-book type="button" onClick={() => onOpenBooking()} className={`mt-4 rounded-xl px-6 py-3 text-sm font-bold shadow-md transition-all ${isDark ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:brightness-110' : 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'}`}>{isAr ? 'ابدأ الحجز' : 'Start a Booking'}</button>
             </div>
           </div>
         )}
@@ -199,7 +199,7 @@ export function CustomerSectionView({ screen, halls, photos: libraryPhotos, lang
               <Cuboid className="mx-auto h-10 w-10 text-amber-500" />
               <h2 className={`mt-4 text-2xl font-serif font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{isAr ? 'التصور ثلاثي الأبعاد مع فريقنا' : '3D visualization with our team'}</h2>
               <p className={`mt-3 text-sm leading-7 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{isAr ? 'نقدم جولة وتصوّراً ثلاثي الأبعاد مناسباً للمساحة والمناسبة أثناء المقابلة.' : 'We provide a 3D walkthrough and visualization tailored to your event and space during the interview.'}</p>
-              <button onClick={() => onOpenBooking()} className={`mt-6 rounded-xl px-6 py-3 text-sm font-bold shadow-md transition-all ${isDark ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:brightness-110' : 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'}`}>{isAr ? 'تواصل للحجز' : 'Contact for Booking'}</button>
+              <button data-page-book onClick={() => onOpenBooking()} className={`mt-6 rounded-xl px-6 py-3 text-sm font-bold shadow-md transition-all ${isDark ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:brightness-110' : 'bg-gradient-to-r from-amber-600 to-amber-700 text-white hover:from-amber-700 hover:to-amber-800'}`}>{isAr ? 'تواصل للحجز' : 'Contact for Booking'}</button>
             </div>
           </div>
         )}
