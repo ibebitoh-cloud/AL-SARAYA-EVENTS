@@ -104,6 +104,23 @@ export interface Hall3DProfile {
   width: number;
   depth: number;
   items: HallLayoutItem[];
+  /** Decor style id from src/data/venueModel.ts (linen, chairs, flowers, lighting colours). */
+  decor?: string;
+  guests?: number;
+}
+
+export type HallFloor = 'marble' | 'carpet' | 'wood' | 'deck' | 'terrace' | 'grass';
+
+/** Real hall measurements in metres. Edited by the CEO (or whoever holds "Company profile & venues" edit rights). */
+export interface HallDimensions {
+  widthM: number;
+  depthM: number;
+  /** Ceiling height; 0 for open-air venues. */
+  ceilingM: number;
+  outdoor: boolean;
+  floor: HallFloor;
+  /** A fixed pool inside the venue area (Pool venue). */
+  pool?: { widthM: number; depthM: number; side: 'left' | 'right' | 'center' };
 }
 
 export interface SavedHallLayout {
@@ -137,6 +154,8 @@ export interface Hall {
   locationId?: LocationId;
   default3D?: Hall3DProfile;
   savedLayouts?: SavedHallLayout[];
+  /** Real measurements; missing values fall back to HALL_DEFAULTS in src/data/venueModel.ts. */
+  dimensions?: Partial<Omit<HallDimensions, 'pool'>> & { pool?: HallDimensions['pool'] | null };
 }
 
 export interface BookingServiceItem {
