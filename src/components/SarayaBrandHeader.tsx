@@ -151,7 +151,7 @@ export function SarayaBrandHeader({
         >
           <BrandLogo
             variant="horizontal"
-            tone={isDark ? 'white' : 'dark'}
+            tone={isDark ? 'white' : 'gold'}
             className="h-9 sm:h-10 w-auto object-contain"
           />
         </a>
@@ -335,7 +335,7 @@ export function SarayaBrandHeader({
                 <div className="flex items-center justify-between pb-6 border-b border-amber-500/20">
                   <BrandLogo
                     variant="horizontal"
-                    tone={isDark ? 'white' : 'dark'}
+                    tone={isDark ? 'white' : 'gold'}
                     className="h-8 w-auto object-contain"
                   />
                   <button
