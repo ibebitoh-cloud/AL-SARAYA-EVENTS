@@ -8,6 +8,7 @@ import { VenueTab, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';
 import { SystemUser, canAccess } from '../data/systemProfiles';
 import { BrandLogo } from './BrandLogo';
+import { LanguageIsland, useAtPageTop } from './ui/language-island';
 import { DaliCredit, DaliMark } from './DaliCredit';
 
 interface VenueHeaderNavProps {
@@ -53,6 +54,7 @@ const useMedia = (query: string) => {
 };
 
 export function VenueHeaderNav({ currentTab, language, user, onTabChange, onToggleLanguage, onOpenTour, theme, onToggleTheme, onGoToWebsite, onLogout, notificationBell }: VenueHeaderNavProps) {
+  const atTop = useAtPageTop();
   const isAr = language === 'ar';
   const dark = theme === 'dark';
   const isDesktop = useMedia('(min-width: 1024px)');
@@ -255,7 +257,11 @@ export function VenueHeaderNav({ currentTab, language, user, onTabChange, onTogg
     {/* Phones and tablets: a slim top bar beside the menu with the screen name and the bell. */}
     <div dir={isAr ? 'rtl' : 'ltr'} style={{ marginInlineStart: pinnedWidth, width: `calc(100% - ${pinnedWidth}px)` }} className={`sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b px-3 backdrop-blur-xl lg:hidden ${surface}`}>
       <div className="min-w-0"><div className={`truncate text-sm font-black ${dark ? 'text-[#F4F1EA]' : 'text-slate-900'}`}>{currentLabel}</div><div className={`truncate text-[10px] ${muted}`}>{displayName}</div></div>
-      {notificationBell}
+      <div className="flex shrink-0 items-center gap-2">
+        {/* Same dynamic-island pill as the website: wide at the top of a screen, "EN" / "ع" once you scroll. */}
+        <LanguageIsland isAr={isAr} wide={atTop} onToggle={() => { sound.click(700); onToggleLanguage(); }} />
+        {notificationBell}
+      </div>
     </div>
 
     {phoneFullOpen && !isDesktop && <>
