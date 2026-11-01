@@ -1,48 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  FileText,
-  CheckCircle2,
-  Clock,
-  Printer,
-  Search,
-  Shield,
-  Download,
-  Plus,
-  Sparkles,
-  AlertCircle,
-  Eye,
-  Signature,
-} from 'lucide-react';
+import { FileText, CheckCircle2, Printer, Search, Plus, Eye, X, ScrollText, CalendarDays, MapPin, Users } from 'lucide-react';
 import { Booking, Language, ContractAgreement } from '../types/venueSystem';
-import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
-import confetti from 'canvas-confetti';
+import { makeTr, eventTypeLabel } from '../utils/tr';
+import { eventDetailsSummary } from '../data/eventTypes';
+import { bookingTotals } from '../data/recordFields';
 import { RecordEditorModal, RowActions, type FieldDef } from './RecordEditor';
 import { usePersistentState, isNonEmptyArray } from '../utils/usePersistentState';
+import { SAMPLE_CONTRACTS, markSamplesMerged, mergeSampleEvents } from '../data/sampleEvents';
+import { BrandLogo } from './BrandLogo';
+import { DaliCredit } from './DaliCredit';
+import { type ContractTerms, useContractTerms } from './ContractTermsEditor';
+
+interface CompanyInfo { nameAr?: string; nameEn?: string; phone?: string; locationsAr?: string; locationsEn?: string; email?: string }
 
 interface ContractsViewProps {
   bookings: Booking[];
   language: Language;
+  /** Create, edit, delete and sign contracts (set on the Edit Permissions screen). */
+  canEdit?: boolean;
+  company?: CompanyInfo;
 }
+
+type Status = ContractAgreement['status'];
 
 const INITIAL_CONTRACTS: ContractAgreement[] = [
   {
-    id: 'cnt-1',
-    contractNumber: 'CTR-2026-101',
-    bookingCode: 'BK-2026-101',
-    clientName: 'أحمد محمود السعيد',
-    clientPhone: '01023456789',
-    clientNationalId: '29304151201934',
-    hallName: 'قاعة آركين',
-    date: '2026-11-16',
-    timeSlot: '18:00 – 23:30',
-    totalAmount: 130000,
-    depositAmount: 30000,
-    securityDeposit: 5000,
-    status: 'signed',
-    signedDate: '2026-09-01',
-    termsApproved: true,
+    id: 'cnt-1', contractNumber: 'CTR-2026-101', bookingCode: 'BK-2026-101', clientName: 'أحمد محمود السعيد', clientPhone: '01023456789',
+    clientNationalId: '29304151201934', hallName: 'قاعة آركين', date: '2026-11-16', timeSlot: '18:00 – 23:30',
+    totalAmount: 130000, depositAmount: 30000, securityDeposit: 5000, status: 'signed', signedDate: '2026-09-01', termsApproved: true,
   },
 ];
 
@@ -60,260 +48,346 @@ const contractFields: FieldDef[] = [
   { key: 'securityDeposit', ar: 'التأمين (ج.م)', en: 'Security deposit (EGP)', type: 'number', min: 0 },
   { key: 'status', ar: 'الحالة', en: 'Status', type: 'select', options: [
     { value: 'draft', ar: 'مسودة', en: 'Draft' }, { value: 'signed', ar: 'موقّع', en: 'Signed' },
-    { value: 'completed', ar: 'منتهي', en: 'Completed' }, { value: 'terminated', ar: 'ملغي', en: 'Terminated' },
+    { value: 'completed', ar: 'منتهي', en: 'Completed' }, { value: 'terminated', ar: 'ملغي', en: 'Cancelled' },
   ] },
   { key: 'signedDate', ar: 'تاريخ التوقيع', en: 'Signed on', type: 'date' },
   { key: 'termsApproved', ar: 'تمت الموافقة على الشروط', en: 'Terms approved', type: 'checkbox' },
 ];
 
-export function ContractsView({ bookings, language }: ContractsViewProps) {
-  const isAr = language === 'ar';
+const STATUS: Record<Status, { ar: string; en: string; cls: string }> = {
+  draft: { ar: 'مسودة', en: 'Draft', cls: 'border-amber-400/40 bg-amber-400/10 text-amber-200' },
+  signed: { ar: 'موقّع', en: 'Signed', cls: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' },
+  completed: { ar: 'منتهي', en: 'Completed', cls: 'border-sky-500/40 bg-sky-500/10 text-sky-300' },
+  terminated: { ar: 'ملغي', en: 'Cancelled', cls: 'border-rose-500/40 bg-rose-500/10 text-rose-300' },
+};
+
+const gold = 'bg-gradient-to-br from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] text-[#0D0D0F]';
+const card = 'rounded-3xl border border-slate-800 bg-slate-900/80';
+const today = () => new Date().toISOString().split('T')[0];
+
+const fromBooking = (bk: Booking, number: string): ContractAgreement => ({
+  id: `cnt-${Date.now()}`, contractNumber: number, bookingCode: bk.code, clientName: bk.clientName, clientPhone: bk.clientPhone,
+  clientNationalId: '', hallName: bk.hallName, date: bk.date, timeSlot: `${bk.startTime} – ${bk.endTime}`,
+  totalAmount: bk.totalPrice, depositAmount: bk.deposit, securityDeposit: bk.securityDeposit, status: 'draft', termsApproved: false,
+});
+
+export function ContractsView({ bookings, language, canEdit = true, company }: ContractsViewProps) {
+  const { isAr, tr, egp } = makeTr(language);
   const [contracts, setContracts] = usePersistentState<ContractAgreement[]>('saraya-contracts-v1', INITIAL_CONTRACTS, isNonEmptyArray);
+  const [terms] = useContractTerms();
   const [editingContract, setEditingContract] = useState<ContractAgreement | null>(null);
-  const newContract = (): ContractAgreement => {
-    const bk = bookings[0];
-    return { id: `cnt-${Date.now()}`, contractNumber: `CTR-${new Date().getFullYear()}-${100 + contracts.length + 1}`, bookingCode: bk?.code || '', clientName: bk?.clientName || '', clientPhone: bk?.clientPhone || '', clientNationalId: '', hallName: bk?.hallName || '', date: bk?.date || new Date().toISOString().split('T')[0], timeSlot: bk ? `${bk.startTime} – ${bk.endTime}` : '', totalAmount: bk?.totalPrice || 0, depositAmount: bk?.deposit || 0, securityDeposit: bk?.securityDeposit || 0, status: 'draft', termsApproved: false };
-  };
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<Status | 'all'>('all');
+
+  // Add the sample contracts once to a browser that saved its contracts before they existed.
+  useEffect(() => { setContracts((prev) => mergeSampleEvents(prev, SAMPLE_CONTRACTS, 'contracts')); markSamplesMerged('contracts'); }, [setContracts]);
+
   const saveContract = (c: ContractAgreement) => setContracts((prev) => prev.some((x) => x.id === c.id) ? prev.map((x) => x.id === c.id ? c : x) : [c, ...prev]);
   const deleteContract = (id: string) => setContracts((prev) => prev.filter((x) => x.id !== id));
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedContract, setSelectedContract] = useState<ContractAgreement | null>(null);
-
-  const handleSignContract = (id: string) => {
-    sound.fanfare();
-    confetti({ particleCount: 40, spread: 55 });
-    setContracts((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              status: 'signed',
-              signedDate: new Date().toISOString().split('T')[0],
-              termsApproved: true,
-            }
-          : c
-      )
-    );
-    if (selectedContract && selectedContract.id === id) {
-      setSelectedContract((prev) => (prev ? { ...prev, status: 'signed', termsApproved: true } : null));
-    }
+  const nextNumber = () => {
+    const year = new Date().getFullYear();
+    const used = contracts.map((c) => Number(c.contractNumber.split('-').pop()) || 0);
+    return `CTR-${year}-${Math.max(100, ...used) + 1}`;
+  };
+  const sign = (id: string) => {
+    sound.success();
+    setContracts((prev) => prev.map((c) => c.id === id ? { ...c, status: 'signed', signedDate: today(), termsApproved: true } : c));
   };
 
-  const filteredContracts = contracts.filter(
-    (c) =>
-      c.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.contractNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.bookingCode.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const counts = useMemo(() => contracts.reduce((acc, c) => ({ ...acc, [c.status]: (acc[c.status] || 0) + 1 }), {} as Record<string, number>), [contracts]);
+  const q = searchQuery.trim().toLowerCase();
+  const visible = contracts
+    .filter((c) => filter === 'all' || c.status === filter)
+    .filter((c) => !q || [c.clientName, c.contractNumber, c.bookingCode, c.hallName].some((v) => v.toLowerCase().includes(q)))
+    .sort((a, b) => {
+      // Live contracts first, soonest event at the top; finished ones after, latest first.
+      const done = (c: ContractAgreement) => c.status === 'completed' || c.status === 'terminated';
+      if (done(a) !== done(b)) return done(a) ? 1 : -1;
+      return done(a) ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+    });
+  const selected = contracts.find((c) => c.id === selectedId) || null;
+  const withoutContract = bookings
+    .filter((b) => b.status !== 'cancelled' && !contracts.some((c) => c.bookingCode === b.code))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const filters: (Status | 'all')[] = ['all', 'draft', 'signed', 'completed', 'terminated'];
 
   return (
-    <div className={`w-full space-y-8 pb-24 ${isAr ? 'text-right' : 'text-left'}`}>
+    <div className="w-full space-y-6 pb-24 text-start">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-slate-900/80 border border-slate-800">
+      <div className={`${card} flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between`}>
         <div>
-          <div className="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">
-            <FileText className="w-4 h-4" />
-            <span>{isAr ? 'الاتفاقيات القانونية والتوثيق' : 'Legal Agreements & Proposals'}</span>
+          <div className="mb-1 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-300">
+            <FileText className="h-4 w-4" /><span>{tr('العقود', 'Contracts')}</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">
-            {isAr ? 'عقود الحجوزات وعروض الأسعار' : 'Event Contracts & Quotations'}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
-            {isAr
-              ? 'إصدار وتوثيق عقود القاعات الرسمية، توقيع الشروط والأحكام، تنظيم مواعيد سداد الدفعات، وبنود رد التأمين.'
-              : 'Issue legally binding venue rental contracts, terms compliance, installment milestones, and deposit terms.'}
+          <h1 className="text-2xl font-black text-white sm:text-3xl">{tr('عقود المناسبات', 'Event contracts')}</h1>
+          <p className="mt-1 max-w-xl text-xs text-slate-400 sm:text-sm">
+            {tr('اختر الحجز ويُكتب العقد تلقائياً بالشروط المعتمدة، ثم اطبعه للتوقيع.', 'Pick a booking and the contract fills in with the approved terms, ready to print and sign.')}
           </p>
         </div>
-
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-        <button type="button" onClick={() => setEditingContract(newContract())} className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 py-2 text-xs font-semibold text-white"><Plus className="h-3.5 w-3.5" />{isAr ? 'عقد جديد' : 'New contract'}</button>
-        <div className="relative w-full sm:w-72">
-          <Search className={`w-3.5 h-3.5 text-slate-500 absolute top-3 ${isAr ? 'right-3' : 'left-3'}`} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isAr ? 'بحث برقم العقد أو العميل...' : 'Search contract or client...'}
-            className={`w-full bg-slate-950 border border-slate-800 rounded-xl py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 ${
-              isAr ? 'pr-9 pl-3' : 'pl-9 pr-3'
-            }`}
-          />
-        </div>
+        <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+          {canEdit && (
+            <button type="button" onClick={() => { sound.click(650); setPickerOpen(true); }} className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-black ${gold}`}>
+              <Plus className="h-3.5 w-3.5" />{tr('عقد جديد من حجز', 'New contract from a booking')}
+            </button>
+          )}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute top-3 h-3.5 w-3.5 text-slate-500 start-3" />
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={tr('بحث بالعميل أو رقم العقد...', 'Search client or contract...')}
+              className="w-full rounded-xl border border-slate-800 bg-slate-950 py-2 text-xs text-white placeholder-slate-500 ps-9 pe-3 focus:border-amber-400 focus:outline-none" />
+          </div>
         </div>
       </div>
 
-      {/* Contract Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {filteredContracts.map((c) => {
-          const isSigned = c.status === 'signed';
+      {/* Status filters */}
+      <div className="flex flex-wrap gap-2" data-no-screen-swipe>
+        {filters.map((f) => {
+          const n = f === 'all' ? contracts.length : counts[f] || 0;
+          const label = f === 'all' ? tr('الكل', 'All') : isAr ? STATUS[f].ar : STATUS[f].en;
           return (
-            <TiltCard
-              key={c.id}
-              tiltMax={4}
-              className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between space-y-4"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-indigo-400 bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-800/40">
-                    {c.contractNumber}
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      isSigned
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                    }`}
-                  >
-                    {isSigned ? (isAr ? 'موقّع ومعتمد' : 'Signed & Active') : (isAr ? 'مسودة بانتظار التوقيع' : 'Draft / Pending')}
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-base font-bold text-white">{c.clientName}</h3>
-                  <div className="text-xs text-slate-400 font-mono mt-0.5">{c.hallName}</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">{c.date} · {c.timeSlot}</div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/70 space-y-1.5 text-xs">
-                  <div className="flex justify-between text-slate-300">
-                    <span>{isAr ? 'قيمة العقد:' : 'Total Value:'}</span>
-                    <span className="font-mono font-bold text-white">{c.totalAmount.toLocaleString()} {isAr ? 'ج.م' : 'EGP'}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>{isAr ? 'العربون المسدد:' : 'Deposit Paid:'}</span>
-                    <span className="font-mono text-emerald-400 font-bold">{c.depositAmount.toLocaleString()} {isAr ? 'ج.م' : 'EGP'}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>{isAr ? 'مبلغ التأمين المسترد:' : 'Held Security Deposit:'}</span>
-                    <span className="font-mono text-amber-400">{c.securityDeposit.toLocaleString()} {isAr ? 'ج.م' : 'EGP'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2">
-                <RowActions language={language} onEdit={() => setEditingContract(c)} onDelete={() => deleteContract(c.id)} />
-                <button
-                  onClick={() => {
-                    sound.click(600);
-                    setSelectedContract(c);
-                  }}
-                  className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>{isAr ? 'معاينة العقد' : 'View Contract'}</span>
-                </button>
-
-                {!isSigned && (
-                  <button
-                    onClick={() => handleSignContract(c.id)}
-                    className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    title={isAr ? 'اعتماد التوقيع' : 'Sign Agreement'}
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>{isAr ? 'توقيع' : 'Sign'}</span>
-                  </button>
-                )}
-              </div>
-            </TiltCard>
+            <button key={f} type="button" onClick={() => setFilter(f)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${filter === f ? 'border-amber-300 bg-amber-400 text-slate-950' : 'border-slate-700 text-slate-300 hover:text-white'}`}>
+              {label} <span className="font-mono opacity-70">{n}</span>
+            </button>
           );
         })}
       </div>
 
-      {/* Contract Preview Modal */}
-      <AnimatePresence>
-        {selectedContract && (
-          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6"
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+      {/* Contract cards */}
+      {visible.length === 0 ? (
+        <div className={`${card} py-12 text-center text-sm text-slate-400`}>{tr('لا توجد عقود هنا', 'No contracts here')}</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {visible.map((c) => {
+            const st = STATUS[c.status];
+            const bk = bookings.find((b) => b.code === c.bookingCode);
+            return (
+              <article key={c.id} className={`${card} flex flex-col gap-3 p-5`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="rounded-lg border border-amber-700/40 bg-amber-950/30 px-2.5 py-1 font-mono text-xs font-bold text-amber-300" dir="ltr">{c.contractNumber}</span>
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${st.cls}`}>{isAr ? st.ar : st.en}</span>
+                </div>
                 <div>
-                  <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/40">
-                    عقد إيجار قاعة مناسبات رسمي
-                  </span>
-                  <h3 className="text-xl font-black text-white mt-1">
-                    {isAr ? `عقد حجز رقم: ${selectedContract.contractNumber}` : `Contract Agreement: ${selectedContract.contractNumber}`}
-                  </h3>
-                  <div className="text-xs text-slate-400 mt-0.5 font-mono">
-                    مرتبط بحجز رقم {selectedContract.bookingCode}
-                  </div>
+                  <h3 className="text-base font-bold text-white">{c.clientName}</h3>
+                  {bk && <div className="mt-0.5 text-[11px] text-amber-200/80">{eventTypeLabel(bk.eventType, isAr)}</div>}
                 </div>
-
-                <button
-                  onClick={() => setSelectedContract(null)}
-                  className="px-3 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer"
-                >
-                  {isAr ? 'إغلاق' : 'Close'}
-                </button>
-              </div>
-
-              {/* Legal Terms & Parties */}
-              <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
-                  <div className="font-bold text-white text-sm">
-                    {isAr ? 'الطرف الأول: السرايا للمناسبات (ELSARAYA EVENTS)' : 'First party: ELSARAYA EVENTS (السرايا للمناسبات)'}
-                  </div>
-                  <div className="text-slate-400">
-                    {isAr
-                      ? `الطرف الثاني: السيد / ${selectedContract.clientName} - رقم قومي: ${selectedContract.clientNationalId} - هاتف: ${selectedContract.clientPhone}`
-                      : `Second Party: ${selectedContract.clientName} - National ID: ${selectedContract.clientNationalId} - Phone: ${selectedContract.clientPhone}`}
-                  </div>
+                <div className="flex flex-wrap gap-2 text-[11px] text-slate-300">
+                  <span className="flex items-center gap-1 rounded-full border border-slate-700 px-2 py-0.5"><CalendarDays className="h-3 w-3" /><span className="font-mono">{c.date}</span></span>
+                  <span className="flex items-center gap-1 rounded-full border border-slate-700 px-2 py-0.5"><MapPin className="h-3 w-3" />{c.hallName}</span>
+                  {bk && <span className="flex items-center gap-1 rounded-full border border-slate-700 px-2 py-0.5"><Users className="h-3 w-3" />{bk.guestCount}</span>}
                 </div>
-
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
-                  <h4 className="font-bold text-white">{isAr ? 'موضوع التعاقد والبيانات المالية:' : 'Agreement Scope & Financials:'}</h4>
-                  <ul className="list-disc list-inside space-y-1 text-slate-400">
-                    <li>{isAr ? `تأجير ${selectedContract.hallName} بتاريخ ${selectedContract.date} من الساعة ${selectedContract.timeSlot}.` : `Rental of ${selectedContract.hallName} on ${selectedContract.date} during ${selectedContract.timeSlot}.`}</li>
-                    <li>{isAr ? `إجمالي القيمة المتفق عليها: ${selectedContract.totalAmount.toLocaleString()} ج.م شاملة كافة الخدمات المسجلة.` : `Total agreed value: ${selectedContract.totalAmount.toLocaleString()} EGP.`}</li>
-                    <li>{isAr ? `سدد الطرف الثاني عربوناً وقدره: ${selectedContract.depositAmount.toLocaleString()} ج.م عند توقيع هذا العقد.` : `Deposit paid upon signing: ${selectedContract.depositAmount.toLocaleString()} EGP.`}</li>
-                    <li>{isAr ? `يتم سداد المبلغ المتبقي بالكامل قبل موعد المناسبة بـ 48 ساعة على الأقل.` : `Remaining balance due at least 48 hours prior to event.`}</li>
-                    <li>{isAr ? `يلتزم الطرف الأول برد مبلغ التأمين وقدره ${selectedContract.securityDeposit.toLocaleString()} ج.م نقداً فور انتهاء المناسبة وسلامة أجهزة القاعة.` : `Security deposit of ${selectedContract.securityDeposit.toLocaleString()} EGP is fully refunded post-event upon venue clearance.`}</li>
-                  </ul>
+                <div className="space-y-1 rounded-xl border border-slate-800/70 bg-slate-950/60 p-3 text-xs">
+                  <div className="flex justify-between text-slate-300"><span>{tr('قيمة العقد', 'Contract value')}</span><span className="font-mono font-bold text-white">{egp(bk?.totalPrice ?? c.totalAmount)}</span></div>
+                  <div className="flex justify-between text-slate-400"><span>{tr('العربون', 'Deposit')}</span><span className="font-mono">{egp(bk?.deposit ?? c.depositAmount)}</span></div>
+                  {c.signedDate && <div className="flex justify-between text-slate-500"><span>{tr('تاريخ التوقيع', 'Signed on')}</span><span className="font-mono">{c.signedDate}</span></div>}
                 </div>
-              </div>
-
-              {/* Signature Block */}
-              <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-xs">
-                  <div className="text-slate-400">{isAr ? 'حالة التوقيع والاعتماد:' : 'Signing Status:'}</div>
-                  <div className="font-bold text-emerald-400 mt-0.5 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{selectedContract.status === 'signed' ? (isAr ? 'معتمد وموقع إلكترونياً' : 'Electronically Signed & Verified') : (isAr ? 'بانتظار التوقيع' : 'Pending Signature')}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <button
-                    onClick={() => {
-                      sound.click(600);
-                      window.print();
-                    }}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>{isAr ? 'طباعة العقد الرسمي' : 'Print Official Contract'}</span>
+                <div className="mt-auto flex items-center gap-2 border-t border-slate-800/80 pt-3">
+                  {canEdit && <RowActions language={language} onEdit={() => setEditingContract(c)} onDelete={() => deleteContract(c.id)} />}
+                  <button type="button" onClick={() => { sound.click(600); setSelectedId(c.id); }} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-800 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700">
+                    <Eye className="h-3.5 w-3.5 text-amber-300" />{tr('عرض وطباعة', 'View & print')}
                   </button>
-
-                  {selectedContract.status !== 'signed' && (
-                    <button
-                      onClick={() => handleSignContract(selectedContract.id)}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/30"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{isAr ? 'توقيع العقد الآن' : 'Sign Now'}</span>
+                  {canEdit && c.status === 'draft' && (
+                    <button type="button" onClick={() => sign(c.id)} className="flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-500">
+                      <CheckCircle2 className="h-3.5 w-3.5" />{tr('تم التوقيع', 'Mark signed')}
                     </button>
                   )}
                 </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pick a booking for a new contract */}
+      {pickerOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 backdrop-blur-sm" style={{ backgroundColor: 'rgba(13, 13, 15, 0.7)' }} onClick={() => setPickerOpen(false)}>
+          <div className={`${card} max-h-[85vh] w-full max-w-lg overflow-y-auto bg-slate-900 p-5`} onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-base font-black text-white">{tr('اختر الحجز', 'Choose the booking')}</h3>
+              <button type="button" aria-label={tr('إغلاق', 'Close')} onClick={() => setPickerOpen(false)} className="rounded-lg p-1.5 text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
+            </div>
+            {withoutContract.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-400">{tr('كل الحجوزات لها عقود بالفعل.', 'Every booking already has a contract.')}</p>
+            ) : (
+              <div className="space-y-2">
+                {withoutContract.map((b) => (
+                  <button key={b.id} type="button" onClick={() => { const c = fromBooking(b, nextNumber()); sound.success(); saveContract(c); setPickerOpen(false); setSelectedId(c.id); }}
+                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-3 text-start hover:border-amber-400">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-bold text-white">{b.clientName}</div>
+                      <div className="mt-0.5 text-[11px] text-slate-400">{eventTypeLabel(b.eventType, isAr)} · {b.hallName}</div>
+                    </div>
+                    <div className="shrink-0 text-end font-mono text-[11px] text-slate-300"><div>{b.date}</div><div className="text-slate-500">{b.code}</div></div>
+                  </button>
+                ))}
               </div>
-            </motion.div>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* The contract document */}
+      <AnimatePresence>
+        {selected && (
+          <ContractDocument key={selected.id} contract={selected} booking={bookings.find((b) => b.code === selected.bookingCode)} terms={terms} language={language} company={company}
+            canSign={canEdit && selected.status === 'draft'} onSign={() => sign(selected.id)} onClose={() => setSelectedId(null)} />
         )}
       </AnimatePresence>
-      {editingContract && <RecordEditorModal title={contracts.some((c) => c.id === editingContract.id) ? (isAr ? 'تعديل العقد' : 'Edit contract') : (isAr ? 'عقد جديد' : 'New contract')} fields={contractFields} value={editingContract} language={language} onClose={() => setEditingContract(null)} onSave={(c) => { saveContract(c); setEditingContract(null); }} onDelete={contracts.some((c) => c.id === editingContract.id) ? () => { deleteContract(editingContract.id); setEditingContract(null); } : undefined} />}
+
+      {editingContract && (
+        <RecordEditorModal title={contracts.some((c) => c.id === editingContract.id) ? tr('تعديل العقد', 'Edit contract') : tr('عقد جديد', 'New contract')}
+          fields={contractFields} value={editingContract} language={language} onClose={() => setEditingContract(null)}
+          onSave={(c) => { saveContract(c); setEditingContract(null); }}
+          onDelete={contracts.some((c) => c.id === editingContract.id) ? () => { deleteContract(editingContract.id); setEditingContract(null); } : undefined} />
+      )}
     </div>
+  );
+}
+
+// Paper colours are inline so the light theme's colour overrides can't change the printed sheet.
+const INK = '#0D0D0F';
+const MUTED = '#5b5750';
+const RULE = '#d8d2c4';
+const GOLD = '#8C6A2E';
+
+interface DocProps {
+  contract: ContractAgreement;
+  booking?: Booking;
+  terms: ContractTerms;
+  language: Language;
+  company?: CompanyInfo;
+  canSign: boolean;
+  onSign: () => void;
+  onClose: () => void;
+}
+
+function ContractDocument({ contract: c, booking: bk, terms, language, company, canSign, onSign, onClose }: DocProps) {
+  const { isAr, tr, egp } = makeTr(language);
+  const totals = bk ? bookingTotals(bk) : { subtotal: c.totalAmount, percent: 0, discount: 0, total: c.totalAmount };
+  const deposit = bk?.deposit ?? c.depositAmount;
+  const paid = bk?.paidAmount ?? deposit;
+  const remaining = Math.max(0, totals.total - paid);
+  const security = bk?.securityDeposit ?? c.securityDeposit;
+  const details = bk ? eventDetailsSummary(bk.eventType, bk.eventDetails, isAr) : '';
+  const companyName = isAr ? (company?.nameAr || 'السرايا للمناسبات') : (company?.nameEn || 'ELSARAYA EVENTS');
+  const st = STATUS[c.status];
+
+  const Heading = ({ n, children }: { n: number; children: React.ReactNode }) => (
+    <h4 className="mb-2 mt-5 flex items-center gap-2 text-sm font-black" style={{ color: INK, breakAfter: 'avoid' }}>
+      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px]" style={{ background: GOLD, color: '#fff' }}>{n}</span>{children}
+    </h4>
+  );
+  const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
+    <div className="flex justify-between gap-4 border-b py-1.5 text-xs" style={{ borderColor: RULE }}><span style={{ color: MUTED }}>{k}</span><span className="text-end font-semibold" style={{ color: INK }}>{v}</span></div>
+  );
+
+  // Rendered straight into <body> so printing can hide the rest of the app (no blank pages).
+  return createPortal(
+    <div className="contract-print-root fixed inset-0 z-[90] flex justify-center overflow-y-auto p-2 backdrop-blur-sm sm:p-6 print:p-0" style={{ backgroundColor: 'rgba(13, 13, 15, 0.7)' }} onClick={onClose}>
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }} onClick={(e) => e.stopPropagation()}
+        className="my-auto h-fit w-full max-w-3xl print:my-0 print:max-w-none">
+        {/* Actions (not printed) */}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-800 bg-slate-900 p-3 print:hidden">
+          <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${st.cls}`}>{isAr ? st.ar : st.en}</span>
+          <div className="flex gap-2">
+            {canSign && (
+              <button type="button" onClick={onSign} className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-500">
+                <CheckCircle2 className="h-3.5 w-3.5" />{tr('تم التوقيع', 'Mark signed')}
+              </button>
+            )}
+            <button type="button" onClick={() => { sound.click(600); window.print(); }} className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-black ${gold}`}>
+              <Printer className="h-3.5 w-3.5" />{tr('طباعة / PDF', 'Print / PDF')}
+            </button>
+            <button type="button" aria-label={tr('إغلاق', 'Close')} onClick={onClose} className="rounded-xl border border-slate-700 p-2 text-slate-300 hover:text-white"><X className="h-4 w-4" /></button>
+          </div>
+        </div>
+
+        {/* A4 sheet */}
+        <article dir={isAr ? 'rtl' : 'ltr'} className="contract-sheet rounded-2xl p-6 text-start shadow-2xl sm:p-10 print:rounded-none print:p-0 print:shadow-none" style={{ background: '#FFFFFF', color: INK }}>
+          <header className="flex flex-col items-center border-b-2 pb-5 text-center" style={{ borderColor: GOLD }}>
+            <BrandLogo variant="full" tone="dark" className="h-24 w-auto" />
+            <p className="mt-2 text-[11px]" style={{ color: MUTED }}>
+              {(isAr ? company?.locationsAr : company?.locationsEn) || ''}{company?.phone ? ` · ${company.phone}` : ''}
+            </p>
+            <h2 className="mt-4 flex items-center gap-2 text-xl font-black" style={{ color: INK }}><ScrollText className="h-5 w-5" style={{ color: GOLD }} />{tr('عقد اتفاق تنظيم مناسبة', 'Event Agreement')}</h2>
+            <div className="mt-1 flex flex-wrap justify-center gap-x-4 font-mono text-[11px]" style={{ color: MUTED }} dir="ltr">
+              <span>{c.contractNumber}</span><span>{c.bookingCode}</span><span>{c.signedDate || today()}</span>
+            </div>
+          </header>
+
+          <p className="mt-5 text-xs leading-6" style={{ color: INK }}>
+            {tr(
+              `إنه في يوم ${c.signedDate || today()} تم الاتفاق بين كل من:`,
+              `This agreement is made on ${c.signedDate || today()} between:`,
+            )}
+          </p>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+            <div className="rounded-xl border p-3 text-xs leading-6" style={{ borderColor: RULE }}>
+              <div className="font-black" style={{ color: GOLD }}>{tr('الطرف الأول', 'First party')}</div>
+              <div className="font-bold">{companyName}</div>
+              <div style={{ color: MUTED }}>{tr('ويمثلها المدير التنفيذي', 'Represented by the CEO')}</div>
+            </div>
+            <div className="rounded-xl border p-3 text-xs leading-6" style={{ borderColor: RULE }}>
+              <div className="font-black" style={{ color: GOLD }}>{tr('الطرف الثاني', 'Second party')}</div>
+              <div className="font-bold">{c.clientName}</div>
+              <div style={{ color: MUTED }}>{tr('رقم قومي', 'National ID')}: <span className="font-mono">{c.clientNationalId || '—'}</span> · {tr('هاتف', 'Phone')}: <span className="font-mono" dir="ltr">{c.clientPhone}</span></div>
+            </div>
+          </div>
+
+          <Heading n={1}>{tr('موضوع العقد', 'The event')}</Heading>
+          <Row k={tr('نوع المناسبة', 'Event type')} v={bk ? eventTypeLabel(bk.eventType, isAr) : '—'} />
+          {details && <Row k={tr('التفاصيل', 'Details')} v={details} />}
+          <Row k={tr('المكان', 'Venue')} v={c.hallName} />
+          <Row k={tr('التاريخ', 'Date')} v={<span className="font-mono">{c.date}</span>} />
+          <Row k={tr('الموعد', 'Time')} v={<span className="font-mono" dir="ltr">{c.timeSlot}</span>} />
+          {bk && <Row k={tr('عدد المدعوين', 'Guests')} v={bk.guestCount} />}
+
+          {bk && bk.services.length > 0 && <>
+            <Heading n={2}>{tr('الخدمات المتفق عليها', 'Agreed services')}</Heading>
+            <ul className="space-y-1 text-xs">
+              {bk.services.map((s) => (
+                <li key={s.id} className="flex justify-between gap-3 border-b py-1.5" style={{ borderColor: RULE }}>
+                  <span>{s.name}</span><span className="font-mono" style={{ color: MUTED }}>× {s.quantity}</span>
+                </li>
+              ))}
+            </ul>
+          </>}
+
+          <Heading n={bk && bk.services.length > 0 ? 3 : 2}>{tr('القيمة وطريقة السداد', 'Price and payment')}</Heading>
+          {totals.discount > 0 && <Row k={tr('الإجمالي قبل الخصم', 'Subtotal')} v={egp(totals.subtotal)} />}
+          {totals.discount > 0 && <Row k={tr(`خصم ${totals.percent}%`, `Discount ${totals.percent}%`)} v={`− ${egp(totals.discount)}`} />}
+          <Row k={tr('إجمالي قيمة العقد', 'Total contract value')} v={<span className="font-mono font-black">{egp(totals.total)}</span>} />
+          <Row k={tr('العربون المدفوع عند التوقيع', 'Deposit paid on signing')} v={<span className="font-mono">{egp(deposit)}</span>} />
+          <Row k={tr('المدفوع حتى الآن', 'Paid so far')} v={<span className="font-mono">{egp(paid)}</span>} />
+          <Row k={tr('المتبقي', 'Balance')} v={<span className="font-mono">{egp(remaining)}</span>} />
+          <p className="mt-2 text-xs leading-6">{tr(`يُسدد المتبقي بالكامل قبل موعد المناسبة بـ ${terms.balanceDays} أيام على الأقل.`, `The full balance is due at least ${terms.balanceDays} days before the event.`)}</p>
+          <p className="text-xs leading-6">{tr(`يدفع الطرف الثاني تأميناً قدره ${egp(security)} يُرد بعد المناسبة وفق البنود التالية.`, `The client pays a security deposit of ${egp(security)}, refunded after the event as set out below.`)}</p>
+
+          <Heading n={bk && bk.services.length > 0 ? 4 : 3}>{tr('الشروط العامة', 'General terms')}</Heading>
+          <ol className="list-decimal space-y-1.5 text-xs leading-6 ps-5">
+            {(isAr ? terms.ar : terms.en).filter((t) => t.trim()).map((t, i) => <li key={i}>{t}</li>)}
+          </ol>
+
+          {/* Signatures */}
+          <div className="mt-10 grid grid-cols-2 gap-8 text-xs" style={{ breakInside: 'avoid' }}>
+            {[[tr('الطرف الأول', 'First party'), companyName], [tr('الطرف الثاني', 'Second party'), c.clientName]].map(([role, name]) => (
+              <div key={role}>
+                <div className="font-black" style={{ color: GOLD }}>{role}</div>
+                <div className="mt-0.5 font-bold">{name}</div>
+                <div className="mt-10 border-t pt-1" style={{ borderColor: INK, color: MUTED }}>{tr('التوقيع', 'Signature')}</div>
+                <div className="mt-6 border-t pt-1" style={{ borderColor: INK, color: MUTED }}>{tr('التاريخ', 'Date')}</div>
+              </div>
+            ))}
+          </div>
+
+          <footer className="mt-10 flex flex-col items-center gap-2 border-t pt-4" style={{ borderColor: RULE }}>
+            <DaliCredit tone="dark" tagline={false} />
+          </footer>
+        </article>
+      </motion.div>
+    </div>,
+    document.body,
   );
 }

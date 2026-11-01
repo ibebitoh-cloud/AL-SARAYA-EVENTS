@@ -28,6 +28,7 @@ import { VenueHeaderNav } from './components/VenueHeaderNav';
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 import BeamWordmarkFooter from './components/ui/beam-wordmark-footer';
 import { DaliCredit, DaliOverlayCredit } from './components/DaliCredit';
+import { SAMPLE_BOOKINGS, markSamplesMerged, mergeSampleEvents } from './data/sampleEvents';
 import { DaliLoader, DaliLoaderOverlay, GlobalDaliLoader } from './components/DaliLoader';
 import { BrandLogo } from './components/BrandLogo';
 import { HoneyEmberBackground } from './components/ui/honey-ember-background';
@@ -165,7 +166,7 @@ export default function App() {
     if (typeof window === 'undefined') return dedupeBookings(INITIAL_BOOKINGS);
     try {
       const saved = JSON.parse(window.localStorage.getItem('saraya-bookings-v3') || 'null');
-      return dedupeBookings(Array.isArray(saved) ? saved : INITIAL_BOOKINGS);
+      return dedupeBookings(mergeSampleEvents(Array.isArray(saved) ? saved : INITIAL_BOOKINGS, SAMPLE_BOOKINGS, 'bookings'));
     } catch {
       return dedupeBookings(INITIAL_BOOKINGS);
     }
@@ -173,6 +174,7 @@ export default function App() {
   useEffect(() => {
     try {
       window.localStorage.setItem('saraya-bookings-v3', JSON.stringify(dedupeBookings(bookings)));
+      markSamplesMerged('bookings');
     } catch (error) {
       console.warn('Bookings could not be saved locally:', error);
     }
@@ -404,11 +406,11 @@ export default function App() {
       {portalLoginOpen && <PortalLogin language={language} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? landingTab(user) : canAccess(user, 'dashboard') ? 'dashboard' : landingTab(user)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
       {!portalLoginOpen && currentTab === 'home' && <SarayaCustomerHomepage halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} theme={theme} onSelectHallForBooking={(hallId) => setPreselectedHallId(hallId)} onOpenBookingModal={openCustomerBooking} onCreateBooking={handleCreateBooking} onOpenEventDesigner={() => setCurrentTab('event_designer')} onNavigate={navigateSection} content={siteContent} />}
       {currentTab.startsWith('public_') && <CustomerSectionView screen={({ public_events: 'events', public_venues: 'venues', public_services: 'services', public_planner: 'planner', public_gallery: 'gallery', public_3d_tour: '3d-tour' } as const)[currentTab as 'public_events' | 'public_venues' | 'public_services' | 'public_planner' | 'public_gallery' | 'public_3d_tour']} halls={halls} photos={photos.filter((photo) => !photo.reviewStatus || photo.reviewStatus === 'approved')} language={language} theme={theme} onOpenBooking={openCustomerBooking} content={siteContent} services={servicesCatalogue} inventory={inventory} onGoHome={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
-      {currentTab === 'company' && canAccess(portalUser, 'company') && <CompanyProfileView language={language} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} companyProfile={companyProfile} onUpdateCompanyProfile={setCompanyProfile} onUpdateHall={handleUpdateHall} readOnly={!may('company')} onAddHall={may('company') ? handleAddHall : undefined} onDeleteHall={may('company') ? handleDeleteHall : undefined} />}
+      {currentTab === 'company' && canAccess(portalUser, 'company') && <CompanyProfileView language={language} isCEO={isCeo} halls={halls} bookings={bookings} services={servicesCatalogue} clients={clients} staff={staff} inventory={inventory} payments={payments} expenses={expenses} companyProfile={companyProfile} onUpdateCompanyProfile={setCompanyProfile} onUpdateHall={handleUpdateHall} readOnly={!may('company')} onAddHall={may('company') ? handleAddHall : undefined} onDeleteHall={may('company') ? handleDeleteHall : undefined} />}
       {currentTab === 'site_content' && tabAllowed('site_content') && <SiteContentView language={language} content={siteContent} onSave={setSiteContent} onOpenTab={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onPreview={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
       {currentTab === 'permissions' && isCeo && <PermissionsView language={language} permissions={editPermissions} onChange={setEditPermissions} />}
       {currentTab === 'photo_library' && canAccess(portalUser, 'photo_library') && viewOnly('photo_library', <PhotoLibraryPage language={language} photos={photos} bookings={bookings} onSavePhotos={handleSavePhotos} />)}
-      {currentTab === 'package_builder' && canAccess(portalUser, 'package_builder') && viewOnly('bookings', <PackageBuilderView halls={halls} services={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} />)}
+      {currentTab === 'package_builder' && canAccess(portalUser, 'package_builder') && viewOnly('bookings', <PackageBuilderView language={language} halls={halls} services={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} />)}
       {currentTab === 'price_lists' && canAccess(portalUser, 'price_lists') && viewOnly('price_lists', <PriceListsView halls={halls} services={servicesCatalogue} priceBook={priceBook} onUpdatePriceBook={setPriceBook} onUpdateHall={handleUpdateHall} language={language} isCEO={portalUser?.role === 'ceo'} pendingPriceBook={pendingFinancePriceBook} onSubmitApproval={setPendingFinancePriceBook} onApprovePending={() => { if (portalUser?.role === 'ceo' && pendingFinancePriceBook) { setPriceBook(pendingFinancePriceBook); setPendingFinancePriceBook(null); } }} onRejectPending={() => { if (portalUser?.role === 'ceo') setPendingFinancePriceBook(null); }} />)}
       {portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && !portalLoginOpen && !tabAllowed(currentTab) && <div className="mx-auto max-w-md py-20 text-center text-sm text-slate-400">{language === 'ar' ? 'هذه الشاشة غير متاحة لحسابك.' : 'This screen is not available for your account.'}</div>}
       {currentTab === 'dashboard' && canAccess(portalUser, 'dashboard') && <DashboardView bookings={bookings} halls={halls} language={language} onNavigateTab={(tab) => setCurrentTab(tab)} />}
@@ -416,7 +418,7 @@ export default function App() {
       {currentTab === 'agenda' && canAccess(portalUser, 'agenda') && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={may('bookings') ? () => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } : undefined} language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={isCeo} canOverrideConflict={may('booking_override')} currentUser={portalUser} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} />}
       {currentTab === 'event_designer' && canAccess(portalUser, 'event_designer') && <EventLayoutDesigner language={language} halls={halls} onUpdateHall={handleUpdateHall} />}
       {currentTab === 'catering' && canAccess(portalUser, 'catering') && viewOnly('catering', <CateringMenuView language={language} />)}
-      {currentTab === 'contracts' && canAccess(portalUser, 'contracts') && viewOnly('contracts', <ContractsView bookings={bookings} language={language} />)}
+      {currentTab === 'contracts' && canAccess(portalUser, 'contracts') && viewOnly('contracts', <ContractsView bookings={bookings} language={language} canEdit={may('contracts')} company={companyProfile} />)}
       {currentTab === 'clients' && canAccess(portalUser, 'clients') && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)}  language={language} onSaveClient={may('clients') ? handleSaveClient : undefined} onDeleteClient={isCeo ? handleDeleteClient : undefined} />}
       {currentTab === 'services' && canAccess(portalUser, 'services') && viewOnly('services', <ServicesView services={servicesCatalogue} onAddService={handleAddService} onUpdateService={handleUpdateService} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)} language={language} onDeleteService={handleDeleteService} />)}
       {currentTab === 'finance' && canAccess(portalUser, 'finance') && (may('payments') || may('expenses') ? <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={(p) => { if (may('payments')) handleAddPayment(p); }} onRefundSecurityDeposit={(id) => { if (may('payments')) handleRefundSecurityDeposit(id); }} onAddExpense={(e) => { if (may('expenses')) handleAddExpense(e); }}  language={language} onEditPayment={may('payments') ? handleEditPayment : undefined} onDeletePayment={may('payments') ? handleDeletePayment : undefined} onEditExpense={may('expenses') ? handleEditExpense : undefined} onDeleteExpense={may('expenses') ? handleDeleteExpense : undefined} /> : viewOnly('payments', <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} language={language} />))}

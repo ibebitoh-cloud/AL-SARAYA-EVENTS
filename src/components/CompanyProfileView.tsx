@@ -9,6 +9,7 @@ import { BRAND_LOGOS } from './BrandLogo';
 import { RecordEditorModal, RowActions } from './RecordEditor';
 import { hallFields } from '../data/recordFields';
 import { trackLoading } from '../utils/loadingTracker';
+import { ContractTermsCard } from './ContractTermsEditor';
 
 interface CompanyProfile {
   nameEn: string; nameAr: string; taglineEn: string; taglineAr: string;
@@ -23,8 +24,10 @@ interface Props {
   onAddHall?: (hall: Hall) => void; onDeleteHall?: (hallId: string) => void;
   /** View only: hides every edit control (set by the CEO's edit permissions). */
   readOnly?: boolean;
+  /** The CEO also edits the contract terms here. */
+  isCEO?: boolean;
 }
-export function CompanyProfileView({ language, halls, bookings, services, clients, staff, inventory, payments, expenses, companyProfile, onUpdateCompanyProfile, onUpdateHall, onAddHall, onDeleteHall, readOnly = false }: Props) {
+export function CompanyProfileView({ language, halls, bookings, services, clients, staff, inventory, payments, expenses, companyProfile, onUpdateCompanyProfile, onUpdateHall, onAddHall, onDeleteHall, readOnly = false, isCEO = false }: Props) {
   const [newHall, setNewHall] = useState<Hall | null>(null);
   const ar = language === 'ar';
   const [editingCompany, setEditingCompany] = useState(false);
@@ -77,6 +80,7 @@ export function CompanyProfileView({ language, halls, bookings, services, client
         </div>
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">{stats.map(([StatIcon, label, value]) => { const Icon = StatIcon as React.ElementType; return <div key={String(label)} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4"><Icon className="w-4 h-4 text-amber-400 mb-2" /><div className="text-[10px] text-slate-500">{label as string}</div><div className="mt-1 text-xl font-black text-white">{value as number}</div></div>; })}</div>
       </section>
+      {isCEO && <ContractTermsCard language={language} />}
 
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
         <div className="flex items-center justify-between gap-3"><div><h2 className="text-base font-black text-white">{ar ? 'ملفات القاعات' : 'Hall Profiles'}</h2><p className="mt-1 text-xs text-slate-500">{ar ? 'عدّل اسم كل قاعة وصورتها ووصفها وسعتها من هنا.' : 'Edit each hall name, photo, description and capacity from here.'}</p></div><div className="flex items-center gap-3"><span className="text-[10px] text-slate-500">{halls.length} {ar ? 'قاعات' : 'halls'}</span>{onAddHall && <button type="button" onClick={() => setNewHall({ id: `hall-${Date.now()}`, name: '', nameEn: '', capacity: 100, basePrice: 0, color: '#f5b942', areaSqMeters: 0, description: '', descriptionEn: '', photoUrl: '', locationId: 'arcane' })} className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-black text-slate-950">{ar ? '+ إضافة قاعة' : '+ Add venue'}</button>}</div></div>

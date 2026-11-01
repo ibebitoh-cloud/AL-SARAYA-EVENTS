@@ -890,6 +890,15 @@ html[data-theme="light"] textarea::placeholder {
   .invoice-print-root { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: #fff !important; backdrop-filter: none; }
 }
 
+/* Printing a contract prints only the contract sheet, on A4. */
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body:has(.contract-print-root) > *:not(.contract-print-root) { display: none !important; }
+  body:has(.contract-print-root) { background: #fff !important; }
+  .contract-print-root { position: static !important; display: block !important; overflow: visible !important; background: #fff !important; backdrop-filter: none !important; }
+  .contract-print-root .contract-sheet { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
 /* Home hero word: metallic gold letters with a brown 3D edge and a slow shine. */
 .hero-gold-foil {
   background: linear-gradient(100deg, #8C6A2E 0%, #E9CF94 22%, #FFF6DC 30%, #C49A52 45%, #8C6A2E 62%, #E9CF94 80%, #C49A52 100%) 0 0 / 300% 100%;
