@@ -19,8 +19,10 @@ const writeDemo = (state: DemoState) => { try { window.localStorage.setItem(PRO_
 interface Props { language: Language; halls: Hall[]; onUpdateHall: (hall: Hall) => void; }
 
 /** 3D Studio Pro: the premium 3D designer. Runs as a limited demo until payment is completed and it is unlocked (src/data/proFeatures.ts). */
-export function Studio3DProView({ language, halls, onUpdateHall }: Props) {
-  const isAr = language === 'ar';
+export function Studio3DProView({ halls, onUpdateHall }: Props) {
+  // 3D Studio Pro always runs in English, even when the portal is in Arabic.
+  const language: Language = 'en';
+  const isAr = false;
   const [demo, setDemo] = useState<DemoState>(() => (typeof window === 'undefined' ? { used: 0 } : readDemo()));
   const [now, setNow] = useState(() => Date.now());
   const active = PRO_3D.unlocked || Boolean(demo.activeUntil && demo.activeUntil > now);
