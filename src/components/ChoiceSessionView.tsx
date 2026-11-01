@@ -10,6 +10,7 @@ import {
 } from '../data/eventOptions';
 import { PreparedOperation } from '../data/preparedOperations';
 import { EventLayout3D } from './EventLayout3D';
+import { autoLayout, defaultDecorFor, hallDimensions } from '../data/venueModel';
 import { sound } from '../utils/soundEffects';
 import { findBookingConflict, uniqueBookingCode } from '../utils/bookingRules';
 import { BrandLogo } from './BrandLogo';
@@ -145,31 +146,16 @@ export function ChoiceSessionView({ op, hall, priceBook, existingBookings, onCha
     update({ bookingCode: code });
   };
 
-  // Illustrative 3D layout of the chosen table set in this hall.
+  // 3D layout of the chosen table set in this hall, at the hall's real measurements.
   const layout = useMemo(() => {
-    const area = hall?.areaSqMeters ?? 0;
-    const width = hall?.default3D?.width ?? (area > 0 ? Math.max(12, Math.round(Math.sqrt(area * 0.66))) : 24);
-    const depth = hall?.default3D?.depth ?? (area > 0 ? Math.max(12, Math.round(area / width)) : 32);
+    const dims = hallDimensions(hall);
     const rect = tableOption?.tableShape === 'rect';
-    const stepX = rect ? 3.6 : 3.4;
-    const stepY = rect ? 2.8 : 3.4;
-    const cols = Math.max(1, Math.floor((width * 0.9) / stepX));
-    const items: HallLayoutItem[] = [
-      { id: 'stage', type: 'stage', labelEn: 'Stage', labelAr: typeCfg.id === 'conference' ? 'منصة' : 'الكوشة', x: 50, y: 8, rotation: 0 },
-    ];
-    if (typeCfg.id !== 'conference') items.push({ id: 'dance', type: 'dance', labelEn: 'Dance Floor', labelAr: 'ساحة الرقص', x: 50, y: 24, rotation: 0 });
-    for (let i = 0; i < tableCount; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const xM = (col - (Math.min(cols, tableCount) - 1) / 2) * stepX;
-      const yM = -depth * 0.12 + row * stepY;
-      items.push({
-        id: `t${i}`, type: 'table', labelEn: `T${i + 1}`, labelAr: `${i + 1}`, rotation: 0, seats: seatsPerTable,
-        shape: rect ? 'rect' : 'round', widthM: rect ? 2 : 1.8, depthM: rect ? 1 : 1.8,
-        x: Math.max(3, Math.min(97, (xM / width + 0.5) * 100)), y: Math.max(3, Math.min(97, (yM / depth + 0.5) * 100)),
-      });
-    }
-    return { width, depth, items };
+    const result = autoLayout({
+      widthM: dims.widthM, depthM: dims.depthM, guests: tableCount * seatsPerTable, eventKind: typeCfg.id,
+      table: rect ? { shape: 'rect', widthM: 2, depthM: 1, seats: seatsPerTable } : { shape: 'round', widthM: 1.8, depthM: 1.8, seats: seatsPerTable },
+      pool: dims.pool,
+    });
+    return { width: dims.widthM, depth: dims.depthM, dims, decor: defaultDecorFor(typeCfg.id), ...result };
   }, [hall, tableOption?.tableShape, tableCount, seatsPerTable, typeCfg.id]);
 
   const includedHere = category ? category.options.filter((o) => included.has(o.id)) : [];
@@ -297,11 +283,11 @@ export function ChoiceSessionView({ op, hall, priceBook, existingBookings, onCha
                   ) : (
                     <div className="overflow-hidden rounded-2xl border border-amber-400/30">
                       <div className="flex items-center justify-between border-b border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-300">
-                        <span>توزيع توضيحي · {tableCount} طاولة × {seatsPerTable} كراسي</span>
+                        <span>{layout.tablesPlaced} طاولة × {seatsPerTable} كراسي · {hall?.name || 'القاعة'} {layout.width}×{layout.depth} م{layout.tablesPlaced < layout.tablesNeeded ? ` · المساحة تتسع لـ ${layout.tablesPlaced} طاولة فقط من ${layout.tablesNeeded}` : ''}</span>
                         <button type="button" aria-label="إغلاق" onClick={() => setShow3D(false)} className="rounded-full border border-slate-700 p-1.5 hover:text-white"><X className="h-3.5 w-3.5" /></button>
                       </div>
-                      <div className="h-[420px]">
-                        <EventLayout3D key={`${tableOption?.id}-${tableCount}`} items={layout.items} width={layout.width} depth={layout.depth} language="ar" mode="overview" onSelect={() => {}} onMove={() => {}} />
+                      <div className="h-[460px] sm:h-[520px]">
+                        <EventLayout3D key={`${tableOption?.id}-${tableCount}`} items={layout.items} width={layout.width} depth={layout.depth} hall={layout.dims} decor={layout.decor} language="ar" mode="overview" readOnly />
                       </div>
                     </div>
                   )}

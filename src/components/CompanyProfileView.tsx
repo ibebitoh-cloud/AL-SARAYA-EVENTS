@@ -4,7 +4,8 @@ import { Booking, Employee, Expense, Hall, InventoryItem, PaymentReceipt, Servic
 import { SYSTEM_USERS } from '../data/systemProfiles';
 import { ALSARAYA_PHOTOS } from '../data/venueImages';
 import { EventLayoutDesigner } from './EventLayoutDesigner';
-import { Hall3DProfile } from '../types/venueSystem';
+import { Hall3DProfile, HallDimensions, HallFloor } from '../types/venueSystem';
+import { FLOOR_OPTIONS, autoLayout, hallDimensions, seatedCapacity } from '../data/venueModel';
 import { BRAND_LOGOS } from './BrandLogo';
 import { RecordEditorModal, RowActions } from './RecordEditor';
 import { hallFields } from '../data/recordFields';
@@ -46,16 +47,8 @@ export function CompanyProfileView({ language, halls, bookings, services, client
   const saveHall = () => { if (!draftHall) return; onUpdateHall(draftHall); setEditingHall(null); };
   const saveCompany = () => { onUpdateCompanyProfile(draftCompany); setEditingCompany(false); };
   const default3D = (hall: Hall): Hall3DProfile => {
-    const width = hall.areaSqMeters && hall.areaSqMeters > 0 ? Math.max(10, Math.round(Math.sqrt(hall.areaSqMeters * 0.66))) : 20;
-    const depth = hall.areaSqMeters && hall.areaSqMeters > 0 ? Math.max(10, Math.round(hall.areaSqMeters / width)) : 30;
-    const tables = Math.max(4, Math.ceil(hall.capacity / 10));
-    const items = [
-      { id: 'stage-1', type: 'stage', labelEn: 'Stage', labelAr: 'منصة', x: 50, y: 12, rotation: 0 },
-      { id: 'screen-1', type: 'screen', labelEn: 'LED Screen', labelAr: 'شاشة LED', x: 50, y: 6, rotation: 0 },
-      { id: 'dance-1', type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', x: 50, y: 58, rotation: 0 },
-      ...Array.from({ length: Math.min(tables, 12) }, (_, i) => ({ id: `table-${i + 1}`, type: 'table', labelEn: 'Round Table', labelAr: 'طاولة دائرية', x: 20 + (i % 4) * 20, y: 30 + Math.floor(i / 4) * 22, rotation: 0, seats: 10 })),
-    ];
-    return { width, depth, items };
+    const dims = hallDimensions(hall);
+    return { width: dims.widthM, depth: dims.depthM, items: autoLayout({ widthM: dims.widthM, depthM: dims.depthM, guests: hall.capacity, pool: dims.pool }).items };
   };
   const hallDesign = (hall: Hall) => hall.default3D ?? default3D(hall);
 
@@ -123,6 +116,20 @@ export function CompanyProfileView({ language, halls, bookings, services, client
           <label className="text-xs text-slate-400">{ar ? 'مساحة القاعة م²' : 'Area m²'}<input type="number" min={0} value={draftHall.areaSqMeters || 0} onChange={(e) => setDraftHall({ ...draftHall, areaSqMeters: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" /></label>
           <label className="text-xs text-slate-400">{ar ? 'السعر الأساسي (ج.م)' : 'Base price (EGP)'}<input type="number" min={0} value={draftHall.basePrice || 0} onChange={(e) => setDraftHall({ ...draftHall, basePrice: Math.max(0, Number(e.target.value) || 0) })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" /></label>
           <label className="text-xs text-slate-400">{ar ? 'الموقع' : 'Location'}<select value={draftHall.locationId || 'arcane'} onChange={(e) => setDraftHall({ ...draftHall, locationId: e.target.value as Hall['locationId'] })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white"><option value="arcane">{ar ? 'فندق اركان' : 'Arcane Hotel'}</option><option value="porto">{ar ? 'بورتو سعيد' : 'Porto Said'}</option></select></label>
+          {(() => { const dims = hallDimensions(draftHall); const setDims = (patch: Partial<HallDimensions>) => setDraftHall({ ...draftHall, dimensions: { ...dims, ...draftHall.dimensions, ...patch } }); const num = (v: string, min: number, max: number) => Math.max(min, Math.min(max, Number(v) || min)); return <div className="sm:col-span-2 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-3">
+            <div className="text-xs font-black text-amber-200">{ar ? 'المقاسات الحقيقية (للمخطط و3D)' : 'Real measurements (for plans and 3D)'}</div>
+            <p className="mt-0.5 text-[10px] text-slate-500">{ar ? 'بالمتر. تُستخدم في مصمم المناسبات وجلسة الاختيار مع العميل.' : 'In metres. Used by the Event Designer and the client choice session.'}</p>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <label className="text-[11px] text-slate-400">{ar ? 'العرض م' : 'Width m'}<input type="number" step={0.5} min={3} max={300} value={dims.widthM} onChange={(e) => setDims({ widthM: num(e.target.value, 3, 300) })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" /></label>
+              <label className="text-[11px] text-slate-400">{ar ? 'العمق م' : 'Depth m'}<input type="number" step={0.5} min={3} max={300} value={dims.depthM} onChange={(e) => setDims({ depthM: num(e.target.value, 3, 300) })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" /></label>
+              <label className="text-[11px] text-slate-400">{ar ? 'الارتفاع م' : 'Ceiling m'}<input type="number" step={0.1} min={2.4} max={30} disabled={dims.outdoor} value={dims.outdoor ? '' : dims.ceilingM} onChange={(e) => setDims({ ceilingM: num(e.target.value, 2.4, 30) })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white disabled:opacity-50" /></label>
+              <label className="text-[11px] text-slate-400">{ar ? 'الأرضية' : 'Floor'}<select value={dims.floor} onChange={(e) => setDims({ floor: e.target.value as HallFloor })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">{FLOOR_OPTIONS.map((f) => <option key={f.id} value={f.id}>{ar ? f.ar : f.en}</option>)}</select></label>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
+              <label className="flex items-center gap-2"><input type="checkbox" className="accent-amber-400" checked={dims.outdoor} onChange={(e) => setDims({ outdoor: e.target.checked, ceilingM: e.target.checked ? 0 : 4.5 })} />{ar ? 'مكان مفتوح (بدون سقف)' : 'Open air (no ceiling)'}</label>
+              <span className="text-slate-500" dir="auto">{dims.widthM}×{dims.depthM} = {Math.round(dims.widthM * dims.depthM)} {ar ? 'م²' : 'm²'} · {ar ? `تتسع لحوالي ${seatedCapacity(dims)} ضيف على طاولات` : `seats about ${seatedCapacity(dims)} at tables`}</span>
+            </div>
+          </div>; })()}
           <label className="text-xs text-slate-400 sm:col-span-2">{ar ? 'وصف القاعة بالعربي' : 'Description AR'}<textarea value={draftHall.description || ''} onChange={(e) => setDraftHall({ ...draftHall, description: e.target.value })} className="mt-1 w-full min-h-20 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" /></label>
           <label className="text-xs text-slate-400 sm:col-span-2">Description EN<textarea value={draftHall.descriptionEn || ''} onChange={(e) => setDraftHall({ ...draftHall, descriptionEn: e.target.value })} className="mt-1 w-full min-h-20 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white" /></label>
         </div>
@@ -130,6 +137,6 @@ export function CompanyProfileView({ language, halls, bookings, services, client
         <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditingHall(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-white">{ar ? 'إلغاء' : 'Cancel'}</button><button type="button" onClick={saveHall} className="px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-2"><Save className="w-3.5 h-3.5" />{ar ? 'حفظ القاعة' : 'Save Hall'}</button></div>
       </div></div>}
       {newHall && onAddHall && <RecordEditorModal title={ar ? 'إضافة قاعة جديدة' : 'Add venue'} fields={hallFields} value={newHall} language={language} onClose={() => setNewHall(null)} onSave={(h) => { onAddHall({ ...h, photo: h.photoUrl }); setNewHall(null); }} />}
-      {editing3DHall && <div className="fixed inset-0 z-[90] bg-slate-950 p-2 sm:p-4 overflow-auto"><div className="mx-auto max-w-7xl"><div className="mb-2 flex items-center justify-between"><div><div className="text-xs font-black uppercase tracking-wider text-amber-400">3D HALL PROFILE</div><div className="text-lg font-black text-white">{ar ? editing3DHall.name : (editing3DHall.nameEn || editing3DHall.name)}</div></div><button type="button" onClick={() => setEditing3DHall(null)} className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white">{ar ? 'إغلاق' : 'Close'}</button></div><EventLayoutDesigner language={language} initialDesign={hallDesign(editing3DHall)} onClose={() => setEditing3DHall(null)} onSaveDesign={(design) => { onUpdateHall({ ...editing3DHall, default3D: design }); setEditing3DHall({ ...editing3DHall, default3D: design }); }} /></div></div>}    </div>
+      {editing3DHall && <div className="fixed inset-0 z-[90] bg-slate-950 p-2 sm:p-4 overflow-auto"><div className="mx-auto max-w-7xl"><div className="mb-2 flex items-center justify-between"><div><div className="text-xs font-black uppercase tracking-wider text-amber-400">3D HALL PROFILE</div><div className="text-lg font-black text-white">{ar ? editing3DHall.name : (editing3DHall.nameEn || editing3DHall.name)}</div></div><button type="button" onClick={() => setEditing3DHall(null)} className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white">{ar ? 'إغلاق' : 'Close'}</button></div><EventLayoutDesigner language={language} initialDesign={hallDesign(editing3DHall)} hallDims={hallDimensions(editing3DHall)} onClose={() => setEditing3DHall(null)} onSaveDesign={(design) => { onUpdateHall({ ...editing3DHall, default3D: design }); setEditing3DHall({ ...editing3DHall, default3D: design }); }} /></div></div>}    </div>
   );
 }

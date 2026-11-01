@@ -25,7 +25,7 @@ export const ROLE_LABELS: Record<SystemRole, { ar: string; en: string }> = {
 };
 
 const FINANCE_SCREENS = ['dashboard', 'bookings', 'agenda', 'clients', 'finance', 'payments', 'expenses', 'reports', 'company', 'photo_library', 'event_designer', 'price_lists'];
-const OPERATION_SCREENS = ['dashboard', 'bookings', 'agenda', 'package_builder', 'event_designer', 'services', 'inventory', 'staff', 'company', 'photo_library'];
+const OPERATION_SCREENS = ['dashboard', 'bookings', 'agenda', 'package_builder', 'event_designer', 'studio_3d', 'services', 'inventory', 'staff', 'company', 'photo_library'];
 const AGENT_SCREENS = ['package_builder', 'agenda', 'bookings', 'event_designer', 'services', 'inventory'];
 
 /** The portal accounts. Website customers do not log in here. */
