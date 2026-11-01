@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentType, type CSSProperties } from 'react';
 import { motion } from 'motion/react';
 
 import { cn } from '@/src/lib/utils';
@@ -18,12 +18,13 @@ type BottomNavBarProps = {
   activeId?: string;
   ariaLabel?: string;
   className?: string;
+  style?: CSSProperties;
   stickyBottom?: boolean;
   /** light: cream and amber. dark: night blue with gold, for the dark portal theme. */
   tone?: 'light' | 'dark';
 };
 
-export function BottomNavBar({ items, activeId, ariaLabel = 'Bottom Navigation', className, stickyBottom = false, tone = 'light' }: BottomNavBarProps) {
+export function BottomNavBar({ items, activeId, ariaLabel = 'Bottom Navigation', className, style, stickyBottom = false, tone = 'light' }: BottomNavBarProps) {
   const [current, setCurrent] = useState(activeId);
   // Follow the page when it changes elsewhere (header links, logo, back to home).
   useEffect(() => setCurrent(activeId), [activeId]);
@@ -35,6 +36,7 @@ export function BottomNavBar({ items, activeId, ariaLabel = 'Bottom Navigation',
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 26 }}
       aria-label={ariaLabel}
+      style={style}
       className={cn(
         'flex h-[54px] max-w-[calc(100vw-24px)] items-center gap-0.5 rounded-full border p-1.5 backdrop-blur-md',
         dark ? 'border-amber-400/20 bg-slate-950/95 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.7)]' : 'border-amber-900/15 bg-[#fff8e4]/95 shadow-[0_12px_32px_-8px_rgba(69,26,3,0.45)]',
