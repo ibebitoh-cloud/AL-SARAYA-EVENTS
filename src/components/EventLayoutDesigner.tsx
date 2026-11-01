@@ -17,6 +17,7 @@ import {
   Grid3X3,
   FolderOpen,
   Files,
+  Palette,
   Pencil,
   Presentation,
   ScreenShare,
@@ -28,7 +29,7 @@ import {
   X,
 } from 'lucide-react';
 import { Hall, Hall3DProfile, HallDimensions, HallLayoutItem, Language, LocationId, SavedHallLayout } from '../types/venueSystem';
-import { DECOR_STYLES, TABLE_PRESETS, autoLayout, chairPositions, decorStyle, defaultDecorFor, formatM, hallDimensions, itemSize, itemSpec, seatedCapacity, tableFootprint } from '../data/venueModel';
+import { CUSTOM_DECOR_FIELDS, DECOR_STYLES, TABLE_PRESETS, encodeCustomDecor, isCustomDecor, autoLayout, chairPositions, decorStyle, defaultDecorFor, formatM, hallDimensions, itemSize, itemSpec, seatedCapacity, tableFootprint } from '../data/venueModel';
 import { EventLayout3D } from './EventLayout3D';
 import { LOCATIONS, hallLocation } from '../data/locations';
 import { BrandLogo } from './BrandLogo';
@@ -535,7 +536,10 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
             <label className="block text-[11px] text-slate-400 mt-2">{isAr ? 'العمق م' : 'Depth m'}<input type="number" min={3} max={200} step={0.5} value={depth} disabled={lockedToHall} onChange={(e) => setDepth(Math.max(3, Math.min(200, Number(e.target.value) || 3)))} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white disabled:opacity-60" /></label>
             {lockedToHall && hallDims && <p className="mt-1.5 text-[10px] leading-4 text-slate-500">{isAr ? `مقاسات القاعة الحقيقية${hallDims.outdoor ? ' (مكان مفتوح)' : ` · الارتفاع ${formatM(hallDims.ceilingM)} م`}. تعدّلها الإدارة من ملف الشركة ← القاعات.` : `Real hall measurements${hallDims.outdoor ? ' (open air)' : ` · ceiling ${formatM(hallDims.ceilingM)} m`}. Management edits them in Company profile → Halls.`}</p>}
             {pro && <><label className="block text-[11px] text-slate-400 mt-3 mb-1">{isAr ? 'ستايل الديكور' : 'Decor style'}</label>
-            <div className="grid grid-cols-1 gap-1">{DECOR_STYLES.map((style) => <button key={style.id} type="button" onClick={() => { setDecor(style.id); setSaved(false); }} aria-pressed={decor === style.id} className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-start text-[11px] font-bold ${decor === style.id ? 'border-amber-400 bg-amber-400/10 text-white' : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-600'}`}><span className="flex shrink-0 overflow-hidden rounded-full border border-white/20">{[style.linen, style.chairFrame, style.flowerAccent].map((c, i) => <span key={i} className="h-4 w-2.5" style={{ background: c }} />)}</span>{isAr ? style.ar : style.en}</button>)}</div></>}
+            <div className="grid grid-cols-1 gap-1">{DECOR_STYLES.map((style) => <button key={style.id} type="button" onClick={() => { setDecor(style.id); setSaved(false); }} aria-pressed={decor === style.id} className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-start text-[11px] font-bold ${decor === style.id ? 'border-amber-400 bg-amber-400/10 text-white' : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-600'}`}><span className="flex shrink-0 overflow-hidden rounded-full border border-white/20">{[style.linen, style.chairFrame, style.flowerAccent].map((c, i) => <span key={i} className="h-4 w-2.5" style={{ background: c }} />)}</span>{isAr ? style.ar : style.en}</button>)}
+              <button type="button" onClick={() => { if (!isCustomDecor(decor)) { const { linen, runner, chair, chairFrame, flower, flowerAccent, stage, backdrop, uplight, centerpiece } = decorStyle(decor); setDecor(encodeCustomDecor({ linen, runner, chair, chairFrame, flower, flowerAccent, stage, backdrop, uplight, centerpiece })); setSaved(false); } }} aria-pressed={isCustomDecor(decor)} className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-start text-[11px] font-bold ${isCustomDecor(decor) ? 'border-amber-400 bg-amber-400/10 text-white' : 'border-dashed border-slate-700 bg-slate-950 text-slate-300 hover:border-amber-400/60'}`}><Palette className="h-4 w-4 shrink-0 text-amber-300" />{isAr ? 'ستايل مخصص (اختر ألوانك)' : 'Custom style (pick your colours)'}</button>
+            </div>
+            {isCustomDecor(decor) && <CustomDecorEditor value={decor} isAr={isAr} onChange={(next) => { setDecor(next); setSaved(false); }} />}</>}
 
             <button type="button" onClick={() => setAutoBuilderOpen(true)} className="mt-3 w-full rounded-lg bg-slate-800 border border-slate-700 py-2.5 text-xs font-bold text-white">{isAr ? 'إنشاء تخطيط تلقائي' : 'Build Auto Layout'}</button>
 
@@ -683,5 +687,54 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
         <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setAutoBuilderOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-white">{isAr ? 'إلغاء' : 'Cancel'}</button><button type="button" onClick={buildSelectedLayout} className="px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-black">{isAr ? 'إنشاء المخطط' : 'Create Layout'}</button></div>
       </div></div>}
     </section>
+  );
+}
+
+const CUSTOM_DECOR_LABELS: Record<typeof CUSTOM_DECOR_FIELDS[number], { en: string; ar: string }> = {
+  linen: { en: 'Tablecloth', ar: 'مفرش الترابيزة' },
+  runner: { en: 'Table runner', ar: 'رانر الترابيزة' },
+  chair: { en: 'Chair cover', ar: 'كسوة الكرسي' },
+  chairFrame: { en: 'Chair frame', ar: 'هيكل الكرسي' },
+  flower: { en: 'Flowers', ar: 'الورد' },
+  flowerAccent: { en: 'Flower accent', ar: 'لون ورد إضافي' },
+  stage: { en: 'Stage / kosha', ar: 'المسرح / الكوشة' },
+  backdrop: { en: 'Backdrop', ar: 'خلفية الكوشة' },
+  uplight: { en: 'Wall lighting', ar: 'إضاءة الحوائط' },
+};
+
+/** Colour pickers for the custom decor style. Updates are delayed slightly so dragging a picker does not rebuild the 3D on every move. */
+function CustomDecorEditor({ value, isAr, onChange }: { value: string; isAr: boolean; onChange: (next: string) => void }) {
+  const [draft, setDraft] = useState(() => decorStyle(value));
+  useEffect(() => { setDraft(decorStyle(value)); }, [value]);
+  const push = (next: typeof draft) => {
+    setDraft(next);
+    window.clearTimeout((push as any).timer);
+    (push as any).timer = window.setTimeout(() => {
+      const { linen, runner, chair, chairFrame, flower, flowerAccent, stage, backdrop, uplight, centerpiece } = next;
+      onChange(encodeCustomDecor({ linen, runner, chair, chairFrame, flower, flowerAccent, stage, backdrop, uplight, centerpiece }));
+    }, 250);
+  };
+  const centerpieces = [
+    { id: 'tall', en: 'Tall flowers', ar: 'ورد عالي' },
+    { id: 'low', en: 'Low flowers + candles', ar: 'ورد منخفض + شموع' },
+    { id: 'candles', en: 'Candles', ar: 'شموع' },
+    { id: 'none', en: 'None', ar: 'بدون' },
+  ] as const;
+  return (
+    <div className="mt-2 rounded-lg border border-amber-400/30 bg-slate-950 p-2">
+      <div className="grid grid-cols-2 gap-1.5">
+        {CUSTOM_DECOR_FIELDS.map((key) => (
+          <label key={key} className="flex items-center gap-2 rounded-md border border-slate-800 px-1.5 py-1 text-[10px] text-slate-300">
+            <input type="color" value={draft[key]} onChange={(e) => push({ ...draft, [key]: e.target.value })} className="h-6 w-7 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0" />
+            <span className="leading-3">{isAr ? CUSTOM_DECOR_LABELS[key].ar : CUSTOM_DECOR_LABELS[key].en}</span>
+          </label>
+        ))}
+      </div>
+      <label className="mt-2 block text-[10px] text-slate-400">{isAr ? 'سنتر الترابيزة' : 'Centrepiece'}
+        <select value={draft.centerpiece} onChange={(e) => push({ ...draft, centerpiece: e.target.value as typeof draft.centerpiece })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-[11px] text-white">
+          {centerpieces.map((c) => <option key={c.id} value={c.id}>{isAr ? c.ar : c.en}</option>)}
+        </select>
+      </label>
+    </div>
   );
 }

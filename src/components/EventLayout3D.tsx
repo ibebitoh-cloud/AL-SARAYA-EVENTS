@@ -84,7 +84,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   const outdoor = Boolean(hall?.outdoor);
   const floorKind = hall?.floor || (outdoor ? 'terrace' : 'marble');
   const poolKey = hall?.pool ? `${hall.pool.widthM}x${hall.pool.depthM}-${hall.pool.side}` : '';
-  const decorId = decorStyle(decor).id;
+  // Custom styles carry their colours in the string, so the full string is the rebuild key.
+  const decorId = decor && decor.startsWith('custom:') ? decor : decorStyle(decor).id;
 
   useEffect(() => { setView(modeToView(mode, tier)); }, [mode, tier]);
 
