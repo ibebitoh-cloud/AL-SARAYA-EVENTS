@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import {
   Volume2,
   VolumeX,
@@ -61,6 +61,36 @@ export function SarayaBrandHeader({
   const [soundEnabled, setSoundEnabled] = useState(sound.enabled);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // True while the hero's own booking button is on screen. Then the header shows a wide
+  // language pill and hides its Book button (no two Book buttons at once). Once the hero
+  // button scrolls away, the pill shrinks to "EN" / "ع" and the header Book button returns.
+  const [heroBookVisible, setHeroBookVisible] = useState(false);
+
+  useEffect(() => {
+    let frame = 0;
+    const check = () => {
+      frame = 0;
+      const el = document.querySelector<HTMLElement>('[data-hero-book]');
+      if (!el) { setHeroBookVisible(false); return; }
+      const r = el.getBoundingClientRect();
+      setHeroBookVisible(r.height > 0 && r.bottom > 80 && r.top < window.innerHeight);
+    };
+    const queue = () => { if (!frame) frame = requestAnimationFrame(check); };
+    check();
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    // The hero mounts and unmounts as the visitor moves between pages, so look again now and then.
+    const timer = window.setInterval(queue, 700);
+    return () => {
+      window.removeEventListener('scroll', queue);
+      window.removeEventListener('resize', queue);
+      window.clearInterval(timer);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+  const langWide = heroBookVisible;
+  const showHeaderBook = !heroBookVisible;
+  const island = { type: 'spring', stiffness: 380, damping: 32, mass: 0.9 } as const;
 
   // Monitor scroll for subtle shadow/blur elevation
   useEffect(() => {
@@ -138,7 +168,7 @@ export function SarayaBrandHeader({
             go('hero');
           }}
           aria-label="ELSARAYA EVENTS"
-          className="group flex shrink-0 items-center transition-transform hover:scale-[1.02]"
+          className="group flex min-w-0 shrink items-center transition-transform hover:scale-[1.02] max-sm:[&_img]:h-7"
         >
           <BrandLogo
             variant="horizontal"
@@ -169,8 +199,9 @@ export function SarayaBrandHeader({
         </nav>
 
         {/* Header Right Actions */}
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          {/* Theme Toggle Button */}
+        <LayoutGroup>
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          {/* Theme Toggle Button (in the menu on phones, to leave room for the language pill) */}
           <button
             type="button"
             onClick={() => {
@@ -179,7 +210,7 @@ export function SarayaBrandHeader({
             }}
             aria-label={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light Mode') : (isAr ? 'الوضع الداكن' : 'Dark Mode')}
             title={theme === 'dark' ? (isAr ? 'الوضع الفاتح' : 'Light Mode') : (isAr ? 'الوضع الداكن' : 'Dark Mode')}
-            className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+            className={`hidden sm:flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
               isDark
                 ? 'border border-amber-500/20 bg-slate-900/80 text-amber-400 hover:bg-slate-800'
                 : 'border border-amber-900/10 bg-slate-100/80 text-slate-700 hover:bg-white hover:text-amber-800 shadow-xs'
@@ -207,26 +238,61 @@ export function SarayaBrandHeader({
             )}
           </button>
 
-          {/* Language Switcher */}
-          <button
+          {/* Language pill: wide on the first screen, then shrinks to "EN" / "ع" like a dynamic island */}
+          <motion.button
+            layout
+            transition={island}
             type="button"
+            data-lang-toggle
+            data-wide={langWide ? 'true' : 'false'}
             onClick={() => {
               sound.click(700);
               onToggleLanguage();
             }}
             aria-label={isAr ? 'Switch to English' : 'التحويل للعربية'}
-            className={`hidden sm:inline-flex items-center gap-1.5 h-9 rounded-full px-3.5 text-xs font-bold transition-all ${
-              isDark
-                ? 'border border-amber-500/20 bg-slate-900/80 text-slate-200 hover:bg-slate-800 hover:text-amber-400'
-                : 'border border-amber-900/10 bg-slate-100/80 text-slate-700 hover:bg-white hover:text-amber-800 shadow-xs'
+            title={isAr ? 'English' : 'العربية'}
+            style={{ borderRadius: 999 }}
+            className={`relative inline-flex h-9 shrink-0 items-center justify-center overflow-hidden border border-[#C49A52]/55 bg-[#0D0D0F] text-xs font-bold shadow-[0_6px_18px_-8px_rgba(13,13,15,0.65),inset_0_1px_0_rgba(233,207,148,0.18)] hover:border-[#E9CF94] ${
+              langWide ? 'gap-1.5 px-3.5' : 'w-9 px-0'
             }`}
           >
-            <Globe className="h-3.5 w-3.5 text-amber-500" />
-            <span>{isAr ? 'EN' : 'العربية'}</span>
-          </button>
+            <AnimatePresence mode="popLayout" initial={false}>
+              {langWide ? (
+                <motion.span
+                  key="wide"
+                  layout="position"
+                  initial={{ opacity: 0, scale: 0.85, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, scale: 0.85, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.22 }}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <Globe className="h-3.5 w-3.5 shrink-0 text-[#E9CF94]" />
+                  <span className="bg-gradient-to-r from-[#E9CF94] to-[#C49A52] bg-clip-text text-transparent" lang={isAr ? 'en' : 'ar'}>
+                    {isAr ? 'English' : 'العربية'}
+                  </span>
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="compact"
+                  layout="position"
+                  initial={{ opacity: 0, scale: 0.6, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, scale: 0.6, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.22 }}
+                  lang={isAr ? 'en' : 'ar'}
+                  className={`bg-gradient-to-r from-[#E9CF94] to-[#C49A52] bg-clip-text text-transparent ${isAr ? 'text-[11px] leading-none tracking-wide' : 'pb-0.5 text-[17px] leading-[1.5]'}`}
+                >
+                  {isAr ? 'EN' : 'ع'}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.button>
 
           {/* Admin Portal Button (Desktop & Tablet with clear label, compact icon on small screens) */}
-          <button
+          <motion.button
+            layout="position"
+            transition={island}
             type="button"
             onClick={() => {
               sound.click(600);
@@ -234,7 +300,7 @@ export function SarayaBrandHeader({
             }}
             aria-label={isAr ? 'دخول الإدارة' : 'Admin Portal'}
             title={isAr ? 'دخول الإدارة' : 'Admin Portal'}
-            className={`inline-flex items-center gap-1.5 h-9 sm:h-10 rounded-full px-2.5 sm:px-4 text-xs font-bold transition-all ${
+            className={`inline-flex shrink-0 items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:h-10 rounded-full sm:px-4 text-xs font-bold transition-colors ${
               isDark
                 ? 'border border-amber-500/35 bg-slate-900/90 text-amber-300 hover:bg-slate-800 hover:border-amber-400 shadow-sm'
                 : 'border border-amber-900/20 bg-amber-50/80 text-amber-900 hover:bg-white hover:text-amber-950 shadow-xs'
@@ -244,20 +310,35 @@ export function SarayaBrandHeader({
             <span className="hidden sm:inline whitespace-nowrap">
               {isAr ? 'دخول الإدارة' : 'Admin Portal'}
             </span>
-          </button>
+          </motion.button>
 
-          {/* Primary Action Button (Book Visit) */}
-          <button
-            type="button"
-            onClick={() => {
-              sound.chime();
-              onOpenBookingModal();
-            }}
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-5 text-xs font-bold text-slate-950 shadow-[0_4px_16px_-4px_rgba(245,158,11,0.5)] transition-all hover:scale-[1.02] hover:brightness-110 active:scale-95"
-          >
-            <Calendar className="h-4 w-4" />
-            <span>{isAr ? 'حجز موعد' : 'Book Visit'}</span>
-          </button>
+          {/* Primary Action Button (Book Visit): hidden while the hero's own Book button is on screen */}
+          <AnimatePresence initial={false}>
+            {showHeaderBook && (
+              <motion.button
+                key="header-book"
+                layout
+                type="button"
+                onClick={() => {
+                  sound.chime();
+                  onOpenBookingModal();
+                }}
+                initial={{ opacity: 0, scale: 0.6, width: 0 }}
+                animate={{ opacity: 1, scale: 1, width: 'auto' }}
+                exit={{ opacity: 0, scale: 0.6, width: 0 }}
+                transition={island}
+                style={{ borderRadius: 999 }}
+                aria-label={isAr ? 'حجز موعد' : 'Book Visit'}
+                className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center overflow-hidden bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-xs font-bold text-slate-950 shadow-[0_4px_16px_-4px_rgba(245,158,11,0.5)] hover:brightness-110 active:scale-95"
+              >
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 max-[379px]:px-2.5 sm:gap-2 sm:px-5">
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  <span className="max-[379px]:hidden sm:hidden">{isAr ? 'حجز' : 'Book'}</span>
+                  <span className="hidden sm:inline">{isAr ? 'حجز موعد' : 'Book Visit'}</span>
+                </span>
+              </motion.button>
+            )}
+          </AnimatePresence>
 
           {/* Mobile Hamburger Menu Toggle (Hidden on lg+) */}
           <button
@@ -267,7 +348,7 @@ export function SarayaBrandHeader({
               setMobileMenuOpen(!mobileMenuOpen);
             }}
             aria-label={mobileMenuOpen ? (isAr ? 'إغلاق القائمة' : 'Close Menu') : (isAr ? 'فتح القائمة' : 'Open Menu')}
-            className={`flex lg:hidden h-10 w-10 items-center justify-center rounded-full transition-colors ${
+            className={`flex lg:hidden h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
               isDark
                 ? 'border border-amber-500/25 bg-slate-900/80 text-slate-200 hover:bg-slate-800'
                 : 'border border-amber-900/15 bg-white text-slate-800 shadow-sm'
@@ -276,6 +357,7 @@ export function SarayaBrandHeader({
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
+        </LayoutGroup>
       </div>
 
       {/* =========================================================================
@@ -409,8 +491,23 @@ export function SarayaBrandHeader({
                   <span>{isAr ? 'حجز موعد استشارة ومعاينة' : 'Book Private Consultation'}</span>
                 </button>
 
-                {/* Quick Preferences Bar (Language & Sound) */}
+                {/* Quick Preferences Bar (Theme on phones, Language & Sound) */}
                 <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.click(600);
+                      onToggleTheme();
+                    }}
+                    className={`col-span-2 flex sm:hidden items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-colors ${
+                      isDark
+                        ? 'border border-slate-800 bg-slate-900 text-slate-300'
+                        : 'border border-slate-200 bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-amber-600" />}
+                    <span>{isDark ? (isAr ? 'الوضع الفاتح' : 'Light Mode') : (isAr ? 'الوضع الداكن' : 'Dark Mode')}</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
