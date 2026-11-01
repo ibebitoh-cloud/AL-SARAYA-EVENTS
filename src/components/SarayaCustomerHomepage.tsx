@@ -30,6 +30,7 @@ import {
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 import { BrandLogo } from './BrandLogo';
+import { RevealText } from './ui/reveal-text';
 import { SERVICE_KEYS, SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
 import { CustomerSuccessStories } from './CustomerSuccessStories';
 import ballroomImg from '../assets/images/alsaraya_grand_ballroom_1791458716707.jpg';
@@ -215,6 +216,15 @@ export function SarayaCustomerHomepage({
     return true;
   });
 
+  // Venue photos cycle through the letters of the hero word, two wedding photos for every party photo.
+  const weddingPhotos = displayPhotos.filter((p) => ['wedding', 'kosha', 'ballroom', 'engagement', 'dining'].includes(p.category)).map((p) => p.src);
+  const partyPhotos = displayPhotos.filter((p) => ['birthday', 'party'].includes(p.category)).map((p) => p.src);
+  const letterPhotos: string[] = [];
+  for (let w = 0, pa = 0; w < weddingPhotos.length || pa < partyPhotos.length;) {
+    if (w < weddingPhotos.length) letterPhotos.push(weddingPhotos[w++]);
+    if (w < weddingPhotos.length) letterPhotos.push(weddingPhotos[w++]);
+    if (pa < partyPhotos.length) letterPhotos.push(partyPhotos[pa++]);
+  }
   const photoFor = (categories: readonly string[], index = 0) => {
     const matches = displayPhotos.filter((p) => categories.includes(p.category));
     return (matches[index] ?? matches[0] ?? displayPhotos[index % Math.max(1, displayPhotos.length)])?.src || '';
@@ -225,6 +235,12 @@ export function SarayaCustomerHomepage({
   const venues = shownHalls.length ? shownHalls : halls.slice(0, 6);
   const galleryPhotos = displayPhotos.slice(0, 6);
 
+  const t = (key: string) => siteText(content, key, isAr);
+  const fadeIn = (delay: number) => ({
+    initial: reduceMotion ? false : { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] as const },
+  });
   const reveal = (delay = 0) => ({
     initial: reduceMotion ? false : { opacity: 0, y: 24 },
     whileInView: { opacity: 1, y: 0 },
@@ -284,188 +300,25 @@ export function SarayaCustomerHomepage({
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} className="w-full space-y-24 sm:space-y-32">
-      {/* =========================================================================
-          NEW HERO: PALATIAL CINEMATIC STAGE & INTERACTIVE HALL NAVIGATOR
-          ========================================================================= */}
-      <section
-        id="hero"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-        className="relative mx-auto min-h-[90vh] sm:min-h-[92vh] w-full max-w-7xl overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-amber-500/25 shadow-2xl flex flex-col justify-between"
-      >
-        {/* Dynamic venue slide images with Ken Burns zoom */}
-        <div className="absolute inset-0 z-0">
-          <AnimatePresence mode="sync">
-            <motion.div
-              key={activeSlide}
-              initial={{ opacity: 0, scale: 1.08 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0 h-full w-full"
-            >
-              <img
-                src={HERO_HALL_SLIDES[activeSlide].image}
-                alt={isAr ? HERO_HALL_SLIDES[activeSlide].titleAr : HERO_HALL_SLIDES[activeSlide].titleEn}
-                className="h-full w-full object-cover"
-              />
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Opulent dark royal vignette overlay: keeps text ultra-crisp in both themes */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#060a12] via-[#080d18]/65 to-[#060a12]/80" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-[#050810]/85" />
-        </div>
-
-        {/* Top Kicker & Royal Crest */}
-        <div className="relative z-10 px-4 pt-8 text-center sm:px-8 sm:pt-12">
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-slate-950/65 px-4 py-1.5 text-xs font-bold tracking-wider text-amber-300 backdrop-blur-md"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-            <span>
-              {isAr
-                ? 'السرايا للمناسبات الفاخرة · فندق آركين & بورتو سعيد'
-                : 'ELSARAYA ROYAL EVENTS · ARCANE HOTEL & PORTO SAID'}
-            </span>
-          </motion.div>
-        </div>
-
-        {/* Center Main Stage Copy */}
-        <div className="relative z-10 mx-auto max-w-4xl px-4 py-6 text-center sm:px-8">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.15 }}
-            className="font-serif text-3xl font-bold leading-tight text-white sm:text-6xl lg:text-7xl"
-          >
-            {isAr ? (
-              <>
-                <span>حيث تُصاغ الليالي الملكية</span>
-                <span className="block mt-2 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">
-                  وتتحول اللحظات إلى أساطير
-                </span>
-              </>
-            ) : (
-              <>
-                <span>Where Royal Celebrations Become</span>
-                <span className="block mt-2 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">
-                  Timeless Palatial Legends
-                </span>
-              </>
-            )}
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-200 sm:text-xl font-sans"
-          >
-            {isAr
-              ? 'ست قاعات فندقية فاخرة بمواصفات عالمية، عزل صوتي متطور 65dB، وإدارة متكاملة ترعى أدق تفاصيل الزفاف وحفلات النخبة في مصر.'
-              : 'Six bespoke hotel-grade venues with panoramic splendor, advanced 65dB acoustic isolation, and couture event management tailored for life’s greatest milestones.'}
-          </motion.p>
-
-          {/* Primary Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.45 }}
-            className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4"
-          >
-            <button
-              type="button"
-              onClick={() => onOpenBookingModal()}
-              className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-8 py-4 text-base font-bold text-slate-950 shadow-[0_12px_28px_-8px_rgba(245,158,11,0.6)] transition-all hover:scale-[1.02] hover:brightness-110 active:scale-95"
-            >
-              <Calendar className="h-5 w-5" />
-              <span>{isAr ? 'طلب معاينة خاصة واستشارة' : 'Request Private Consultation'}</span>
-            </button>
-
-            {onNavigate && (
-              <button
-                type="button"
-                onClick={() => onNavigate('3d-tour')}
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-slate-950/60 px-6 py-4 text-base font-semibold text-white backdrop-blur-md transition-all hover:border-amber-400/50 hover:bg-slate-900/80 active:scale-95"
-              >
-                <Box className="h-5 w-5 text-amber-400" />
-                <span>{isAr ? 'جولة تفاعلية 3D للقاعات' : 'Explore 3D Virtual Tour'}</span>
-              </button>
-            )}
-          </motion.div>
-
-          {/* Quick Occasion Selection Chips */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold"
-          >
-            {OCCASIONS.map(({ key, icon: Icon, titleAr, titleEn }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => onOpenBookingModal()}
-                className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/20 bg-slate-950/70 px-4 py-2 text-slate-200 backdrop-blur-sm transition-all hover:border-amber-400 hover:bg-amber-500/20 hover:text-white"
-              >
-                <Icon className="h-3.5 w-3.5 text-amber-400" />
-                <span>{isAr ? titleAr : titleEn}</span>
-              </button>
-            ))}
-          </motion.div>
-        </div>
-
-        {/* Bottom Hall Navigator Bar */}
-        <div className="relative z-10 border-t border-amber-500/20 bg-slate-950/80 p-3 backdrop-blur-xl sm:p-4">
-          <div className="mx-auto flex max-w-5xl flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-              <Building2 className="h-4 w-4 text-amber-400" />
-              <span className="font-semibold text-slate-200">
-                {isAr ? 'استكشف القاعات الملكية:' : 'Explore Royal Venues:'}
-              </span>
-            </div>
-
-            <div className="flex w-full sm:w-auto items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto py-1">
-              {HERO_HALL_SLIDES.map((slide, i) => {
-                const isActive = activeSlide === i;
-                return (
-                  <button
-                    key={slide.id}
-                    type="button"
-                    onClick={() => setActiveSlide(i)}
-                    className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
-                      isActive
-                        ? 'border border-amber-400/60 bg-amber-500/20 text-amber-300 shadow-md'
-                        : 'border border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                    }`}
-                  >
-                    <span
-                      className={`h-2 w-2 rounded-full transition-colors ${
-                        isActive ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b]' : 'bg-slate-600'
-                      }`}
-                    />
-                    <span className="truncate max-w-[120px] sm:max-w-none">
-                      {isAr ? slide.titleAr : slide.titleEn}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="hidden lg:flex items-center gap-2 text-xs text-amber-300 font-mono">
-              <ShieldCheck className="h-4 w-4 text-emerald-400" />
-              <span>
-                {isAr
-                  ? HERO_HALL_SLIDES[activeSlide].featureAr
-                  : HERO_HALL_SLIDES[activeSlide].featureEn}
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* First screen: the big name with venue photos inside its letters, one line and one button. */}
+      <section id="hero" className="flex min-h-[calc(100svh-5.5rem)] flex-col items-center justify-center px-1 py-14 text-center sm:px-6">
+        <h1 aria-label={t('hero.word')}>
+          <RevealText
+            text={t('hero.word')}
+            textColor="hero-gold-foil"
+            overlayColor="text-amber-400"
+            fontSize="text-[clamp(3.4rem,17.5vw,15rem)]"
+            letterImages={letterPhotos}
+          />
+        </h1>
+        <motion.p {...fadeIn(1.5)} className="mt-7 max-w-3xl font-serif text-2xl leading-snug text-amber-100 sm:mt-10 sm:text-4xl">
+          {t('hero.title1')} <span className="text-amber-400">{t('hero.title2')}</span>
+        </motion.p>
+        <motion.div {...fadeIn(1.7)} className="mt-9 sm:mt-12">
+          <button type="button" onClick={() => onOpenBookingModal()} className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-9 py-4 text-base font-bold text-slate-950 shadow-[0_14px_30px_-12px_rgba(245,158,11,0.6)] transition hover:-translate-y-0.5">
+            <Calendar className="h-5 w-5" />{t('hero.button')}
+          </button>
+        </motion.div>
       </section>
 
       {/* =========================================================================
