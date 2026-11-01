@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, Footprints, LayoutGrid, Ruler, RotateCcw, RotateCw, Scan } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, Footprints, LayoutGrid, Ruler, RotateCcw, RotateCw, Scan, Sparkles } from 'lucide-react';
 import { DaliLoader } from './DaliLoader';
 import type { HallDimensions } from '../types/venueSystem';
 import { chairPositions, decorStyle, formatM, itemSize, tableFootprint } from '../data/venueModel';
@@ -118,7 +118,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 800);
       const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2));
-      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.enabled = pro;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -164,6 +164,15 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         wood: std('#6B4A2E', 0.6),
       };
 
+      if (!pro) {
+        // Basic tier: a plain massing model in flat neutral colours, no gold, no textures, no glow.
+        Object.assign(M, {
+          linen: std('#E4DFD5', 0.95), runner: std('#E4DFD5', 0.95), chair: std('#8F8A80', 0.95), chairFrame: std('#8F8A80', 0.95),
+          gold: std('#7C776E', 0.95), black: std('#3B3B40', 0.95), stage: std('#6F6A62', 0.95), backdrop: std('#8F8A80', 0.95),
+          sofa: std('#D6D1C6', 0.95), lens: std('#3B3B40', 0.95), flower: std('#9C978D', 0.95), flowerAccent: std('#9C978D', 0.95), leaf: std('#9C978D', 0.95),
+          silver: std('#9C978D', 0.95),
+        });
+      }
       const ledTexture = canvasTexture(1024, 576, (ctx) => {
         const g = ctx.createLinearGradient(0, 0, 1024, 576);
         g.addColorStop(0, '#0D0D0F'); g.addColorStop(0.5, '#2A2116'); g.addColorStop(1, '#0D0D0F');
@@ -175,7 +184,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         ctx.fillText('ELSARAYA', 512, 260);
         ctx.font = '400 40px "Readex Pro", "Cairo", sans-serif'; ctx.fillStyle = '#F4F1EA'; ctx.fillText('EVENTS', 512, 350);
       });
-      M.led = std('#FFFFFF', 0.35, 0, { map: ledTexture, emissive: new THREE.Color('#FFFFFF'), emissiveMap: ledTexture, emissiveIntensity: 0.9 });
+      M.led = pro ? std('#FFFFFF', 0.35, 0, { map: ledTexture, emissive: new THREE.Color('#FFFFFF'), emissiveMap: ledTexture, emissiveIntensity: 0.9 }) : std('#26262A', 0.9);
 
       const danceTexture = canvasTexture(256, 256, (ctx) => {
         const dark = style.id === 'black_gold' || style.id === 'corporate';
@@ -183,7 +192,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         ctx.strokeStyle = dark ? 'rgba(196,154,82,.8)' : 'rgba(150,140,125,.55)'; ctx.lineWidth = 4;
         ctx.strokeRect(0, 0, 256, 256);
       });
-      M.dance = std('#FFFFFF', 0.12, 0.2, { map: danceTexture });
+      M.dance = pro ? std('#FFFFFF', 0.12, 0.2, { map: danceTexture }) : std('#BDB7AC', 0.95);
 
       // ── Floor ──
       const floorTexture = (() => {
@@ -213,7 +222,10 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           ctx.strokeStyle = 'rgba(120,110,95,.45)'; ctx.lineWidth = 3; ctx.strokeRect(0, 0, 512, 512); ctx.beginPath(); ctx.moveTo(256, 0); ctx.lineTo(256, 512); ctx.moveTo(0, 256); ctx.lineTo(512, 256); ctx.stroke();
         }, [W / 2.4, D / 2.4]);
       })();
-      const floorMat = std('#FFFFFF', floorKind === 'marble' ? 0.28 : floorKind === 'carpet' || floorKind === 'grass' ? 0.95 : 0.7, 0, { map: floorTexture });
+      const basicFloor: Record<string, string> = { marble: '#CFCAC0', carpet: '#5E5650', wood: '#8A7560', deck: '#9A8670', grass: '#6F8065', terrace: '#9A958B' };
+      const floorMat = pro
+        ? std('#FFFFFF', floorKind === 'marble' ? 0.28 : floorKind === 'carpet' || floorKind === 'grass' ? 0.95 : 0.7, 0, { map: floorTexture })
+        : std(basicFloor[floorKind] || '#CFCAC0', 0.95);
       const floor = new THREE.Mesh(own(new THREE.BoxGeometry(W, 0.1, D)), floorMat);
       floor.position.y = -0.05;
       floor.receiveShadow = true;
@@ -227,7 +239,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       scene.add(new THREE.AmbientLight(0xffffff, 0.18));
       const key = new THREE.DirectionalLight(0xfff4e6, outdoor ? 1.6 : 2.0);
       key.position.set(W * 0.25, Math.max(W, D) * 1.1, D * 0.35);
-      key.castShadow = true;
+      key.castShadow = pro;
       key.shadow.mapSize.set(coarse ? 1024 : 2048, coarse ? 1024 : 2048);
       const half = Math.max(W, D) / 2 + 2;
       Object.assign(key.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 1, far: Math.max(W, D) * 3 });
@@ -247,19 +259,21 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const washMat = own(new THREE.MeshBasicMaterial({ map: washTexture, color: new THREE.Color(style.uplight), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
       if (!outdoor) {
         const wallH = Math.max(2.4, ceilingM);
-        const wallMat = std('#CFC5B4', 0.85);
+        const wallMat = std(pro ? '#CFC5B4' : '#B5B0A6', 0.9);
         const trimMat = M.gold;
         const panelMat = std('#B8AC97', 0.8);
         const makeWall = (length: number, nx: number, nz: number) => {
           const g = new THREE.Group();
           const wall = new THREE.Mesh(own(new THREE.BoxGeometry(length, wallH, 0.2)), wallMat);
           wall.position.y = wallH / 2; wall.receiveShadow = true; g.add(wall);
+          if (pro) {
           const wainscot = new THREE.Mesh(own(new THREE.BoxGeometry(length, 1.0, 0.04)), panelMat);
           wainscot.position.set(0, 0.5, 0.12); g.add(wainscot);
           const trim = new THREE.Mesh(own(new THREE.BoxGeometry(length, 0.04, 0.06)), trimMat);
           trim.position.set(0, 1.0, 0.13); g.add(trim);
           const crown = new THREE.Mesh(own(new THREE.BoxGeometry(length, 0.12, 0.1)), trimMat);
           crown.position.set(0, wallH - 0.06, 0.12); g.add(crown);
+          }
           const count = pro ? Math.max(2, Math.floor(length / 4)) : 0;
           const washGeo = own(new THREE.PlaneGeometry(1.4, Math.min(3.2, wallH * 0.75)));
           for (let i = 0; i < count; i++) {
@@ -368,9 +382,9 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         const radius = variant === 'badge' ? ch / 2 : 22;
         ctx.beginPath();
         ctx.moveTo(radius, 4); ctx.lineTo(cw - radius, 4); ctx.quadraticCurveTo(cw - 4, 4, cw - 4, radius); ctx.lineTo(cw - 4, ch - radius); ctx.quadraticCurveTo(cw - 4, ch - 4, cw - radius, ch - 4); ctx.lineTo(radius, ch - 4); ctx.quadraticCurveTo(4, ch - 4, 4, ch - radius); ctx.lineTo(4, radius); ctx.quadraticCurveTo(4, 4, radius, 4); ctx.closePath();
-        ctx.fillStyle = variant === 'dim' ? 'rgba(196,154,82,.95)' : 'rgba(13,13,15,.86)';
+        ctx.fillStyle = variant === 'dim' ? 'rgba(196,154,82,.95)' : pro ? 'rgba(13,13,15,.86)' : 'rgba(40,40,44,.8)';
         ctx.fill();
-        ctx.lineWidth = 4; ctx.strokeStyle = variant === 'dim' ? 'rgba(13,13,15,.6)' : 'rgba(233,207,148,.85)'; ctx.stroke();
+        if (pro) { ctx.lineWidth = 4; ctx.strokeStyle = variant === 'dim' ? 'rgba(13,13,15,.6)' : 'rgba(233,207,148,.85)'; ctx.stroke(); }
         ctx.fillStyle = variant === 'dim' ? '#0D0D0F' : variant === 'badge' ? '#E9CF94' : '#F4F1EA';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(text, cw / 2, ch / 2 + 3);
@@ -393,18 +407,20 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       // ── Measurements: 1 m grid, hall dimension lines, ceiling height ──
       const measureGroup = new THREE.Group();
       scene.add(measureGroup);
+      const line = (pts: number[], color: string, opacity: number) => {
+        const geo = own(new THREE.BufferGeometry());
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        return new THREE.LineSegments(geo, own(new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false })));
+      };
       {
         const minor: number[] = [];
         const major: number[] = [];
         for (let x = 0; x <= W + 1e-6; x += 1) (Math.round(x) % 5 === 0 ? major : minor).push(-W / 2 + x, 0.012, -D / 2, -W / 2 + x, 0.012, D / 2);
         for (let z = 0; z <= D + 1e-6; z += 1) (Math.round(z) % 5 === 0 ? major : minor).push(-W / 2, 0.012, -D / 2 + z, W / 2, 0.012, -D / 2 + z);
-        const line = (pts: number[], color: string, opacity: number) => {
-          const geo = own(new THREE.BufferGeometry());
-          geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-          return new THREE.LineSegments(geo, own(new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false })));
-        };
-        measureGroup.add(line(minor, floorKind === 'marble' || floorKind === 'terrace' ? '#5A5246' : '#E9CF94', 0.22));
-        measureGroup.add(line(major, '#C49A52', 0.5));
+        measureGroup.add(line(minor, !pro || floorKind === 'marble' || floorKind === 'terrace' ? '#5A5246' : '#E9CF94', pro ? 0.22 : 0.16));
+        measureGroup.add(line(major, pro ? '#C49A52' : '#5A5246', pro ? 0.5 : 0.22));
+      }
+      if (pro) {
         const off = outdoor ? 1.2 : 0.9;
         const dims: number[] = [
           -W / 2, 0.05, -D / 2 - off, W / 2, 0.05, -D / 2 - off,
@@ -432,6 +448,11 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         ...[-0.19, 0.19].map((x) => tr(new THREE.CylinderGeometry(0.014, 0.014, 0.48, 6), x, 0.69, 0.19)),
         ...[0.62, 0.74, 0.9].map((y) => tr(new THREE.BoxGeometry(0.38, 0.025, 0.02), 0, y, 0.19)),
       ]));
+      // Basic tier chair: a seat block and a back slab, nothing else.
+      const basicChairGeo = own(mergeGeometries([
+        tr(new THREE.BoxGeometry(0.42, 0.46, 0.42), 0, 0.23, 0),
+        tr(new THREE.BoxGeometry(0.42, 0.42, 0.06), 0, 0.67, 0.18),
+      ]));
       const chairCushionGeo = own(tr(new THREE.BoxGeometry(0.42, 0.05, 0.4), 0, 0.48, 0));
       const plateGeo = own(new THREE.CylinderGeometry(0.14, 0.14, 0.012, 20));
       const glassGeo = own(new THREE.CylinderGeometry(0.035, 0.028, 0.14, 10));
@@ -457,7 +478,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       };
       const box = (parent: any, w: number, h: number, d: number, mat: any, x = 0, y = h / 2, z = 0, shadow = true) => mesh(parent, unitBox, mat, [x, y, z], [w, h, d], shadow);
       const cyl = (parent: any, r: number, h: number, mat: any, x = 0, y = h / 2, z = 0, shadow = true) => mesh(parent, unitCyl, mat, [x, y, z], [r, h, r], shadow);
-      const ball = (parent: any, r: number, mat: any, x: number, y: number, z: number) => mesh(parent, sphereGeo, mat, [x, y, z], [r, r, r], false);
+      const ball = (parent: any, r: number, mat: any, x: number, y: number, z: number) => pro && mesh(parent, sphereGeo, mat, [x, y, z], [r, r, r], false);
       const flowerCluster = (parent: any, x: number, y: number, z: number, r: number) => {
         if (!pro) return;
         ball(parent, r, M.flower, x, y, z);
@@ -472,6 +493,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       };
       const addChairs = (parent: any, item: LayoutItem) => {
         const spots = chairPositions(item).map((c) => ({ x: c.x, y: 0, z: c.z, ry: Math.atan2(c.nx, c.nz) }));
+        if (!pro) { instanced(parent, basicChairGeo, M.chair, spots, false); return; }
         instanced(parent, chairFrameGeo, M.chairFrame, spots);
         instanced(parent, chairCushionGeo, M.chair, spots);
       };
@@ -516,7 +538,14 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         let labelY = 1.6;
         let footprint = { w, d };
 
-        if (item.type === 'table') {
+        if (item.type === 'table' && !pro) {
+          // Basic: plain top on a single leg, plain chairs, no cloth, no settings.
+          footprint = tableFootprint(item);
+          if (item.shape === 'rect') { box(group, w, 0.05, d, M.linen, 0, 0.75, 0, false); box(group, Math.max(0.2, w - 0.4), 0.72, 0.12, M.chair, 0, 0.36, 0, false); }
+          else { mesh(group, unitCyl, M.linen, [0, 0.75, 0], [w / 2, 0.05, w / 2], false); cyl(group, 0.07, 0.72, M.chair, 0, 0.36, 0, false); }
+          addChairs(group, item);
+          labelY = 1.2;
+        } else if (item.type === 'table') {
           footprint = tableFootprint(item);
           if (item.shape === 'rect') {
             box(group, w + 0.04, 0.025, d + 0.04, M.linen, 0, 0.75);
@@ -532,10 +561,19 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           if (pro) { addPlaceSettings(group, item, w, d); addCenterpiece(group); }
           addChairs(group, item);
           labelY = style.centerpiece === 'tall' ? 2.1 : 1.3;
+        } else if (item.type === 'chairs' && !pro) {
+          group.add(new THREE.Mesh(basicChairGeo, M.chair));
+          labelY = 1.2;
         } else if (item.type === 'chairs') {
           const frame = new THREE.Mesh(chairFrameGeo, M.chairFrame); frame.castShadow = true; group.add(frame);
           const cushion = new THREE.Mesh(chairCushionGeo, M.chair); cushion.castShadow = true; group.add(cushion);
           labelY = 1.2;
+        } else if (item.type === 'stage' && !pro) {
+          const h = 0.6;
+          box(group, w, h, d, M.stage, 0, h / 2, 0, false);
+          const backH = Math.min(3, (ceilingM || 6) - h - 0.4);
+          box(group, w, backH, 0.12, M.backdrop, 0, h + backH / 2, -d / 2 + 0.06, false);
+          labelY = h + backH + 0.5;
         } else if (item.type === 'stage') {
           const h = 0.6;
           box(group, w, h, d, M.stage, 0, h / 2);
@@ -558,6 +596,11 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
             for (const x of [-w / 2 + 0.4, w / 2 - 0.4]) flowerCluster(group, x, h + 0.25, d / 2 - 0.35, 0.28);
           }
           labelY = h + backH + 0.5;
+        } else if (item.type === 'screen' && !pro) {
+          const sh = Math.min(w * 9 / 16, (ceilingM || 8) - 1.8);
+          box(group, w, sh, 0.12, M.led, 0, 1.4 + sh / 2, 0, false);
+          for (const x of [-w / 2 + 0.3, w / 2 - 0.3]) box(group, 0.08, 1.4, 0.08, M.black, x, 0.7, 0, false);
+          labelY = 1.4 + sh + 0.4;
         } else if (item.type === 'screen') {
           const sh = Math.min(w * 9 / 16, (ceilingM || 8) - 1.8);
           const bottom = 1.4;
@@ -572,6 +615,9 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           top.rotation.x = -0.25;
           box(group, 0.22, 0.22, 0.01, M.gold, 0, 0.72, 0.205, false);
           labelY = 1.5;
+        } else if (item.type === 'dance' && !pro) {
+          box(group, w, 0.03, d, M.dance, 0, 0.015, 0, false);
+          labelY = 0.4;
         } else if (item.type === 'dance') {
           const floorMesh = mesh(group, unitBox, M.dance.clone(), [0, 0.015, 0], [w, 0.03, d], false);
           const tex = floorMesh.material.map = danceTexture.clone();
@@ -587,8 +633,10 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         } else if (item.type === 'buffet' || item.type === 'registration') {
           box(group, w, 0.025, d, M.linen, 0, 0.75);
           box(group, w, 0.73, d, item.type === 'buffet' ? M.linen : M.black, 0, 0.365);
-          box(group, w, 0.06, 0.01, M.gold, 0, 0.7, d / 2 + 0.005, false);
-          if (item.type === 'buffet') {
+          if (pro) box(group, w, 0.06, 0.01, M.gold, 0, 0.7, d / 2 + 0.005, false);
+          if (item.type === 'buffet' && !pro) {
+            // Basic: plain counter only.
+          } else if (item.type === 'buffet') {
             const lidGeo = own(new THREE.CylinderGeometry(0.17, 0.17, 0.48, 16, 1, false, 0, Math.PI));
             const n = Math.max(1, Math.floor((w - 0.3) / 0.75));
             for (let i = 0; i < n; i++) {
@@ -598,7 +646,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
               lid.rotation.z = Math.PI / 2;
             }
           } else {
-            for (const x of [-w / 4, w / 4]) { const chair = new THREE.Group(); chair.add(new THREE.Mesh(chairFrameGeo, M.chairFrame), new THREE.Mesh(chairCushionGeo, M.chair)); chair.position.set(x, 0, -d / 2 - 0.35); chair.rotation.y = Math.PI; group.add(chair); }
+            for (const x of [-w / 4, w / 4]) { const chair = new THREE.Group(); if (pro) chair.add(new THREE.Mesh(chairFrameGeo, M.chairFrame), new THREE.Mesh(chairCushionGeo, M.chair)); else chair.add(new THREE.Mesh(basicChairGeo, M.chair)); chair.position.set(x, 0, -d / 2 - 0.35); chair.rotation.y = Math.PI; group.add(chair); }
           }
           labelY = 1.4;
         } else if (item.type === 'entrance' || item.type === 'exit') {
@@ -608,7 +656,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           const n = Math.round(w / 0.35);
           for (let i = 0; i <= n; i++) ball(group, 0.16, i % 3 ? M.flower : M.flowerAccent, -w / 2 + (w / n) * i, h + 0.12, 0.05);
           for (const x of [-w / 2, w / 2]) for (let i = 0; i < 6; i++) ball(group, 0.14, i % 2 ? M.leaf : M.flower, x, 0.3 + i * (h / 6), 0.18);
-          if (item.type === 'entrance') box(group, Math.min(1.6, w - 0.6), 0.01, 3, M.runner, 0, 0.006, -1.5, false);
+          if (item.type === 'entrance' && pro) box(group, Math.min(1.6, w - 0.6), 0.01, 3, M.runner, 0, 0.006, -1.5, false);
           labelY = h + 0.6;
         } else if (item.type === 'bar') {
           box(group, w, 1.05, d, M.black, 0, 0.525);
@@ -617,7 +665,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           for (let i = 0; i < n; i++) { const x = -w / 2 + (w / n) * (i + 0.5); cyl(group, 0.18, 0.05, M.chair, x, 0.76, d / 2 + 0.45); cyl(group, 0.025, 0.74, M.chairFrame, x, 0.37, d / 2 + 0.45); }
           labelY = 1.6;
         } else if (item.type === 'lounge') {
-          box(group, w, 0.01, d, M.runner, 0, 0.005, 0, false);
+          if (pro) box(group, w, 0.01, d, M.runner, 0, 0.005, 0, false);
           const sofaW = Math.min(2.2, w - 0.4);
           box(group, sofaW, 0.42, 0.85, M.sofa, 0, 0.21, -d / 2 + 0.45);
           box(group, sofaW, 0.4, 0.18, M.sofa, 0, 0.62, -d / 2 + 0.12);
@@ -650,7 +698,14 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         }
 
         group.userData.footprint = footprint;
-        if (item.type === 'table') {
+        if (!pro) {
+          // Basic: name only, for the main pieces; no table numbers, no sizes.
+          if (['stage', 'dance', 'screen', 'buffet', 'entrance', 'bar'].includes(item.type)) {
+            const label = makeLabel(isAr ? item.labelAr : item.labelEn, 15);
+            label.position.set(0, labelY, 0);
+            group.add(label); labelSprites.push(label);
+          }
+        } else if (item.type === 'table') {
           const label = makeLabel(String(tableNumbers.get(item.id) || ''), 18, 'badge');
           label.position.set(0, labelY, 0);
           group.add(label); labelSprites.push(label);
@@ -685,8 +740,9 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       };
       const isInScene = (obj: any) => { let o = obj; while (o) { if (o === scene) return true; o = o.parent; } return false; };
       const applyMeasure = () => {
-        measureGroup.visible = measureRef.current;
-        labelSprites.forEach((s) => { if (!measureGroup.children.includes(s)) s.visible = measureRef.current; });
+        const on = !pro || measureRef.current;
+        measureGroup.visible = on;
+        labelSprites.forEach((s) => { if (!measureGroup.children.includes(s)) s.visible = on; });
       };
 
       // Selection outline (footprint, including chairs) that follows the selected item.
@@ -992,15 +1048,16 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           ))}
         </div>
         <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-950/85 p-1 backdrop-blur">
-          <button type="button" onClick={() => setMeasure((m) => !m)} aria-pressed={measure} title={isAr ? 'المقاسات والأسماء' : 'Measurements & labels'} className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold ${measure ? 'bg-amber-400/15 text-amber-200' : 'text-slate-400 hover:bg-slate-800'}`}><Ruler className="h-3.5 w-3.5" /><span className="hidden sm:inline">{isAr ? 'المقاسات' : 'Measurements'}</span></button>
+          <span className={`flex min-h-9 items-center gap-1 rounded-lg px-2.5 text-[10px] font-black tracking-widest ${tier === 'pro' ? 'bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] text-[#0D0D0F]' : 'bg-slate-800 text-slate-300'}`}>{tier === 'pro' ? <><Sparkles className="h-3.5 w-3.5" />PRO</> : (isAr ? 'أساسي' : 'BASIC')}</span>
+          {tier === 'pro' && <button type="button" onClick={() => setMeasure((m) => !m)} aria-pressed={measure} title={isAr ? 'المقاسات والأسماء' : 'Measurements & labels'} className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold ${measure ? 'bg-amber-400/15 text-amber-200' : 'text-slate-400 hover:bg-slate-800'}`}><Ruler className="h-3.5 w-3.5" /><span className="hidden sm:inline">{isAr ? 'المقاسات' : 'Measurements'}</span></button>}
           <button type="button" onClick={() => engineRef.current?.applyView?.(view)} title={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} aria-label={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-200 hover:bg-slate-800"><Scan className="h-4 w-4" /></button>
         </div>
       </div>
 
       <div className="pointer-events-none absolute bottom-2 start-2 z-10 max-w-[calc(100%-1rem)] space-y-1">
-        <div className="w-fit rounded-lg border border-slate-700 bg-slate-950/85 px-2.5 py-1.5 text-[10px] font-bold text-amber-200" dir="auto">
+        {tier === 'pro' && <div className="w-fit rounded-lg border border-slate-700 bg-slate-950/85 px-2.5 py-1.5 text-[10px] font-bold text-amber-200" dir="auto">
           {formatM(width)} × {formatM(depth)} {unit}{!outdoor && ceilingM ? ` · ${isAr ? 'الارتفاع' : 'ceiling'} ${formatM(ceilingM)} ${unit}` : ` · ${isAr ? 'مكان مفتوح' : 'open air'}`} · {formatM(width * depth)} {isAr ? 'م²' : 'm²'}
-        </div>
+        </div>}
         <div className="w-fit rounded-lg bg-slate-950/70 px-2.5 py-1 text-[10px] text-slate-300">{hint}</div>
       </div>
 
