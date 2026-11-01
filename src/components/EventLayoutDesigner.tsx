@@ -72,12 +72,12 @@ const INITIAL_ITEMS: LayoutItem[] = autoLayout({ widthM: 24, depthM: 32, guests:
 /** Starting layout for a hall with no saved design, at its real size. */
 const hallStarter = (hall: Hall, guests: number) => { const dims = hallDimensions(hall); return autoLayout({ widthM: dims.widthM, depthM: dims.depthM, guests: Math.min(guests, hall.capacity || guests), eventKind: 'wedding', pool: dims.pool }).items; };
 
-interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; halls?: Hall[]; onUpdateHall?: (hall: Hall) => void; /** Real measurements of the hall being edited when no hall list is passed (Company profile). */ hallDims?: HallDimensions; /** 'basic' = accurate plan + simple 3D. 'pro' = 3D Studio Pro (decor styles, walk-through, rich detail). */ edition?: 'basic' | 'pro'; /** Demo mode turns saving off. */ canSave?: boolean; }
+interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; halls?: Hall[]; onUpdateHall?: (hall: Hall) => void; /** Real measurements of the hall being edited when no hall list is passed (Company profile). */ hallDims?: HallDimensions; /** 'basic' = accurate plan + simple 3D. 'pro' = 3D Studio Pro (decor styles, walk-through, rich detail). */ edition?: 'basic' | 'pro'; /** Demo mode turns saving off. */ canSave?: boolean; /** Shows a DEMO mark over the 3D view. */ demo?: boolean; }
 
 const STORAGE_BASIC = 'saraya-event-layout-design-v1';
 const STORAGE_PRO = 'saraya-3d-studio-pro-design-v1';
 
-export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose, halls = [], onUpdateHall, hallDims: fixedHallDims, edition = 'basic', canSave = true }: DesignerProps) {
+export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose, halls = [], onUpdateHall, hallDims: fixedHallDims, edition = 'basic', canSave = true, demo = false }: DesignerProps) {
   const pro = edition === 'pro';
   const storageKey = pro ? STORAGE_PRO : STORAGE_BASIC;
   const isAr = language === 'ar';
@@ -503,7 +503,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </div>
           <div className="p-2 sm:p-4">
             <div className="mx-auto h-[70vh] min-h-[440px] max-w-6xl">
-              <EventLayout3D items={items} width={width} depth={depth} language={language} hall={scene3D} decor={decor} tier={edition} mode="overview" readOnly />
+              <EventLayout3D items={items} width={width} depth={depth} language={language} hall={scene3D} decor={decor} tier={edition} mode="overview" readOnly watermark={demo ? 'DEMO' : undefined} />
             </div>
             <p className="mx-auto mt-2 max-w-6xl px-1 text-[11px] leading-5 text-slate-500">{isAr ? 'تصور توضيحي بالمقاسات الحقيقية للقاعة والأثاث؛ الألوان والزهور النهائية يتم اختيارها مع فريق السرايا.' : 'Illustration at the real size of the venue and furniture; final colours and flowers are chosen with the ELSARAYA team.'}</p>
           </div>
@@ -605,6 +605,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   hall={scene3D}
                   decor={decor}
                   tier={edition}
+                  watermark={demo ? 'DEMO' : undefined}
                   mode="overview"
                   selectedId={selectedId}
                   rotationMode={rotationMode}

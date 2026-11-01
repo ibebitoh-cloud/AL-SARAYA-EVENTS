@@ -35,6 +35,8 @@ type Props = {
   tier?: 'basic' | 'pro';
   /** Customer / presentation view: nothing can be dragged. */
   readOnly?: boolean;
+  /** Text tiled over the 3D view only (e.g. DEMO). */
+  watermark?: string;
   onSelect?: (id: string | null) => void;
   selectedId?: string | null;
   rotationMode?: boolean;
@@ -49,7 +51,7 @@ const UTILS_URL = 'three/addons/utils/BufferGeometryUtils.js';
 
 const modeToView = (mode?: Props['mode'], tier: Props['tier'] = 'basic'): View3D => (mode === 'pov' && tier === 'pro' ? 'walk' : mode === 'plan' ? 'plan' : '3d');
 
-export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, selectedId, rotationMode = false, onSelect, onMove, onRotate, onViewChange }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, watermark, selectedId, rotationMode = false, onSelect, onMove, onRotate, onViewChange }: Props) {
   const isAr = language === 'ar';
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
@@ -1028,6 +1030,11 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   return (
     <div className="relative h-full min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" dir={isAr ? 'rtl' : 'ltr'}>
       <div ref={hostRef} data-rotation-ui className="absolute inset-0" />
+      {watermark && <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] overflow-hidden">
+        <div className="absolute -inset-1/2 flex flex-wrap content-start gap-x-20 gap-y-16 opacity-[0.14]" style={{ transform: 'rotate(-24deg)' }}>
+          {Array.from({ length: 120 }, (_, i) => <span key={i} className="whitespace-nowrap text-3xl font-black tracking-[0.35em] text-amber-200">{watermark}</span>)}
+        </div>
+      </div>}
       {!readOnly && view !== 'walk' && rotationMode && selectedId && items.some((item) => item.id === selectedId) && <div ref={rotationBarRef} data-rotation-ui className="pointer-events-auto absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" style={{ left: '50%', top: '50%' }} onPointerDown={(event) => event.stopPropagation()}>
         <button type="button" title={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, -15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
         <button type="button" title={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
