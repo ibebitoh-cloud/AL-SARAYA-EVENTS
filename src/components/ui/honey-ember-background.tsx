@@ -16,20 +16,23 @@ const CSS = `
 .rpb.dark{background:#070b12}
 .rpb.light{background:#faf9f6}
 
-.rpb-blob{position:absolute;border-radius:9999px;filter:blur(90px);pointer-events:none;z-index:0;will-change:transform}
+/* No filter:blur() here: the radial gradients already fade to transparent, and blurring four
+   screen-sized layers was the main reason the hero stuttered on large desktop screens.
+   The extra mid stop in each gradient gives the same soft edge the blur used to add. */
+.rpb-blob{position:absolute;border-radius:9999px;pointer-events:none;z-index:0;will-change:transform;contain:strict}
 
 /* Dark mode palette: Deep sapphire night with warm gold amber glows */
-.rpb.dark .rpb-blob.a{width:75vmax;height:75vmax;left:-20vmax;top:-25vmax;background:radial-gradient(circle,rgba(217,119,6,0.18) 0%,rgba(15,23,42,0) 70%);animation:rpb-a 28s ease-in-out infinite alternate}
-.rpb.dark .rpb-blob.b{width:65vmax;height:65vmax;right:-15vmax;top:10vmax;background:radial-gradient(circle,rgba(30,27,75,0.45) 0%,rgba(15,23,42,0) 70%);opacity:.9;animation:rpb-b 32s ease-in-out infinite alternate}
-.rpb.dark .rpb-blob.c{width:80vmax;height:70vmax;left:10vmax;bottom:-30vmax;background:radial-gradient(circle,rgba(180,83,9,0.15) 0%,rgba(7,11,18,0) 70%);animation:rpb-c 36s ease-in-out infinite alternate}
-.rpb.dark .rpb-blob.d{width:55vmax;height:55vmax;right:10vmax;bottom:-15vmax;background:radial-gradient(circle,rgba(245,158,11,0.12) 0%,rgba(15,23,42,0) 70%);animation:rpb-d 24s ease-in-out infinite alternate}
+.rpb.dark .rpb-blob.a{width:75vmax;height:75vmax;left:-20vmax;top:-25vmax;background:radial-gradient(circle,rgba(217,119,6,0.126) 0%,rgba(217,119,6,0.068) 35%,rgba(15,23,42,0) 72%);animation:rpb-a 28s ease-in-out infinite alternate}
+.rpb.dark .rpb-blob.b{width:65vmax;height:65vmax;right:-15vmax;top:10vmax;background:radial-gradient(circle,rgba(30,27,75,0.315) 0%,rgba(30,27,75,0.171) 35%,rgba(15,23,42,0) 72%);opacity:.9;animation:rpb-b 32s ease-in-out infinite alternate}
+.rpb.dark .rpb-blob.c{width:80vmax;height:70vmax;left:10vmax;bottom:-30vmax;background:radial-gradient(circle,rgba(180,83,9,0.105) 0%,rgba(180,83,9,0.057) 35%,rgba(7,11,18,0) 72%);animation:rpb-c 36s ease-in-out infinite alternate}
+.rpb.dark .rpb-blob.d{width:55vmax;height:55vmax;right:10vmax;bottom:-15vmax;background:radial-gradient(circle,rgba(245,158,11,0.084) 0%,rgba(245,158,11,0.046) 35%,rgba(15,23,42,0) 72%);animation:rpb-d 24s ease-in-out infinite alternate}
 .rpb.dark .rpb-dots{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.18;background-image:radial-gradient(rgba(245,158,11,0.5) 1px,transparent 1.2px);background-size:16px 16px}
 
 /* Light mode palette: Royal alabaster & champagne marble */
-.rpb.light .rpb-blob.a{width:75vmax;height:75vmax;left:-18vmax;top:-22vmax;background:radial-gradient(circle,rgba(254,243,199,0.7) 0%,rgba(250,249,246,0) 70%);animation:rpb-a 28s ease-in-out infinite alternate}
-.rpb.light .rpb-blob.b{width:65vmax;height:65vmax;right:-10vmax;top:-5vmax;background:radial-gradient(circle,rgba(253,230,138,0.5) 0%,rgba(250,249,246,0) 70%);opacity:.9;animation:rpb-b 32s ease-in-out infinite alternate}
-.rpb.light .rpb-blob.c{width:80vmax;height:70vmax;left:5vmax;bottom:-30vmax;background:radial-gradient(circle,rgba(254,215,170,0.45) 0%,rgba(250,249,246,0) 70%);animation:rpb-c 36s ease-in-out infinite alternate}
-.rpb.light .rpb-blob.d{width:55vmax;height:55vmax;right:-15vmax;bottom:-18vmax;background:radial-gradient(circle,rgba(243,244,246,0.8) 0%,rgba(250,249,246,0) 70%);animation:rpb-d 24s ease-in-out infinite alternate}
+.rpb.light .rpb-blob.a{width:75vmax;height:75vmax;left:-18vmax;top:-22vmax;background:radial-gradient(circle,rgba(254,243,199,0.49) 0%,rgba(254,243,199,0.266) 35%,rgba(250,249,246,0) 72%);animation:rpb-a 28s ease-in-out infinite alternate}
+.rpb.light .rpb-blob.b{width:65vmax;height:65vmax;right:-10vmax;top:-5vmax;background:radial-gradient(circle,rgba(253,230,138,0.35) 0%,rgba(253,230,138,0.19) 35%,rgba(250,249,246,0) 72%);opacity:.9;animation:rpb-b 32s ease-in-out infinite alternate}
+.rpb.light .rpb-blob.c{width:80vmax;height:70vmax;left:5vmax;bottom:-30vmax;background:radial-gradient(circle,rgba(254,215,170,0.315) 0%,rgba(254,215,170,0.171) 35%,rgba(250,249,246,0) 72%);animation:rpb-c 36s ease-in-out infinite alternate}
+.rpb.light .rpb-blob.d{width:55vmax;height:55vmax;right:-15vmax;bottom:-18vmax;background:radial-gradient(circle,rgba(243,244,246,0.56) 0%,rgba(243,244,246,0.304) 35%,rgba(250,249,246,0) 72%);animation:rpb-d 24s ease-in-out infinite alternate}
 .rpb.light .rpb-dots{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.09;background-image:radial-gradient(rgba(180,83,9,0.6) 1px,transparent 1.2px);background-size:14px 14px}
 
 .rpb-content{position:relative;z-index:2}

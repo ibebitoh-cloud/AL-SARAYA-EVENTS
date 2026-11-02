@@ -19,6 +19,8 @@ interface RevealTextProps {
   overlayDuration?: number;
   springDuration?: number;
   letterImages?: string[];
+  /** Optional class for a static layer under each letter (used for the gold foil's 3D edge). */
+  depthClassName?: string;
   className?: string;
 }
 
@@ -32,6 +34,7 @@ export function RevealText({
   overlayDuration = 0.4,
   springDuration = 600,
   letterImages = [],
+  depthClassName,
   className = '',
 }: RevealTextProps) {
   const reduceMotion = useReducedMotion();
@@ -40,13 +43,16 @@ export function RevealText({
   // After the sweep, one slow wave fills each letter with its photo in turn, so phone
   // visitors (who can't hover) still see the pictures.
   const [waveIndex, setWaveIndex] = useState<number | null>(null);
+  // The letter photos are only attached once the letters have landed (or a letter is hovered),
+  // so they don't compete with the page's first paint.
+  const [photosOn, setPhotosOn] = useState(false);
   const letterCount = text.replace(/\s+/g, '').length;
 
   useEffect(() => {
     if (reduceMotion) return;
     // Run the colour sweep once the last letter's spring has settled.
     const totalDelay = (letterCount - 1) * letterDelay * 1000 + springDuration;
-    const timer = setTimeout(() => setShowOverlay(true), totalDelay);
+    const timer = setTimeout(() => { setShowOverlay(true); setPhotosOn(true); }, totalDelay);
     let step = -1;
     let wave: ReturnType<typeof setInterval> | undefined;
     const waveStart = setTimeout(() => {
@@ -68,7 +74,7 @@ export function RevealText({
           {word.split('').map((letter) => {
             index += 1;
             const i = index;
-            const image = letterImages.length ? letterImages[i % letterImages.length] : '';
+            const image = (photosOn || hoveredIndex !== null) && letterImages.length ? letterImages[i % letterImages.length] : '';
             const active = (hoveredIndex === i || (hoveredIndex === null && waveIndex !== null && Math.abs(waveIndex - i) <= 1)) && Boolean(image);
             return (
               <motion.span
@@ -82,8 +88,9 @@ export function RevealText({
                 transition={{ delay: i * letterDelay, type: 'spring', damping: 12, stiffness: 200, mass: 0.8 }}
               >
                 {/* Base text layer */}
-                <motion.span className={`absolute inset-0 ${textColor}`} animate={{ opacity: active ? 0 : 1 }} transition={{ duration: 0.15 }}>
-                  {letter}
+                <motion.span className="absolute inset-0" animate={{ opacity: active ? 0 : 1 }} transition={{ duration: 0.15 }}>
+                  {depthClassName && <span aria-hidden="true" className={`absolute inset-0 ${depthClassName}`}>{letter}</span>}
+                  <span className={`absolute inset-0 ${textColor}`}>{letter}</span>
                 </motion.span>
                 {/* Photo layer: the letter is filled with a picture that slowly pans */}
                 <motion.span
