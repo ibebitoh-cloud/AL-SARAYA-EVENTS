@@ -28,7 +28,7 @@
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Readex+Pro:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Readex+Pro:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Readex+Pro:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet"></noscript>
-    <!-- The DALI STUDIO "D" loader. These styles are here, not in index.css, so the same spinning D
+    <!-- The DALI STUDIO "D" loader. These styles are here, not in index.css, so the same drawn D
          shows while the app downloads; src/components/DaliLoader.tsx uses them after that. -->
     <!-- The site always opens in the dark (black) theme; the light toggle only lasts for the current visit. -->
     <script>document.documentElement.dataset.theme='dark';document.documentElement.style.colorScheme='dark';try{localStorage.removeItem('saraya-theme')}catch(e){}</script>
@@ -36,11 +36,19 @@
       .dali-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 12px;font-family:'Readex Pro','Cairo',sans-serif;--dl-size:56px}
       .dali-loader[data-size='sm']{--dl-size:36px;gap:10px;padding:12px}
       .dali-loader[data-size='lg']{--dl-size:76px;gap:18px}
-      .dali-loader-mark{position:relative;display:block;width:var(--dl-size);height:var(--dl-size);perspective:600px}
-      .dali-loader-mark::before{content:'';position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,rgba(233,207,148,.35) 0%,rgba(196,154,82,.12) 45%,transparent 70%);animation:dali-glow 1.8s ease-in-out infinite}
-      .dali-loader-mark img,.dali-spin-icon img{position:relative;display:block;width:100%;height:100%;object-fit:contain;user-select:none;animation:dali-spin 1.8s cubic-bezier(.65,0,.35,1) infinite;filter:drop-shadow(0 6px 14px rgba(140,106,46,.45))}
-      .dali-spin-icon{perspective:200px}
-      .dali-spin-icon img{animation-duration:1.2s;filter:none}
+      .dali-loader-mark{position:relative;display:block;width:var(--dl-size);height:var(--dl-size)}
+      .dali-loader-mark::before{content:'';position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,rgba(233,207,148,.3) 0%,rgba(196,154,82,.1) 45%,transparent 70%);animation:dali-glow 2.4s ease-in-out infinite}
+      .dali-spin-icon{position:relative}
+      /* The D draws itself (bars grow down, then the curve is traced), a gold shine sweeps across it, then it starts again. */
+      .dl-draw{position:absolute;inset:0;animation:dl-fade 2.4s ease-in-out infinite}
+      .dl-draw img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;user-select:none;pointer-events:none}
+      .dali-loader-mark .dl-draw img{filter:drop-shadow(0 6px 14px rgba(140,106,46,.4))}
+      .dl-bars{clip-path:inset(0 62% 0 0);animation:dl-bars 2.4s cubic-bezier(.6,0,.2,1) infinite}
+      .dl-bowl{clip-path:inset(0 0 0 39%);-webkit-mask:conic-gradient(from 270deg at 54.7% 50%,#000 var(--dl-a),transparent 0);mask:conic-gradient(from 270deg at 54.7% 50%,#000 var(--dl-a),transparent 0);animation:dl-bowl 2.4s cubic-bezier(.55,0,.25,1) infinite}
+      .dl-sheen{position:absolute;inset:0;overflow:hidden;-webkit-mask:url(/brand/dali-mark.png) center/contain no-repeat;mask:url(/brand/dali-mark.png) center/contain no-repeat}
+      .dl-sheen::after{content:'';position:absolute;inset:-10% -60%;background:linear-gradient(105deg,transparent 40%,rgba(255,250,232,.95) 50%,transparent 60%);transform:translateX(-40%);animation:dl-sheen 2.4s ease-in-out infinite}
+      [dir='rtl'] .dl-sheen::after{transform:translateX(40%);animation-name:dl-sheen-rtl}
+      @property --dl-a{syntax:'<angle>';inherits:false;initial-value:360deg}
       .dali-loader-label{display:inline-flex;align-items:baseline;font-size:13px;font-weight:600;color:#E9CF94}
       .dali-loader[data-size='sm'] .dali-loader-label{font-size:11px}
       .dali-loader[lang='en'] .dali-loader-label{letter-spacing:.28em;text-transform:uppercase;font-size:11px}
@@ -53,16 +61,20 @@
       .dali-splash{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:#0D0D0F;transition:opacity .45s ease}
       html[data-theme='light'] .dali-splash{background:#F4F1EA}
       .dali-splash.is-done{opacity:0;pointer-events:none}
-      @keyframes dali-spin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+      @keyframes dl-bars{0%{clip-path:inset(0 62% 100% 0)}22%,100%{clip-path:inset(0 62% 0 0)}}
+      @keyframes dl-bowl{0%,18%{--dl-a:0deg}58%,100%{--dl-a:360deg}}
+      @keyframes dl-sheen{0%,56%{transform:translateX(-40%)}88%,100%{transform:translateX(40%)}}
+      @keyframes dl-sheen-rtl{0%,56%{transform:translateX(40%)}88%,100%{transform:translateX(-40%)}}
+      @keyframes dl-fade{0%,90%{opacity:1}99%,100%{opacity:0}}
       @keyframes dali-glow{0%,100%{opacity:.55;transform:scale(.9)}50%{opacity:1;transform:scale(1.05)}}
       @keyframes dali-dot{0%,20%{opacity:0}40%,100%{opacity:1}}
-      @media (prefers-reduced-motion:reduce){.dali-loader-mark img,.dali-spin-icon img{animation:dali-spin 3.6s linear infinite}.dali-loader-mark::before{animation:none}}
+      @media (prefers-reduced-motion:reduce){.dl-draw,.dl-bars,.dl-bowl{animation:none}.dl-sheen::after{animation-duration:4s}.dali-loader-mark::before{animation:none}}
     </style>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
     <div id="dali-splash" class="dali-splash" data-dali-ignore>
       <div class="dali-loader" data-size="lg" role="status" aria-live="polite" lang="ar" dir="rtl">
-        <span class="dali-loader-mark" aria-hidden="true"><img src="/brand/dali-mark.png" alt="" /></span>
+        <span class="dali-loader-mark" aria-hidden="true"><span class="dl-draw"><img class="dl-bars" src="/brand/dali-mark.png" alt="" /><img class="dl-bowl" src="/brand/dali-mark.png" alt="" /><span class="dl-sheen"></span></span></span>
         <span class="dali-loader-label">جارٍ التحميل<span class="dali-loader-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></span>
       </div>
     </div>

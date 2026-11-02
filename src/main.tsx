@@ -5,7 +5,7 @@ import './light-accents.css';
 
 createRoot(document.getElementById('root')!).render(<App />);
 
-// The spinning D from index.html stays up for at least a moment after the app is ready, then fades out.
+// The DALI loader from index.html stays up for at least a moment after the app is ready, then fades out.
 const splash = document.getElementById('dali-splash');
 if (splash) {
   window.setTimeout(() => {
