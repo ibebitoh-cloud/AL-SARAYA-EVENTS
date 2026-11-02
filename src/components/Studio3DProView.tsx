@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Box, Clock, CreditCard, Footprints, Lock, Palette, Presentation, Sparkles } from 'lucide-react';
+import { Box, Clock, Footprints, KeyRound, Lock, Palette, Presentation, Sparkles, X } from 'lucide-react';
 import type { Hall, Language } from '../types/venueSystem';
 import { EventLayoutDesigner } from './EventLayoutDesigner';
 import { BrandLogo } from './BrandLogo';
-import { PRO_3D, PRO_3D_STORAGE_KEY } from '../data/proFeatures';
+import { PRO_3D, PRO_3D_LICENSE_KEY, PRO_3D_STORAGE_KEY, hashProKey, isProLicensed } from '../data/proFeatures';
 import previewPro from '../assets/images/studio3d/preview-pro.jpg';
 import previewBasic from '../assets/images/studio3d/preview-basic.jpg';
 
@@ -27,15 +27,17 @@ export function Studio3DProView({ halls, onUpdateHall }: Props) {
   const isAr = false;
   const [demo, setDemo] = useState<DemoState>(() => (typeof window === 'undefined' ? { used: 0 } : readDemo()));
   const [now, setNow] = useState(() => Date.now());
-  const active = PRO_3D.unlocked || Boolean(demo.activeUntil && demo.activeUntil > now);
+  const [licensed, setLicensed] = useState(() => (typeof window === 'undefined' ? PRO_3D.unlocked : isProLicensed()));
+  const [keyOpen, setKeyOpen] = useState(false);
+  const active = licensed || Boolean(demo.activeUntil && demo.activeUntil > now);
   const left = Math.max(0, PRO_3D.demoSessions - demo.used);
   const price = `$${PRO_3D.priceUsd}`;
 
   useEffect(() => {
-    if (PRO_3D.unlocked || !demo.activeUntil) return;
+    if (licensed || !demo.activeUntil) return;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [demo.activeUntil]);
+  }, [demo.activeUntil, licensed]);
 
   const startSession = () => {
     if (left <= 0) return;
@@ -45,7 +47,9 @@ export function Studio3DProView({ halls, onUpdateHall }: Props) {
     setNow(Date.now());
   };
 
-  if (PRO_3D.unlocked) return <EventLayoutDesigner language={language} halls={halls} onUpdateHall={onUpdateHall} edition="pro" />;
+  const keyDialog = keyOpen && <ActivationDialog onClose={() => setKeyOpen(false)} onActivated={() => { setKeyOpen(false); setLicensed(true); }} />;
+
+  if (licensed) return <EventLayoutDesigner language={language} halls={halls} onUpdateHall={onUpdateHall} edition="pro" />;
 
   if (active) {
     const remaining = Math.max(0, Math.ceil(((demo.activeUntil || 0) - now) / 1000));
@@ -58,10 +62,11 @@ export function Studio3DProView({ halls, onUpdateHall }: Props) {
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
             <span className="flex items-center gap-1 font-mono text-amber-100" dir="ltr"><Clock className="h-3.5 w-3.5" />{mm}:{ss}</span>
             <span>{isAr ? `الجلسات المتبقية: ${left}` : `${left} sessions left`}</span>
-            <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="rounded-lg bg-amber-400 px-2.5 py-1 font-black text-slate-950 hover:bg-amber-300">{isAr ? 'فعّل الاشتراك للاستخدام' : 'Activate subscription to use'}</a>
+            <button type="button" onClick={() => setKeyOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 py-1 font-black text-slate-950 hover:bg-amber-300"><KeyRound className="h-3.5 w-3.5" />Activate subscription</button>
           </div>
         </div>
         <EventLayoutDesigner language={language} halls={halls} onUpdateHall={onUpdateHall} edition="pro" canSave={false} demo />
+        {keyDialog}
       </div>
     );
   }
@@ -108,10 +113,56 @@ export function Studio3DProView({ halls, onUpdateHall }: Props) {
             <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-amber-200"><Lock className="h-3.5 w-3.5" />{isAr ? 'خدمة أونلاين · الاشتراك غير مفعّل' : 'Online service · subscription not active'}</div>
             <p className="mt-1 text-xs leading-5 text-slate-300">{isAr ? '3D Studio Pro غير قابل للاستخدام بدون اشتراك فعّال. التجربة للمعاينة فقط: لا حفظ ولا عرض للعملاء.' : '3D Studio Pro can’t be used without an active subscription. The demo is a preview only: no saving and no client presentation.'}</p>
           </div>
-          <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300"><CreditCard className="h-4 w-4" />{isAr ? 'فعّل الاشتراك' : 'Activate subscription'}</a>
+          <button type="button" onClick={() => setKeyOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300"><KeyRound className="h-4 w-4" />Activate subscription</button>
         </div>
-        <p className="mt-2 text-[10px] text-slate-500">{isAr ? `الاشتراك ${price} · يتفعّل بعد إتمام الدفع.` : `Subscription ${price} · activates once payment is completed.`}</p>
+        <p className="mt-2 text-[10px] text-slate-500">{isAr ? `الاشتراك ${price} · يتفعّل بعد إتمام الدفع.` : `Subscription ${price} · activates with the key you receive after payment.`}</p>
       </div>
+      {keyDialog}
     </section>
+  );
+}
+
+/** "Enter activation key" dialog. A valid key is remembered on this browser and unlocks Pro. */
+function ActivationDialog({ onClose, onActivated }: { onClose: () => void; onActivated: () => void }) {
+  const [key, setKey] = useState('');
+  const [state, setState] = useState<'idle' | 'checking' | 'wrong' | 'ok'>('idle');
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!key.trim()) return;
+    setState('checking');
+    let hash = '';
+    try { hash = await hashProKey(key); } catch {}
+    if (hash && hash === PRO_3D.activationKeyHash) {
+      try { window.localStorage.setItem(PRO_3D_LICENSE_KEY, hash); } catch {}
+      setState('ok');
+      window.setTimeout(onActivated, 900);
+    } else setState('wrong');
+  };
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center p-4" style={{ background: 'rgba(5,5,7,.78)' }} role="dialog" aria-modal="true" aria-labelledby="pro-key-title" dir="ltr" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <form onSubmit={submit} className="w-full max-w-md rounded-2xl border border-amber-400/40 bg-[#111113] p-5 shadow-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-amber-200"><KeyRound className="h-4 w-4" />3D Studio Pro</div>
+            <h2 id="pro-key-title" className="mt-1 text-lg font-black text-white">Enter activation key</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-400">Your activation key is issued once your subscription payment is completed. It unlocks Pro on this device.</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"><X className="h-4 w-4" /></button>
+        </div>
+        <label className="mt-4 block text-[11px] font-bold text-slate-300" htmlFor="pro-key-input">Activation key</label>
+        <input id="pro-key-input" autoFocus autoComplete="off" spellCheck={false} value={key} onChange={(e) => { setKey(e.target.value.toUpperCase()); if (state === 'wrong') setState('idle'); }} placeholder="XXXX-XXXX-XXXX-XXXX" aria-invalid={state === 'wrong'} aria-describedby="pro-key-status" className={`mt-1 w-full rounded-xl border bg-[#0D0D0F] px-3 py-2.5 font-mono text-sm tracking-[0.2em] text-white outline-none focus:border-amber-400 ${state === 'wrong' ? 'border-red-500' : 'border-slate-700'}`} />
+        <div id="pro-key-status" role="status" className="mt-2 min-h-5 text-xs">
+          {state === 'wrong' && <span className="font-bold text-red-400">This activation key isn’t valid. Check it and try again.</span>}
+          {state === 'ok' && <span className="font-bold text-emerald-400">Key accepted. Unlocking 3D Studio Pro…</span>}
+        </div>
+        <button type="submit" disabled={!key.trim() || state === 'checking' || state === 'ok'} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300 disabled:opacity-50"><Lock className="h-4 w-4" />{state === 'checking' ? 'Checking…' : 'Activate'}</button>
+        <p className="mt-3 text-[10px] leading-4 text-slate-500">Don’t have a key yet? Complete your subscription to receive one.{PRO_3D.paymentUrl && <> <a href={PRO_3D.paymentUrl} target="_blank" rel="noreferrer" className="font-bold text-amber-300 hover:text-amber-200">Go to payment</a></>}</p>
+      </form>
+    </div>
   );
 }
