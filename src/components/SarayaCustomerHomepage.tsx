@@ -33,10 +33,10 @@ import { BrandLogo } from './BrandLogo';
 import { RevealText } from './ui/reveal-text';
 import { SERVICE_KEYS, SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
 import { CustomerSuccessStories } from './CustomerSuccessStories';
-import ballroomImg from '../assets/images/alsaraya_grand_ballroom_1791458716707.jpg';
-import koshaImg from '../assets/images/alsaraya_royal_kosha_1791458732633.jpg';
-import gardenImg from '../assets/images/alsaraya_garden_terrace_1791458767479.jpg';
-import diningImg from '../assets/images/alsaraya_banquet_dining_1791458748323.jpg';
+import ballroomImg from '../assets/images/alsaraya_grand_ballroom_1791458716707.webp';
+import koshaImg from '../assets/images/alsaraya_royal_kosha_1791458732633.webp';
+import gardenImg from '../assets/images/alsaraya_garden_terrace_1791458767479.webp';
+import diningImg from '../assets/images/alsaraya_banquet_dining_1791458748323.webp';
 
 interface SarayaCustomerHomepageProps {
   halls: Hall[];
@@ -225,6 +225,8 @@ export function SarayaCustomerHomepage({
     if (w < weddingPhotos.length) letterPhotos.push(weddingPhotos[w++]);
     if (pa < partyPhotos.length) letterPhotos.push(partyPhotos[pa++]);
   }
+  // Letter fills are at most a few hundred pixels wide, so ask the photo CDNs for a smaller copy.
+  for (let i = 0; i < letterPhotos.length; i++) letterPhotos[i] = letterPhotos[i].replace(/([?&]w=)1800\b/, '$1900');
   const photoFor = (categories: readonly string[], index = 0) => {
     const matches = displayPhotos.filter((p) => categories.includes(p.category));
     return (matches[index] ?? matches[0] ?? displayPhotos[index % Math.max(1, displayPhotos.length)])?.src || '';
@@ -308,6 +310,7 @@ export function SarayaCustomerHomepage({
             textColor="hero-gold-foil"
             overlayColor="text-amber-400"
             fontSize="text-[clamp(3.4rem,17.5vw,15rem)]"
+            depthClassName="hero-gold-depth"
             letterImages={letterPhotos}
           />
         </h1>

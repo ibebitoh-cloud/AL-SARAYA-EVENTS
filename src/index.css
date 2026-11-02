@@ -923,8 +923,19 @@ html[data-theme="light"] textarea::placeholder {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  filter: drop-shadow(0 1px 0 #5a3d14) drop-shadow(0 2px 0 #4a3010) drop-shadow(0 3px 0 #3b260c) drop-shadow(0 4px 0 #2e1d09) drop-shadow(0 14px 18px rgba(60, 30, 5, 0.4));
   animation: hero-gold-shine 7s linear infinite;
+  /* Own layer, so the moving shine never repaints the 3D edge underneath. */
+  will-change: transform;
+}
+/* The 3D gold edge under each hero letter. It used to be five chained filter: drop-shadow()s on the
+   moving foil, which were re-rendered every frame and made the hero stutter on desktop. The same
+   layered edge is now a static text-shadow that is painted once. */
+.hero-gold-depth {
+  color: #5a3d14;
+  -webkit-text-fill-color: #5a3d14;
+  text-shadow: 0 1px 0 #5a3d14, 0 2px 0 #4a3010, 0 3px 0 #4a3010, 0 4px 0 #3b260c, 0 5px 0 #3b260c, 0 6px 0 #3b260c,
+    0 7px 0 #2e1d09, 0 8px 0 #2e1d09, 0 9px 0 #2e1d09, 0 10px 0 #2e1d09, 0 14px 18px rgba(60, 30, 5, 0.4), 0 22px 18px rgba(60, 30, 5, 0.4);
+  pointer-events: none;
 }
 @keyframes hero-gold-shine { to { background-position: 300% 0; } }
 @media (prefers-reduced-motion: reduce) { .hero-gold-foil { animation: none; } }

@@ -1,9 +1,9 @@
 import { CoupleTestimonial } from '../types/venueSystem';
-import ballroomImg from '../assets/images/alsaraya_grand_ballroom_1791458716707.jpg';
-import weddingEntranceImg from '../assets/images/saraya_couture_wedding_1791459224733.jpg';
-import gardenImg from '../assets/images/alsaraya_garden_terrace_1791458767479.jpg';
-import koshaImg from '../assets/images/alsaraya_royal_kosha_1791458732633.jpg';
-import diningImg from '../assets/images/alsaraya_banquet_dining_1791458748323.jpg';
+import ballroomImg from '../assets/images/alsaraya_grand_ballroom_1791458716707.webp';
+import weddingEntranceImg from '../assets/images/saraya_couture_wedding_1791459224733.webp';
+import gardenImg from '../assets/images/alsaraya_garden_terrace_1791458767479.webp';
+import koshaImg from '../assets/images/alsaraya_royal_kosha_1791458732633.webp';
+import diningImg from '../assets/images/alsaraya_banquet_dining_1791458748323.webp';
 
 export const INITIAL_COUPLE_TESTIMONIALS: CoupleTestimonial[] = [
   {
