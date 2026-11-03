@@ -78,7 +78,7 @@ export function BookingPlannerView({ booking, halls, services, priceBook, langua
       </div>
 
       {/* Full booking data */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <section className={card}>
           <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-300"><Phone className="h-4 w-4" /> {tr('العميل', 'Client')}</h3>
           {row(tr('الاسم', 'Name'), booking.clientName)}
@@ -100,7 +100,7 @@ export function BookingPlannerView({ booking, halls, services, priceBook, langua
           {booking.assignedStaff?.length > 0 && row(tr('فريق العمل', 'Team'), booking.assignedStaff.map((s) => s.name).join('، '))}
         </section>
 
-        <section className={card}>
+        <section className={`${card} md:col-span-2 xl:col-span-1`}>
           <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-300"><Wallet className="h-4 w-4" /> {tr('الحساب', 'Payment')}</h3>
           {row(tr('سعر القاعة', 'Hall price'), egp(booking.basePrice))}
           {row(tr('الخدمات', 'Services'), egp(booking.services.reduce((sum, s) => sum + (Number(s.totalPrice) || 0), 0)))}
@@ -121,7 +121,7 @@ export function BookingPlannerView({ booking, halls, services, priceBook, langua
           <h3 className="flex items-center gap-2 text-sm font-bold text-amber-300"><Box className="h-4 w-4" /> {tr('نموذج القاعة ثلاثي الأبعاد', '3D model of the hall')}<span className="rounded-full border border-slate-600 px-2 py-0.5 text-[10px] font-black tracking-widest text-slate-300">BASIC</span></h3>
           <span className="text-[11px] text-slate-400">{hallName} · {scene.dims.widthM}×{scene.dims.depthM} {tr('م', 'm')} · {booking.guestCount} {tr('فرد', 'guests')}</span>
         </div>
-        <div className="h-[340px] overflow-hidden rounded-2xl border border-slate-800 sm:h-[420px]">
+        <div className="h-[340px] overflow-hidden rounded-2xl border border-slate-800 sm:h-[min(420px,62vh)] sm:min-h-[320px]">
           <EventLayout3D items={scene.items} width={scene.dims.widthM} depth={scene.dims.depthM} language={language} hall={scene.dims} tier="basic" mode="overview" readOnly />
         </div>
         <p className="mt-2 text-[11px] text-slate-500">{hall?.default3D?.items?.length ? tr('التصميم المحفوظ لهذه القاعة.', 'The saved layout for this hall.') : tr('توزيع تلقائي حسب عدد المدعوين. عدّله من شاشة مصمم المناسبة.', 'Automatic layout for the guest count. Change it in the Event Designer.')}</p>
