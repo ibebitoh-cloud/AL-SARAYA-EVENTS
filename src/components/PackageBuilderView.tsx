@@ -104,15 +104,15 @@ export function PackageBuilderView({ language = 'ar', halls, services, priceBook
 
       {tab === 'bookings' && (() => {
         const bq = bookingQuery.trim().toLowerCase();
+        // Only upcoming events are listed; past or completed ones show up only when searched for.
         const list = existingBookings
           .filter((b) => b.status !== 'cancelled')
-          .filter((b) => !bq || b.clientName.toLowerCase().includes(bq) || b.clientPhone.includes(bq) || b.code.toLowerCase().includes(bq))
-          // Upcoming first (soonest), then past events (most recent first).
+          .filter((b) => bq ? (b.clientName.toLowerCase().includes(bq) || b.clientPhone.includes(bq) || b.code.toLowerCase().includes(bq)) : (b.date >= todayIso && b.status !== 'completed'))
           .sort((a, b) => { const fa = a.date >= todayIso, fb = b.date >= todayIso; if (fa !== fb) return fa ? -1 : 1; return fa ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date); });
         return (
           <section className="space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-slate-400">{tr('اختر الحجز لعرض بياناته كاملة، ونموذج القاعة ثلاثي الأبعاد، والخدمات غير المختارة.', 'Pick a booking to see all its details, the 3D model of the hall and the services not picked yet.')}</p>
+              <p className="text-xs text-slate-400">{tr('المناسبات القادمة فقط. للمناسبات السابقة ابحث بالاسم أو الهاتف أو الكود.', 'Upcoming events only. To find a past event, search by name, phone or code.')}</p>
               <div className="relative">
                 <Search className="absolute top-2.5 h-3.5 w-3.5 text-slate-500 start-2.5" />
                 <input value={bookingQuery} onChange={(e) => setBookingQuery(e.target.value)} placeholder={tr('بحث بالاسم أو الهاتف أو الكود', 'Search name, phone or code')} className="w-full rounded-full border border-slate-700 bg-slate-950 py-2 text-xs text-white ps-8 pe-3 focus:border-amber-400 focus:outline-none sm:w-64" />
@@ -121,7 +121,7 @@ export function PackageBuilderView({ language = 'ar', halls, services, priceBook
             {list.length === 0 ? (
               <div className={`${card} py-12 text-center`}>
                 <CalendarCheck2 className="mx-auto h-8 w-8 text-slate-600" />
-                <p className="mt-3 text-sm font-semibold text-slate-300">{existingBookings.length ? tr('لا توجد نتائج', 'No matches') : tr('لا توجد حجوزات بعد', 'No bookings yet')}</p>
+                <p className="mt-3 text-sm font-semibold text-slate-300">{bq ? tr('لا توجد نتائج', 'No matches') : tr('لا توجد مناسبات قادمة', 'No upcoming events')}</p>
               </div>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
