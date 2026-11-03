@@ -83,6 +83,8 @@ export function NewBookingModal({
 
   const isCustomHall = hallId === CUSTOM_HALL_ID || hallId === CUSTOMER_VENUE_ID;
   const isCustomerVenue = hallId === CUSTOMER_VENUE_ID;
+  // Services at a place outside our halls use the "other location" prices.
+  const servicePriceLoc = isCustomHall ? 'other' as const : locationId;
   // Customers never see prices: the team prices the request after talking to them.
   const showLocationPrices = !customerMode;
   const locationHalls = halls.filter((h) => hallLocation(h) === locationId);
@@ -141,7 +143,7 @@ export function NewBookingModal({
   Object.entries(selectedServices).forEach(([srvId, qty]) => {
     const srv = servicesCatalogue.find((s) => s.id === srvId);
     if (!srv) return;
-    const p = servicePriceAt(priceBook, locationId, srv);
+    const p = servicePriceAt(priceBook, servicePriceLoc, srv);
     lineItems.push({
       id: `bs-${Date.now()}-${srvId}`, serviceId: srvId, name: srv.name, quantity: qty,
       unitPrice: p.price, costPrice: p.cost, totalPrice: p.price * qty, totalCost: p.cost * qty,
@@ -370,7 +372,7 @@ export function NewBookingModal({
                   {servicesCatalogue.map((srv) => {
                     const isChecked = !!selectedServices[srv.id];
                     const qty = selectedServices[srv.id] || 1;
-                    const price = servicePriceAt(priceBook, locationId, srv).price;
+                    const price = servicePriceAt(priceBook, servicePriceLoc, srv).price;
                     return (
                       <div key={srv.id} onClick={() => toggleService(srv)}
                         className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 text-xs ${isChecked ? 'bg-indigo-600/15 border-indigo-500 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'}`}>

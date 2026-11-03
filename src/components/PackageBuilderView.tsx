@@ -6,6 +6,8 @@ import { EVENT_TYPES, eventDetailsSummary, eventTypeConfig } from '../data/event
 import { LOCATIONS, hallLocation, locationName } from '../data/locations';
 import { PreparedOperation, loadPreparedOperations, savePreparedOperations } from '../data/preparedOperations';
 import { ChoiceSessionView } from './ChoiceSessionView';
+import { BookingPlannerView } from './BookingPlannerView';
+import { bookingStatusLabel } from '../utils/tr';
 import { sound } from '../utils/soundEffects';
 import { findBookingConflict } from '../utils/bookingRules';
 
@@ -36,13 +38,17 @@ const blankOperation = (halls: Hall[]): PreparedOperation => {
  * Event Planner. The team prepares each operation before the meeting (client, type, hall, date, guests);
  * in the meeting the customer only chooses in the choice session. Selling prices only.
  */
-export function PackageBuilderView({ language = 'ar', halls, priceBook, existingBookings, onCreateBooking }: Props) {
+export function PackageBuilderView({ language = 'ar', halls, services, priceBook, existingBookings, onCreateBooking }: Props) {
   const { isAr, tr } = makeTr(language);
   const [ops, setOps] = useState<PreparedOperation[]>(loadPreparedOperations);
   const [filter, setFilter] = useState<'all' | 'ready' | 'session' | 'booked'>('all');
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState<PreparedOperation | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  /** The planner starts by choosing an existing booking; prepared (not yet booked) events are the second tab. */
+  const [tab, setTab] = useState<'bookings' | 'prepared'>('bookings');
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [bookingQuery, setBookingQuery] = useState('');
 
   useEffect(() => savePreparedOperations(ops), [ops]);
 
@@ -52,6 +58,11 @@ export function PackageBuilderView({ language = 'ar', halls, priceBook, existing
   if (session) {
     return <ChoiceSessionView op={session} hall={halls.find((h) => h.id === session.hallId)} priceBook={priceBook} existingBookings={existingBookings}
       onChange={upsert} onBack={() => setSessionId(null)} onCreateBooking={onCreateBooking} />;
+  }
+
+  const plannedBooking = existingBookings.find((b) => b.id === bookingId);
+  if (plannedBooking) {
+    return <BookingPlannerView booking={plannedBooking} halls={halls} services={services} priceBook={priceBook} language={language} onBack={() => setBookingId(null)} />;
   }
 
   if (draft) {
@@ -80,11 +91,69 @@ export function PackageBuilderView({ language = 'ar', halls, priceBook, existing
       <div className={`${card} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
         <div>
           <h2 className="flex items-center gap-2 text-lg font-black text-white"><Sparkles className="h-5 w-5 text-amber-400" /> {tr('تصميم الحفلة مع العميل', 'Event Planner')}</h2>
-          <p className="mt-1 text-xs text-slate-400">{tr('جهّز بيانات العملية قبل المقابلة، ثم افتح جلسة الاختيار أمام العميل — بدون إدخال بيانات أمامه.', 'Prepare the client, event, hall and date before the meeting, then open the choice session with the client.')}</p>
+          <p className="mt-1 text-xs text-slate-400">{tr('اختر المناسبة أولاً لعرض الحجز كاملاً ونموذج القاعة والخدمات غير المختارة. أو جهّز عملية جديدة قبل المقابلة.', 'Choose the event first to see the full booking, the hall model and the services not picked. Or prepare a new event before the meeting.')}</p>
         </div>
         <button type="button" onClick={() => { sound.click(650); setDraft(blankOperation(halls)); }} className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300"><Plus className="h-4 w-4" /> {tr('تجهيز عملية جديدة', 'Prepare a new event')}</button>
       </div>
 
+      <div className="flex gap-2" role="tablist" data-no-screen-swipe>
+        {([['bookings', tr('1. اختر المناسبة', '1. Choose the event'), CalendarCheck2], ['prepared', tr('عمليات قبل الحجز', 'Prepared before booking'), ClipboardList]] as const).map(([id, label, Icon]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-bold transition ${tab === id ? 'border-amber-300 bg-amber-400 text-slate-950' : 'border-slate-700 text-slate-300 hover:text-white'}`}><Icon className="h-4 w-4" />{label}</button>
+        ))}
+      </div>
+
+      {tab === 'bookings' && (() => {
+        const bq = bookingQuery.trim().toLowerCase();
+        const list = existingBookings
+          .filter((b) => b.status !== 'cancelled')
+          .filter((b) => !bq || b.clientName.toLowerCase().includes(bq) || b.clientPhone.includes(bq) || b.code.toLowerCase().includes(bq))
+          // Upcoming first (soonest), then past events (most recent first).
+          .sort((a, b) => { const fa = a.date >= todayIso, fb = b.date >= todayIso; if (fa !== fb) return fa ? -1 : 1; return fa ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date); });
+        return (
+          <section className="space-y-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-slate-400">{tr('اختر الحجز لعرض بياناته كاملة، ونموذج القاعة ثلاثي الأبعاد، والخدمات غير المختارة.', 'Pick a booking to see all its details, the 3D model of the hall and the services not picked yet.')}</p>
+              <div className="relative">
+                <Search className="absolute top-2.5 h-3.5 w-3.5 text-slate-500 start-2.5" />
+                <input value={bookingQuery} onChange={(e) => setBookingQuery(e.target.value)} placeholder={tr('بحث بالاسم أو الهاتف أو الكود', 'Search name, phone or code')} className="w-full rounded-full border border-slate-700 bg-slate-950 py-2 text-xs text-white ps-8 pe-3 focus:border-amber-400 focus:outline-none sm:w-64" />
+              </div>
+            </div>
+            {list.length === 0 ? (
+              <div className={`${card} py-12 text-center`}>
+                <CalendarCheck2 className="mx-auto h-8 w-8 text-slate-600" />
+                <p className="mt-3 text-sm font-semibold text-slate-300">{existingBookings.length ? tr('لا توجد نتائج', 'No matches') : tr('لا توجد حجوزات بعد', 'No bookings yet')}</p>
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {list.map((b) => {
+                  const cfgB = eventTypeConfig(b.eventType);
+                  const h = halls.find((x) => x.id === b.hallId);
+                  const d = daysUntil(b.date);
+                  return (
+                    <button key={b.id} type="button" onClick={() => { sound.click(700); setBookingId(b.id); window.scrollTo({ top: 0 }); }} className={`${card} flex flex-col gap-3 text-start transition hover:border-amber-400/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400`}>
+                      <div className="flex w-full items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-base font-black text-white">{cfgB.emoji} {b.clientName}</div>
+                          <div className="mt-0.5 text-[11px] text-slate-400"><span className="font-mono">{b.code}</span> · {eventTypeLabel(b.eventType, isAr)}</div>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-slate-700 px-2 py-0.5 text-[10px] font-bold text-slate-300">{bookingStatusLabel(b.status, isAr)}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-[11px] text-slate-300">
+                        <span className="flex items-center gap-1 rounded-full border border-slate-700 px-2 py-0.5"><CalendarDays className="h-3 w-3" /><span className="font-mono">{b.date}</span>{d >= 0 && <span className="text-amber-300">· {d === 0 ? tr('اليوم', 'Today') : tr(`بعد ${d} يوم`, `in ${d} days`)}</span>}</span>
+                        <span className="flex items-center gap-1 rounded-full border border-slate-700 px-2 py-0.5"><MapPin className="h-3 w-3" />{h ? (isAr ? h.name : h.nameEn || h.name) : b.hallName}</span>
+                        <span className="flex items-center gap-1 rounded-full border border-slate-700 px-2 py-0.5"><Users className="h-3 w-3" />{b.guestCount}</span>
+                      </div>
+                      <span className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-xl bg-amber-400 px-3 py-2 text-xs font-black text-slate-950"><Play className="h-3.5 w-3.5" />{tr('افتح المناسبة', 'Open event')}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        );
+      })()}
+
+      {tab === 'prepared' && <>
       {/* Coming up: confirmed and tentative bookings, so the team sees which dates are taken. */}
       {upcoming.length > 0 && (
         <section>
@@ -165,6 +234,7 @@ export function PackageBuilderView({ language = 'ar', halls, priceBook, existing
           </div>
         )}
       </div>
+      </>}
     </div>
   );
 }

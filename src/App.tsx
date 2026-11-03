@@ -41,7 +41,7 @@ import { PortalLogin } from './components/PortalLogin';
 import { NotificationBell } from './components/NotificationBell';
 import { NOTIFICATIONS_KEY, StaffNotification, clearNotificationsForUser, notificationFor } from './data/notifications';
 import { SystemUser, canAccess, landingTab, resolveSystemUser, removeStaleUserData, PRICE_VISIBILITY_KEY, type PriceVisibility, SYSTEM_USERS } from './data/systemProfiles';
-import { buildInitialPriceBook } from './data/pricing';
+import { buildInitialPriceBook, initialOtherPrices } from './data/pricing';
 const QuickBookingModal = lazy(() => import('./components/QuickBookingModal').then((m) => ({ default: m.QuickBookingModal })));
 const NewBookingModal = lazy(() => import('./components/NewBookingModal').then((m) => ({ default: m.NewBookingModal })));
 const OnboardingFlow = lazy(() => import('./components/OnboardingFlow').then((m) => ({ default: m.OnboardingFlow })));
@@ -266,7 +266,8 @@ export default function App() {
     if (typeof window === 'undefined') return buildInitialPriceBook(INITIAL_SERVICES);
     try {
       const saved = JSON.parse(window.localStorage.getItem('saraya-price-book-v1') || 'null');
-      return saved?.arcane && saved?.porto ? saved : buildInitialPriceBook(INITIAL_SERVICES);
+      // Price books saved before "Other location" existed get it filled from the catalogue prices.
+      return saved?.arcane && saved?.porto ? { ...saved, other: saved.other || initialOtherPrices(INITIAL_SERVICES) } : buildInitialPriceBook(INITIAL_SERVICES);
     } catch { return buildInitialPriceBook(INITIAL_SERVICES); }
   });
   const [pendingFinancePriceBook, setPendingFinancePriceBook] = useState<PriceBook | null>(() => {
@@ -445,7 +446,7 @@ export default function App() {
       {currentTab === 'catering' && canAccess(portalUser, 'catering') && viewOnly('catering', <CateringMenuView language={language} />)}
       {currentTab === 'contracts' && canAccess(portalUser, 'contracts') && viewOnly('contracts', <ContractsView bookings={bookings} language={language} canEdit={may('contracts')} company={companyProfile} />)}
       {currentTab === 'clients' && canAccess(portalUser, 'clients') && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)}  language={language} onSaveClient={may('clients') ? handleSaveClient : undefined} onDeleteClient={isCeo ? handleDeleteClient : undefined} />}
-      {currentTab === 'services' && canAccess(portalUser, 'services') && viewOnly('services', <ServicesView services={servicesCatalogue} onAddService={handleAddService} onUpdateService={handleUpdateService} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)} language={language} onDeleteService={handleDeleteService} />)}
+      {currentTab === 'services' && canAccess(portalUser, 'services') && viewOnly('services', <ServicesView services={servicesCatalogue} onAddService={handleAddService} onUpdateService={handleUpdateService} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)} language={language} onDeleteService={handleDeleteService} priceBook={priceBook} onUpdatePriceBook={setPriceBook} halls={halls} />)}
       {currentTab === 'finance' && canAccess(portalUser, 'finance') && (may('payments') || may('expenses') ? <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={(p) => { if (may('payments')) handleAddPayment(p); }} onRefundSecurityDeposit={(id) => { if (may('payments')) handleRefundSecurityDeposit(id); }} onAddExpense={(e) => { if (may('expenses')) handleAddExpense(e); }}  language={language} onEditPayment={may('payments') ? handleEditPayment : undefined} onDeletePayment={may('payments') ? handleDeletePayment : undefined} onEditExpense={may('expenses') ? handleEditExpense : undefined} onDeleteExpense={may('expenses') ? handleDeleteExpense : undefined} /> : viewOnly('payments', <FinanceView payments={payments} expenses={expenses} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit} onAddExpense={handleAddExpense} language={language} />))}
       {currentTab === 'payments' && canAccess(portalUser, 'payments') && viewOnly('payments', <PaymentsLedgerView payments={payments} bookings={bookings} onAddPayment={handleAddPayment} onRefundSecurityDeposit={handleRefundSecurityDeposit}  language={language} onEditPayment={handleEditPayment} onDeletePayment={handleDeletePayment} />)}
       {currentTab === 'expenses' && canAccess(portalUser, 'expenses') && viewOnly('expenses', <ExpensesView expenses={expenses} bookings={bookings} onAddExpense={handleAddExpense}  language={language} onEditExpense={handleEditExpense} onDeleteExpense={handleDeleteExpense} />)}

@@ -12,8 +12,12 @@ import {
   Check,
   Pencil,
   ImageOff,
+  MapPin,
+  ArrowLeftRight,
 } from 'lucide-react';
-import { ServiceDefinition, Language } from '../types/venueSystem';
+import { Hall, ServiceDefinition, Language, PriceBook, PriceEntry, PriceLocationId } from '../types/venueSystem';
+import { PRICE_LOCATIONS, hallLocation, priceLocationName } from '../data/locations';
+import { servicePriceAt, setServicePrices } from '../data/pricing';
 import { makeTr } from '../utils/tr';
 import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
@@ -27,10 +31,19 @@ interface ServicesViewProps {
   sellingPricesOnly?: boolean;
   language?: Language;
   onDeleteService?: (serviceId: string) => void;
+  /** Each service has its own price at Arcane, Porto and any other place. */
+  priceBook: PriceBook;
+  onUpdatePriceBook: (book: PriceBook) => void;
+  halls?: Hall[];
 }
 
-export function ServicesView({ services, onAddService, onUpdateService, sellingPricesOnly = false, language = 'ar', onDeleteService }: ServicesViewProps) {
-  const { tr, egp } = makeTr(language);
+type PlacePrices = Record<PriceLocationId, PriceEntry>;
+
+export function ServicesView({ services, onAddService, onUpdateService, sellingPricesOnly = false, language = 'ar', onDeleteService, priceBook, onUpdatePriceBook, halls = [] }: ServicesViewProps) {
+  const { tr, egp, isAr } = makeTr(language);
+  /** The place is chosen first; services and their prices are shown for that place only. */
+  const [place, setPlace] = useState<PriceLocationId | null>(null);
+  const [prices, setPrices] = useState<PlacePrices>({ arcane: { price: 2500, cost: 1200 }, porto: { price: 2500, cost: 1200 }, other: { price: 2500, cost: 1200 } });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,8 +52,6 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
   // New Service form state
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ServiceDefinition['category']>('buffet');
-  const [defaultPrice, setDefaultPrice] = useState(2500);
-  const [defaultCost, setDefaultCost] = useState(1200);
   const [unit, setUnit] = useState('مناسبة');
   const [description, setDescription] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
@@ -69,8 +80,8 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
     setEditingService(null);
     setName('');
     setCategory('buffet');
-    setDefaultPrice(2500);
-    setDefaultCost(1200);
+    const start = { price: 2500, cost: 1200 };
+    setPrices({ arcane: start, porto: start, other: start });
     setUnit('مناسبة');
     setDescription('');
     setPhotoUrl('');
@@ -81,8 +92,11 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
     setEditingService(service);
     setName(service.name);
     setCategory(service.category);
-    setDefaultPrice(service.defaultPrice);
-    setDefaultCost(service.defaultCost);
+    setPrices({
+      arcane: servicePriceAt(priceBook, 'arcane', service),
+      porto: servicePriceAt(priceBook, 'porto', service),
+      other: servicePriceAt(priceBook, 'other', service),
+    });
     setUnit(service.unit);
     setDescription(service.description || '');
     setPhotoUrl(service.photoUrl || '');
@@ -97,22 +111,72 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
       id: editingService?.id || `srv-${Date.now()}`,
       name: name.trim(),
       category,
-      defaultPrice: Number(defaultPrice) || 0,
-      defaultCost: Number(defaultCost) || 0,
+      // The catalogue default follows the Arcane price; each place keeps its own price in the price book.
+      defaultPrice: Number(prices.arcane.price) || 0,
+      defaultCost: Number(prices.arcane.cost) || 0,
       unit: unit.trim() || 'مناسبة',
       description: description.trim(),
       photoUrl: photoUrl.trim() || undefined,
     };
     if (editingService) onUpdateService(updatedService);
     else onAddService(updatedService);
+    onUpdatePriceBook(setServicePrices(priceBook, updatedService.id, prices));
     setIsModalOpen(false);
     setEditingService(null);
     setName('');
     setDescription('');
   };
 
+  const placeHalls = (id: PriceLocationId) => id === 'other' ? [] : halls.filter((h) => !h.isExternalListing && hallLocation(h) === id);
+
+  if (!place) {
+    return (
+      <div className="w-full space-y-6 pb-20 text-start">
+        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-amber-400" />
+            <span>{tr('اختر المكان أولاً', 'Choose the place first')}</span>
+          </h2>
+          <p className="mt-1 text-xs text-slate-400">{tr('لكل مكان أسعار خدمات خاصة به. اختر المكان لعرض خدماته وأسعارها.', 'Each place has its own service prices. Pick a place to see its services and prices.')}</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {PRICE_LOCATIONS.map((loc) => {
+            const hallsHere = placeHalls(loc.id);
+            return (
+              <button key={loc.id} type="button" onClick={() => { sound.click(620); setPlace(loc.id); }}
+                className="group flex flex-col items-start gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 text-start transition hover:border-amber-400/70 hover:bg-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300 group-hover:bg-amber-400 group-hover:text-slate-950"><MapPin className="h-5 w-5" /></span>
+                <span className="text-lg font-black text-white">{isAr ? loc.nameAr : loc.nameEn}</span>
+                <span className="text-xs leading-5 text-slate-400">
+                  {loc.id === 'other'
+                    ? tr('مكان العميل أو أي مكان خارج قاعاتنا', "The client's own venue or any place outside our halls")
+                    : hallsHere.length ? hallsHere.map((h) => (isAr ? h.name : h.nameEn || h.name)).join(' · ') : tr('قاعات هذا الموقع', 'Halls at this location')}
+                </span>
+                <span className="mt-auto text-[11px] font-bold text-amber-300">{tr(`${services.length} خدمة ←`, `${services.length} services →`)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-6 pb-20 text-start">
+      {/* Chosen place */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-3">
+        <MapPin className="h-4 w-4 text-amber-300" />
+        <span className="text-xs text-amber-100/80">{tr('المكان:', 'Place:')}</span>
+        <strong className="text-sm text-white">{priceLocationName(place, isAr)}</strong>
+        <div className="ms-auto flex flex-wrap gap-1.5">
+          {PRICE_LOCATIONS.filter((l) => l.id !== place).map((l) => (
+            <button key={l.id} type="button" onClick={() => { sound.click(560); setPlace(l.id); }} className="inline-flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-1.5 text-[11px] font-semibold text-slate-300 hover:text-white">
+              <ArrowLeftRight className="h-3 w-3" /> {isAr ? l.nameAr : l.nameEn}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Top Filter and Search Bar */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div>
@@ -167,8 +231,9 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
       {/* Services Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredServices.map((srv) => {
-          const profit = srv.defaultPrice - srv.defaultCost;
-          const margin = srv.defaultPrice > 0 ? Math.round((profit / srv.defaultPrice) * 100) : 0;
+          const here = servicePriceAt(priceBook, place, srv);
+          const profit = here.price - here.cost;
+          const margin = here.price > 0 ? Math.round((profit / here.price) * 100) : 0;
 
           return (
             <TiltCard
@@ -203,7 +268,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                 <div className="p-2 rounded-xl bg-slate-950/70">
                   <span className="text-[10px] text-slate-500 block font-sans">{tr('سعر البيع', 'Selling price')}</span>
                   <span className="font-bold text-white tabular-nums">
-                    {egp(srv.defaultPrice)}
+                    {egp(here.price)}
                   </span>
                   <span className="text-[9px] text-slate-500 block font-sans">{tr('لكل', 'per')} {srv.unit}</span>
                 </div>
@@ -212,7 +277,7 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                 <div className="p-2 rounded-xl bg-slate-950/70">
                   <span className="text-[10px] text-slate-500 block font-sans">{tr('التكلفة', 'Cost')}</span>
                   <span className="font-bold text-rose-300 tabular-nums">
-                    {egp(srv.defaultCost)}
+                    {egp(here.cost)}
                   </span>
                   <span className="text-[9px] text-slate-500 block font-sans">{tr('تكلفة تقديرية', 'estimated')}</span>
                 </div>
@@ -281,27 +346,23 @@ export function ServicesView({ services, onAddService, onUpdateService, sellingP
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('سعر البيع للعميل', 'Client price')}</label>
-                  <input
-                    type="number"
-                    value={defaultPrice}
-                    onChange={(e) => setDefaultPrice(Number(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono"
-                  />
+              <fieldset className="space-y-2 rounded-2xl border border-slate-800 bg-slate-950/40 p-3">
+                <legend className="px-1 text-xs font-semibold text-amber-300">{tr('السعر في كل مكان', 'Price at each place')}</legend>
+                <div className="grid grid-cols-[1fr_6.5rem_6.5rem] items-center gap-2 text-[10px] font-semibold text-slate-500">
+                  <span>{tr('المكان', 'Place')}</span><span>{tr('سعر البيع', 'Client price')}</span><span>{tr('التكلفة', 'Cost')}</span>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('تكلفة الخدمة', 'Service cost')}</label>
-                  <input
-                    type="number"
-                    value={defaultCost}
-                    onChange={(e) => setDefaultCost(Number(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono"
-                  />
-                </div>
-              </div>
+                {PRICE_LOCATIONS.map((loc) => (
+                  <div key={loc.id} className={`grid grid-cols-[1fr_6.5rem_6.5rem] items-center gap-2 rounded-xl p-1 ${loc.id === place ? 'bg-amber-400/10' : ''}`}>
+                    <span className="flex items-center gap-1 text-xs font-semibold text-white"><MapPin className="h-3 w-3 text-amber-300" />{isAr ? loc.nameAr : loc.nameEn}</span>
+                    <input type="number" min={0} aria-label={`${tr('سعر البيع', 'Client price')} · ${isAr ? loc.nameAr : loc.nameEn}`} value={prices[loc.id].price}
+                      onChange={(e) => { const v = Math.max(0, Number(e.target.value) || 0); setPrices((p) => ({ ...p, [loc.id]: { ...p[loc.id], price: v } })); }}
+                      className="w-full px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono" />
+                    <input type="number" min={0} aria-label={`${tr('التكلفة', 'Cost')} · ${isAr ? loc.nameAr : loc.nameEn}`} value={prices[loc.id].cost}
+                      onChange={(e) => { const v = Math.max(0, Number(e.target.value) || 0); setPrices((p) => ({ ...p, [loc.id]: { ...p[loc.id], cost: v } })); }}
+                      className="w-full px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono" />
+                  </div>
+                ))}
+              </fieldset>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">{tr('الوصف والتفاصيل', 'Description')}</label>

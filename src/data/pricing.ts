@@ -1,4 +1,4 @@
-import type { EventPackage, LocationId, PriceBook, PriceEntry, ServiceDefinition } from '../types/venueSystem';
+import type { EventPackage, LocationId, LocationPriceList, PriceBook, PriceEntry, PriceLocationId, ServiceDefinition } from '../types/venueSystem';
 
 /**
  * Sellable packages. Names/contents are defined here; prices are set per location in the PriceBook
@@ -68,11 +68,31 @@ export const buildInitialPriceBook = (services: ServiceDefinition[]): PriceBook 
   return {
     arcane: { packages: { ...ARCANE_PACKAGE_PRICES }, services: arcaneServices },
     porto: { packages: portoPackages, services: portoServices },
+    other: initialOtherPrices(services),
   };
 };
 
+/** "Other location" service prices start at the catalogue price; the admin sets the real ones on the Services screen. */
+export const initialOtherPrices = (services: ServiceDefinition[]): LocationPriceList => {
+  const other: Record<string, PriceEntry> = {};
+  services.forEach((s) => { other[s.id] = { price: s.defaultPrice, cost: s.defaultCost }; });
+  return { packages: {}, services: other };
+};
+
+/** Sets one service's price + cost at each place in one go. */
+export const setServicePrices = (book: PriceBook, serviceId: string, prices: Partial<Record<PriceLocationId, PriceEntry>>): PriceBook => {
+  const next: PriceBook = { ...book };
+  (Object.keys(prices) as PriceLocationId[]).forEach((loc) => {
+    const entry = prices[loc];
+    if (!entry) return;
+    const list = next[loc] || { packages: {}, services: {} };
+    next[loc] = { ...list, services: { ...list.services, [serviceId]: entry } };
+  });
+  return next;
+};
+
 /** Selling price + cost of a service at a location (falls back to the catalogue default). */
-export const servicePriceAt = (book: PriceBook, loc: LocationId, srv: ServiceDefinition): PriceEntry =>
+export const servicePriceAt = (book: PriceBook, loc: PriceLocationId, srv: ServiceDefinition): PriceEntry =>
   book[loc]?.services[srv.id] || { price: srv.defaultPrice, cost: srv.defaultCost };
 
 export const packagePriceAt = (book: PriceBook, loc: LocationId, pkgId: string): PriceEntry =>

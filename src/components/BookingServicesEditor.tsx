@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, Percent, Lock } from 'lucide-react';
 import type { Booking, BookingServiceItem, Language, PriceBook, ServiceDefinition } from '../types/venueSystem';
 import { servicePriceAt } from '../data/pricing';
+import { bookingPriceLocation } from '../data/locations';
 import { bookingTotals } from '../data/recordFields';
 import { makeTr } from '../utils/tr';
 
@@ -22,7 +23,7 @@ export function BookingServicesEditor({ booking, services, priceBook, language, 
   const { tr, egp } = makeTr(language);
   const [toAdd, setToAdd] = useState('');
   const lines = booking.services || [];
-  const location = booking.locationId || 'arcane';
+  const location = bookingPriceLocation(booking);
   const totals = bookingTotals({ basePrice: Number(booking.basePrice) || 0, services: lines.map((l) => ({ ...l, totalPrice: (Number(l.quantity) || 0) * (Number(l.unitPrice) || 0) })), discountPercent: booking.discountPercent });
   const paid = Number(booking.paidAmount) || 0;
 
