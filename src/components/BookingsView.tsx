@@ -15,8 +15,9 @@ import {
   Clock,
   Sparkles,
   FileDown,
+  Box,
 } from 'lucide-react';
-import { Booking, BookingStatus, EventType, Hall, Language, PriceBook, ServiceDefinition } from '../types/venueSystem';
+import { Booking, BookingStatus, EventType, Hall, Hall3DProfile, Language, PriceBook, ServiceDefinition } from '../types/venueSystem';
 import { BookingEditModal } from './BookingEditModal';
 import { RowActions } from './RecordEditor';
 import { makeTr, eventTypeLabel } from '../utils/tr';
@@ -25,6 +26,7 @@ import { sound } from '../utils/soundEffects';
 import { eventDetailsSummary } from '../data/eventTypes';
 import { locationName } from '../data/locations';
 import { ProposalExportModal, sampleProposalBooking } from './ProposalExportModal';
+import { Booking3DEditor } from './Booking3DEditor';
 
 interface BookingsViewProps {
   bookings: Booking[];
@@ -50,6 +52,8 @@ interface BookingsViewProps {
   currentUser?: { id: string; name: string } | null;
   /** Company phone and places, printed on client proposals. */
   company?: { phone?: string; whatsapp?: string; locationsAr?: string; locationsEn?: string };
+  /** Saves a booking's own 3D layout. Left out = the 3D opens view-only. */
+  onSaveBooking3D?: (bookingId: string, design: Hall3DProfile) => void;
 }
 
 export function BookingsView({
@@ -70,10 +74,13 @@ export function BookingsView({
   canOverrideConflict = false,
   currentUser,
   company,
+  onSaveBooking3D,
 }: BookingsViewProps) {
   const { isAr, tr, egp } = makeTr(language);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [proposal, setProposal] = useState<{ booking: Booking; sample: boolean } | null>(null);
+  const [open3DId, setOpen3DId] = useState<string | null>(null);
+  const open3D = open3DId ? bookings.find((b) => b.id === open3DId) : undefined;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
@@ -265,6 +272,17 @@ export function BookingsView({
                     <FileDown className="w-3.5 h-3.5" />
                     <span>{tr('تصدير عرض للعميل', 'Export proposal')}</span>
                   </button>
+
+                  <button
+                    onClick={() => {
+                      sound.click(600);
+                      setOpen3DId(bk.id);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/40 text-cyan-200 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <Box className="w-3.5 h-3.5" />
+                    <span>{tr('فتح 3D', 'Open 3D')}</span>
+                  </button>
                 </div>
               </div>
 
@@ -342,6 +360,7 @@ export function BookingsView({
         )}
       </div>
       {editingBooking && onEditBooking && <BookingEditModal booking={editingBooking} bookings={bookings} halls={halls} services={services} priceBook={priceBook} canDiscount={canDiscount} canOverrideConflict={canOverrideConflict} currentUser={currentUser} language={language} onClose={() => setEditingBooking(null)} onSave={(b) => { onEditBooking(b); setEditingBooking(null); }} onDelete={onDeleteBooking ? () => { onDeleteBooking(editingBooking.id); setEditingBooking(null); } : undefined} />}
+      {open3D && <Booking3DEditor booking={open3D} bookings={bookings} halls={halls} language={language} canEdit={!!onSaveBooking3D} onSave={(id, design) => onSaveBooking3D?.(id, design)} onClose={() => setOpen3DId(null)} />}
       {proposal && <ProposalExportModal key={proposal.booking.id} booking={proposal.booking} isSample={proposal.sample} onClose={() => setProposal(null)} language={language} halls={halls} services={services} company={company} />}
     </div>
   );

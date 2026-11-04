@@ -1,12 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Box, CalendarDays, CheckCircle2, CircleDashed, ClipboardList, Clock, ImageOff, Lock, MapPin, Phone, Users, Wallet } from 'lucide-react';
-import type { Booking, Hall, Language, PriceBook, ServiceDefinition } from '../types/venueSystem';
+import type { Booking, Hall, Hall3DProfile, Language, PriceBook, ServiceDefinition } from '../types/venueSystem';
 import { bookingStatusLabel, eventTypeLabel, makeTr } from '../utils/tr';
 import { eventTypeConfig } from '../data/eventTypes';
 import { bookingPriceLocation, locationName, priceLocationName } from '../data/locations';
 import { servicePriceAt } from '../data/pricing';
 import { bookingTotals } from '../data/recordFields';
-import { autoLayout, hallDimensions } from '../data/venueModel';
+import { hallDimensions } from '../data/venueModel';
+import { bookingDesign } from '../data/booking3D';
+import { Booking3DEditor } from './Booking3DEditor';
 import { EventLayout3D } from './EventLayout3D';
 import { isProLicensed } from '../data/proFeatures';
 
@@ -19,6 +21,10 @@ interface Props {
   onBack: () => void;
   /** Selling-prices-only users: hide deposit, paid, balance and security deposit, as on the Bookings screen. */
   hidePayments?: boolean;
+  /** All bookings (for the 3D "Working on" list). */
+  bookings?: Booking[];
+  /** Saves the booking's own 3D. Left out = the 3D opens view-only. */
+  onSaveBooking3D?: (bookingId: string, design: Hall3DProfile) => void;
 }
 
 const card = 'rounded-3xl border border-slate-800 bg-slate-900/70 p-5 sm:p-6';
@@ -34,7 +40,8 @@ const statusCls: Record<string, string> = {
  * the client has not picked yet (for reference). Read only: bookings are edited by admin users on the Bookings screen.
  * Selling prices only; costs and wages are never shown here.
  */
-export function BookingPlannerView({ booking, halls, services, priceBook, language, onBack, hidePayments = false }: Props) {
+export function BookingPlannerView({ booking, halls, services, priceBook, language, onBack, hidePayments = false, bookings = [], onSaveBooking3D }: Props) {
+  const [open3D, setOpen3D] = useState(false);
   const { isAr, tr, egp } = makeTr(language);
   const hall = halls.find((h) => h.id === booking.hallId);
   const hallName = hall ? (isAr ? hall.name : hall.nameEn || hall.name) : booking.hallName || tr('مكان العميل', 'Client venue');
@@ -46,10 +53,9 @@ export function BookingPlannerView({ booking, halls, services, priceBook, langua
 
   const scene = useMemo(() => {
     const dims = hallDimensions(hall);
-    const saved = hall?.default3D?.items;
-    const items = saved?.length ? saved : autoLayout({ widthM: dims.widthM, depthM: dims.depthM, guests: Math.max(10, booking.guestCount || 0), eventKind: booking.eventType, pool: dims.pool }).items;
-    return { dims, items };
-  }, [hall, booking.guestCount, booking.eventType]);
+    const design = bookingDesign(booking, halls);
+    return { dims, items: design.items, decor: design.decor, mood: design.mood, own: !!booking.design3D?.items?.length };
+  }, [hall, booking, halls]);
 
   const pro3D = useMemo(() => isProLicensed(), []);
   const BackIcon = isAr ? ArrowRight : ArrowLeft;
@@ -128,9 +134,13 @@ export function BookingPlannerView({ booking, halls, services, priceBook, langua
           <span className="text-[11px] text-slate-400">{hallName} · {scene.dims.widthM}×{scene.dims.depthM} {tr('م', 'm')} · {booking.guestCount} {tr('فرد', 'guests')}</span>
         </div>
         <div className="h-[340px] overflow-hidden rounded-2xl border border-slate-800 sm:h-[min(420px,62vh)] sm:min-h-[320px]">
-          <EventLayout3D items={scene.items} width={scene.dims.widthM} depth={scene.dims.depthM} language={language} hall={scene.dims} decor={pro3D ? hall?.default3D?.decor : undefined} tier={pro3D ? 'pro' : 'basic'} mode="overview" readOnly />
+          <EventLayout3D items={scene.items} width={scene.dims.widthM} depth={scene.dims.depthM} language={language} hall={scene.dims} decor={pro3D ? scene.decor : undefined} initialMood={scene.mood} tier={pro3D ? 'pro' : 'basic'} mode="overview" readOnly />
         </div>
-        <p className="mt-2 text-[11px] text-slate-500">{hall?.default3D?.items?.length ? tr('التصميم المحفوظ لهذه القاعة.', 'The saved layout for this hall.') : tr('توزيع تلقائي حسب عدد المدعوين. عدّله من شاشة مصمم المناسبة.', 'Automatic layout for the guest count. Change it in the Event Designer.')}</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] text-slate-500">{scene.own ? tr('تصميم 3D الخاص بهذا الحجز.', 'This booking’s own 3D design.') : tr('يبدأ من التصميم الافتراضي للقاعة لهذا النوع من المناسبات.', 'Starts from the hall’s default for this event type.')}</p>
+          <button type="button" onClick={() => setOpen3D(true)} className="flex items-center gap-1.5 rounded-xl border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-200"><Box className="h-3.5 w-3.5" />{onSaveBooking3D ? tr('تعديل 3D', 'Edit 3D') : tr('فتح 3D', 'Open 3D')}</button>
+        </div>
+        {open3D && <Booking3DEditor booking={booking} bookings={bookings.length ? bookings : [booking]} halls={halls} language={language} canEdit={!!onSaveBooking3D} onSave={(id, design) => onSaveBooking3D?.(id, design)} onClose={() => setOpen3D(false)} />}
       </section>
 
       {/* Picked services */}

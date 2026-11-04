@@ -110,6 +110,10 @@ export interface Hall3DProfile {
   /** Decor style id from src/data/venueModel.ts (linen, chairs, flowers, lighting colours). */
   decor?: string;
   guests?: number;
+  /** 3D Studio Pro lighting scene the design opens in. */
+  mood?: 'day' | 'evening' | 'party';
+  /** ISO time of the last save. */
+  updatedAt?: string;
 }
 
 export type HallFloor = 'marble' | 'carpet' | 'wood' | 'deck' | 'terrace' | 'grass';
@@ -155,7 +159,10 @@ export interface Hall {
   sourceUrl?: string;
   isExternalListing?: boolean;
   locationId?: LocationId;
+  /** Main 3D default of the hall (used when an event type has no default of its own). Set in Company profile → Halls. */
   default3D?: Hall3DProfile;
+  /** 3D default per event type. New bookings start from the one matching their event type. */
+  defaults3D?: Partial<Record<EventType, Hall3DProfile>>;
   savedLayouts?: SavedHallLayout[];
   /** Real measurements; missing values fall back to HALL_DEFAULTS in src/data/venueModel.ts. */
   dimensions?: Partial<Omit<HallDimensions, 'pool'>> & { pool?: HallDimensions['pool'] | null };
@@ -217,6 +224,8 @@ export interface Booking {
   discountPercent?: number;
   /** Set when an authorised user saved this booking despite a clash with another booking at the same venue. */
   conflictOverride?: ConflictOverride;
+  /** This booking's own 3D layout. Copied from the hall's default for the event type when the booking is made. */
+  design3D?: Hall3DProfile;
 }
 
 /** Audit record of a double-booking warning that was overridden. */

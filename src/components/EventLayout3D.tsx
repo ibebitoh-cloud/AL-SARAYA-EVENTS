@@ -57,6 +57,9 @@ type Props = {
   onViewChange?: (view: View3D) => void;
   /** Pro: hall name / event shown on the bottom strip of a saved photo. */
   caption?: string;
+  /** Pro: lighting scene to open in (a booking's or hall default's saved scene). Defaults to Evening. */
+  initialMood?: Mood3D;
+  onMoodChange?: (mood: Mood3D) => void;
 };
 
 const THREE_URL = 'three';
@@ -67,7 +70,7 @@ const POST_URLS = ['three/addons/postprocessing/EffectComposer.js', 'three/addon
 
 const modeToView = (mode?: Props['mode'], tier: Props['tier'] = 'basic'): View3D => (mode === 'pov' && tier === 'pro' ? 'walk' : mode === 'plan' ? 'plan' : '3d');
 
-export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, watermark, caption, selectedId, selectedIds, multiSelect = false, rotationMode = false, onSelect, onMove, onMoveMany, onRotate, onViewChange }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, watermark, caption, selectedId, selectedIds, multiSelect = false, rotationMode = false, onSelect, onMove, onMoveMany, onRotate, onViewChange, initialMood, onMoodChange }: Props) {
   const isAr = language === 'ar';
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
@@ -76,7 +79,9 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   const [view, setView] = useState<View3D>(() => modeToView(mode, tier));
   const [measure, setMeasure] = useState(true);
   // Pro always opens in Evening lighting (user request, 2026-11-04); Day and Party are one tap away.
-  const [mood, setMood] = useState<Mood3D>('evening');
+  const [mood, setMood] = useState<Mood3D>(initialMood || 'evening');
+  const moodChangeRef = useRef(onMoodChange);
+  moodChangeRef.current = onMoodChange;
   const [tour, setTour] = useState(false);
   const [guestsOn, setGuestsOn] = useState(false);
   const guestsRef = useRef(guestsOn);
@@ -2171,6 +2176,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   useEffect(() => { engineRef.current?.applyView?.(view); onViewChange?.(view); }, [view, ready]);
   useEffect(() => { engineRef.current?.applyMeasure?.(); }, [measure, ready]);
   useEffect(() => { engineRef.current?.applyMood?.(mood); }, [mood, ready]);
+  useEffect(() => { moodChangeRef.current?.(mood); }, [mood]);
+  useEffect(() => { if (initialMood) setMood(initialMood); }, [initialMood]);
   useEffect(() => { engineRef.current?.setTour?.(tour); }, [tour, ready, view]);
   stopTourRef.current = () => setTour(false);
   useEffect(() => { if (!toast) return; const t = window.setTimeout(() => setToast(''), 2600); return () => window.clearTimeout(t); }, [toast]);
@@ -2297,7 +2304,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           ))}
         </div>
         <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-950/85 p-1 backdrop-blur">
-          <span className={`flex min-h-9 items-center gap-1 rounded-lg px-2.5 text-[10px] font-black tracking-widest ${tier === 'pro' ? 'bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] text-[#0D0D0F]' : 'bg-[#172033] text-[#CFE5FF]'}`}>{tier === 'pro' ? <><Sparkles className="h-3.5 w-3.5" />PRO</> : (isAr ? 'أساسي' : 'BASIC')}</span>
+          <span className={`flex min-h-9 items-center gap-1 rounded-lg px-2.5 text-[10px] font-black tracking-widest ${tier === 'pro' ? 'bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] text-[#0D0D0F]' : 'bg-[#172033] text-[#CFE5FF]'}`}>{tier === 'pro' ? <><Sparkles className="h-3.5 w-3.5" />{isAr ? 'برو' : 'PRO'}</> : (isAr ? 'أساسي' : 'BASIC')}</span>
           {tier === 'pro' && <button type="button" onClick={() => setMeasure((m) => !m)} aria-pressed={measure} title={isAr ? 'المقاسات والأسماء' : 'Measurements & labels'} className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold ${measure ? 'bg-amber-400/15 text-amber-200' : 'text-slate-400 hover:bg-slate-800'}`}><Ruler className="h-3.5 w-3.5" /><span className="hidden sm:inline">{isAr ? 'المقاسات' : 'Measurements'}</span></button>}
           <button type="button" onClick={() => engineRef.current?.applyView?.(view)} title={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} aria-label={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-200 hover:bg-slate-800"><Scan className="h-4 w-4" /></button>
         </div>

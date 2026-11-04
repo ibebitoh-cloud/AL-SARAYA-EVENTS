@@ -18,7 +18,7 @@ import {
 import { INITIAL_EVENTS } from './data/mockEvents';
 import { isProLicensed } from './data/proFeatures';
 import {
-  Booking, BookingStatus, PaymentReceipt, Expense, InventoryItem, Employee,
+  Booking, BookingStatus, PaymentReceipt, Expense, InventoryItem, Employee, Hall3DProfile,
   ServiceDefinition, VenueTab, Language, Hall, PriceBook, ClientProfile,
 } from './types/venueSystem';
 import { usePersistentState, isNonEmptyArray } from './utils/usePersistentState';
@@ -75,6 +75,7 @@ const InvoicePrintModal = lazy(() => import('./components/InvoicePrintModal').th
 import { DICTIONARY } from './utils/i18n';
 import { sound } from './utils/soundEffects';
 import { uniqueBookingCode } from './utils/bookingRules';
+import { withStarter3D } from './data/booking3D';
 
 
 const uniqueEventPhotos = (items: VenuePhoto[]) => {
@@ -312,6 +313,8 @@ export default function App() {
     if (bookings.some((booking) => booking.id === newBooking.id)) return;
     // A clashing code would make dedupeBookings drop the new booking, so give it a fresh one.
     if (bookings.some((booking) => booking.code === newBooking.code)) newBooking = { ...newBooking, code: uniqueBookingCode(bookings) };
+    // Every booking starts with its own copy of the hall's 3D default for its event type.
+    newBooking = withStarter3D(newBooking, halls);
     setBookings((prev) => dedupeBookings([newBooking, ...prev]));
     if (newBooking.deposit > 0) {
       setPayments((prev) => [{
@@ -331,7 +334,7 @@ export default function App() {
   /** A request sent from the public website: saved as tentative and announced to staff. */
   const handleCustomerRequest = (newBooking: Booking) => {
     if (bookings.some((booking) => booking.id === newBooking.id)) return;
-    const booking = bookings.some((b) => b.code === newBooking.code) ? { ...newBooking, code: uniqueBookingCode(bookings) } : newBooking;
+    const booking = withStarter3D(bookings.some((b) => b.code === newBooking.code) ? { ...newBooking, code: uniqueBookingCode(bookings) } : newBooking, halls);
     setBookings((prev) => dedupeBookings([booking, ...prev]));
     setNotifications((prev) => [notificationFor(booking), ...prev].slice(0, 200));
   };
@@ -349,7 +352,10 @@ export default function App() {
   const handleUpdateStaffAttendance = (staffId: string, status: Employee['attendanceStatus']) => setStaff((prev) => prev.map((emp) => emp.id === staffId ? { ...emp, attendanceStatus: status } : emp));
   // Full add / edit / delete for every record type. Callers only receive these when the user may edit that area.
   // Only the CEO may change a booking's discount; anyone else's edit keeps the saved one.
-  const handleEditBooking = (updated: Booking) => setBookings((prev) => prev.map((b) => (b.id === updated.id ? normalizeBooking(portalUser?.role === 'ceo' ? updated : { ...updated, discountPercent: b.discountPercent }, halls) : b)));
+  // A booking moved to another hall gets that hall's 3D default (the old layout would not fit the new room).
+  const handleEditBooking = (updated: Booking) => setBookings((prev) => prev.map((b) => (b.id === updated.id ? normalizeBooking(withStarter3D({ ...(portalUser?.role === 'ceo' ? updated : { ...updated, discountPercent: b.discountPercent }), ...(updated.hallId !== b.hallId ? { design3D: undefined } : {}) }, halls), halls) : b)));
+  /** Saves a booking's own 3D layout (from the booking's Open 3D). */
+  const handleSaveBooking3D = (bookingId: string, design: Hall3DProfile) => setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, design3D: { ...design, updatedAt: new Date().toISOString() } } : b)));
   const handleDeleteBooking = (bookingId: string) => setBookings((prev) => prev.filter((b) => b.id !== bookingId));
   const handleSaveClient = (client: ClientProfile) => setClients((prev) => prev.some((c) => c.id === client.id) ? prev.map((c) => c.id === client.id ? client : c) : [client, ...prev]);
   // Only admins (CEO profiles) may remove a customer, whatever their edit rights on the Clients screen.
@@ -437,17 +443,17 @@ export default function App() {
       {currentTab === 'site_content' && tabAllowed('site_content') && <SiteContentView language={language} content={siteContent} onSave={setSiteContent} onOpenTab={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onPreview={() => { setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
       {currentTab === 'permissions' && isCeo && <PermissionsView language={language} permissions={editPermissions} onChange={setEditPermissions} priceVisibility={priceVisibility} onChangePriceVisibility={setPriceVisibility} />}
       {currentTab === 'photo_library' && canAccess(portalUser, 'photo_library') && viewOnly('photo_library', <PhotoLibraryPage language={language} photos={photos} bookings={bookings} onSavePhotos={handleSavePhotos} />)}
-      {currentTab === 'package_builder' && canAccess(portalUser, 'package_builder') && viewOnly('bookings', <PackageBuilderView language={language} halls={halls} services={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)} />)}
+      {currentTab === 'package_builder' && canAccess(portalUser, 'package_builder') && viewOnly('bookings', <PackageBuilderView language={language} halls={halls} services={servicesCatalogue} priceBook={priceBook} existingBookings={bookings} onCreateBooking={handleCreateBooking} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)} onSaveBooking3D={may('bookings') ? handleSaveBooking3D : undefined} />)}
       {currentTab === 'price_lists' && canAccess(portalUser, 'price_lists') && viewOnly('price_lists', <PriceListsView halls={halls} services={servicesCatalogue} priceBook={priceBook} onUpdatePriceBook={setPriceBook} onUpdateHall={handleUpdateHall} language={language} isCEO={portalUser?.role === 'ceo'} pendingPriceBook={pendingFinancePriceBook} onSubmitApproval={setPendingFinancePriceBook} onApprovePending={() => { if (portalUser?.role === 'ceo' && pendingFinancePriceBook) { setPriceBook(pendingFinancePriceBook); setPendingFinancePriceBook(null); } }} onRejectPending={() => { if (portalUser?.role === 'ceo') setPendingFinancePriceBook(null); }} />)}
       {portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && !portalLoginOpen && !tabAllowed(currentTab) && <div className="mx-auto max-w-md py-20 text-center text-sm text-slate-400">{language === 'ar' ? 'هذه الشاشة غير متاحة لحسابك.' : 'This screen is not available for your account.'}</div>}
       {currentTab === 'dashboard' && canAccess(portalUser, 'dashboard') && <DashboardView bookings={bookings} halls={halls} language={language} onNavigateTab={(tab) => setCurrentTab(tab)} calendar={canAccess(portalUser, 'agenda') ? <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={may('bookings') ? () => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } : undefined} language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={isCeo} canOverrideConflict={may('booking_override')} currentUser={portalUser} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} /> : undefined} />}
-      {currentTab === 'bookings' && canAccess(portalUser, 'bookings') && <BookingsView bookings={bookings} halls={halls} onOpenNewBooking={() => { if (may('bookings')) { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } }} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} hideProfit={portalUser?.role === 'finance'} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={(id, status) => { if (may('bookings')) handleUpdateBookingStatus(id, status); }} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)}  language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={portalUser?.role === 'ceo'} canOverrideConflict={may('booking_override')} currentUser={portalUser} company={companyProfile} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} />}
+      {currentTab === 'bookings' && canAccess(portalUser, 'bookings') && <BookingsView bookings={bookings} halls={halls} onOpenNewBooking={() => { if (may('bookings')) { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } }} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} hideProfit={portalUser?.role === 'finance'} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={(id, status) => { if (may('bookings')) handleUpdateBookingStatus(id, status); }} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)}  language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={portalUser?.role === 'ceo'} canOverrideConflict={may('booking_override')} currentUser={portalUser} company={companyProfile} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} onSaveBooking3D={may('bookings') ? handleSaveBooking3D : undefined} />}
       {currentTab === 'agenda' && canAccess(portalUser, 'agenda') && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={may('bookings') ? () => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } : undefined} language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={isCeo} canOverrideConflict={may('booking_override')} currentUser={portalUser} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} />}
       {currentTab === 'event_designer' && canAccess(portalUser, 'event_designer') && (canAccess(portalUser, 'studio_3d') && isProLicensed()
         // 3D opens as Pro by default once 3D Studio Pro is activated on this device (Pro is always in English).
-        ? <EventLayoutDesigner key="pro" language="en" halls={halls} onUpdateHall={handleUpdateHall} edition="pro" />
-        : <EventLayoutDesigner key="basic" language={language} halls={halls} onUpdateHall={handleUpdateHall} />)}
-      {currentTab === 'studio_3d' && canAccess(portalUser, 'studio_3d') && <Studio3DProView language={language} halls={halls} onUpdateHall={handleUpdateHall} />}
+        ? <EventLayoutDesigner key="pro" language={language} halls={halls} onUpdateHall={handleUpdateHall} edition="pro" bookings={bookings} onSaveBooking3D={may('bookings') ? handleSaveBooking3D : undefined} />
+        : <EventLayoutDesigner key="basic" language={language} halls={halls} onUpdateHall={handleUpdateHall} bookings={bookings} onSaveBooking3D={may('bookings') ? handleSaveBooking3D : undefined} />)}
+      {currentTab === 'studio_3d' && canAccess(portalUser, 'studio_3d') && <Studio3DProView language={language} halls={halls} onUpdateHall={handleUpdateHall} bookings={bookings} onSaveBooking3D={may('bookings') ? handleSaveBooking3D : undefined} />}
       {currentTab === 'catering' && canAccess(portalUser, 'catering') && viewOnly('catering', <CateringMenuView language={language} />)}
       {currentTab === 'contracts' && canAccess(portalUser, 'contracts') && viewOnly('contracts', <ContractsView bookings={bookings} language={language} canEdit={may('contracts')} company={companyProfile} />)}
       {currentTab === 'clients' && canAccess(portalUser, 'clients') && <ClientsView clients={clients} bookings={bookings} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)}  language={language} onSaveClient={may('clients') ? handleSaveClient : undefined} onDeleteClient={isCeo ? handleDeleteClient : undefined} />}

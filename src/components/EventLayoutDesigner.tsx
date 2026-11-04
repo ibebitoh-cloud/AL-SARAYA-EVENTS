@@ -33,7 +33,8 @@ import {
   SquareDashedMousePointer,
   ListChecks,
 } from 'lucide-react';
-import { Hall, Hall3DProfile, HallDimensions, HallLayoutItem, Language, LocationId, SavedHallLayout } from '../types/venueSystem';
+import { Booking, Hall, Hall3DProfile, HallDimensions, HallLayoutItem, Language, LocationId, SavedHallLayout } from '../types/venueSystem';
+import { bookingDesign, designerKind } from '../data/booking3D';
 import { CUSTOM_DECOR_FIELDS, DECOR_STYLES, TABLE_PRESETS, encodeCustomDecor, isCustomDecor, autoLayout, chairPositions, decorStyle, defaultDecorFor, formatM, hallDimensions, itemSize, itemSpec, seatedCapacity, tableFootprint } from '../data/venueModel';
 import { EventLayout3D } from './EventLayout3D';
 import { ITEM_CATALOG, ITEM_CATEGORIES, ItemCategory, catalogItem } from '../data/itemCatalog';
@@ -65,24 +66,35 @@ const INITIAL_ITEMS: LayoutItem[] = autoLayout({ widthM: 24, depthM: 32, guests:
 /** Starting layout for a hall with no saved design, at its real size. */
 const hallStarter = (hall: Hall, guests: number) => { const dims = hallDimensions(hall); return autoLayout({ widthM: dims.widthM, depthM: dims.depthM, guests: Math.min(guests, hall.capacity || guests), eventKind: 'wedding', pool: dims.pool }).items; };
 
-interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; halls?: Hall[]; onUpdateHall?: (hall: Hall) => void; /** Real measurements of the hall being edited when no hall list is passed (Company profile). */ hallDims?: HallDimensions; /** 'basic' = accurate plan + simple 3D. 'pro' = 3D Studio Pro (decor styles, walk-through, rich detail). */ edition?: 'basic' | 'pro'; /** Demo mode turns saving off. */ canSave?: boolean; /** Shows a DEMO mark over the 3D view. */ demo?: boolean; }
+interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onSaveDesign?: (design: Hall3DProfile) => void; onClose?: () => void; halls?: Hall[]; onUpdateHall?: (hall: Hall) => void; /** Real measurements of the hall being edited when no hall list is passed (Company profile). */ hallDims?: HallDimensions; /** 'basic' = accurate plan + simple 3D. 'pro' = 3D Studio Pro (decor styles, walk-through, rich detail). */ edition?: 'basic' | 'pro'; /** Demo mode turns saving off. */ canSave?: boolean; /** Shows a DEMO mark over the 3D view. */ demo?: boolean;
+  /** Event type the designer starts on (e.g. the hall default being edited). */ initialEventKind?: EventKind;
+  /** Short line shown above the plan, e.g. "Wedding default" or the booking. */ contextTitle?: string;
+  /** Bookings that can be opened from the "Working on" picker; their 3D is saved back with onSaveBooking3D. */ bookings?: Booking[];
+  onSaveBooking3D?: (bookingId: string, design: Hall3DProfile) => void;
+  /** Opens straight on this booking's own 3D. */ initialBookingId?: string; }
 
 const STORAGE_BASIC = 'saraya-event-layout-design-v1';
 const STORAGE_PRO = 'saraya-3d-studio-pro-design-v1';
 /** The hall the designer opens on. */
 const DEFAULT_HALL_ID = 'arcane-hall';
 
-export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose, halls = [], onUpdateHall, hallDims: fixedHallDims, edition = 'basic', canSave = true, demo = false }: DesignerProps) {
+export function EventLayoutDesigner({ language, initialDesign: initialDesignProp, onSaveDesign, onClose, halls = [], onUpdateHall, hallDims: fixedHallDims, edition = 'basic', canSave = true, demo = false, initialEventKind, contextTitle, bookings = [], onSaveBooking3D, initialBookingId }: DesignerProps) {
   const pro = edition === 'pro';
   const storageKey = pro ? STORAGE_PRO : STORAGE_BASIC;
   const isAr = language === 'ar';
   // Always opens on Arcane Hall (user request, 2026-11-04), falling back to any Arcane venue, then the first hall.
-  const defaultHall = halls.find((hall) => hall.id === DEFAULT_HALL_ID) || halls.find((hall) => hallLocation(hall) === 'arcane') || halls[0];
+  const initialBooking = initialBookingId ? bookings.find((booking) => booking.id === initialBookingId) : undefined;
+  const initialDesign = initialBooking ? bookingDesign(initialBooking, halls) : initialDesignProp;
+  const defaultHall = (initialBooking && halls.find((hall) => hall.id === initialBooking.hallId)) || halls.find((hall) => hall.id === DEFAULT_HALL_ID) || halls.find((hall) => hallLocation(hall) === 'arcane') || halls[0];
+  // The booking whose own 3D is being edited ('' = the hall's default / saved plans).
+  const [workingBookingId, setWorkingBookingId] = useState(initialBooking?.id || '');
+  const workingBooking = bookings.find((booking) => booking.id === workingBookingId);
   const [locationId, setLocationId] = useState<LocationId>(() => defaultHall ? hallLocation(defaultHall) : 'arcane');
   const locationHalls = halls.filter((hall) => hallLocation(hall) === locationId);
   const [hallId, setHallId] = useState(() => defaultHall?.id || '');
   const activeHall = halls.find((hall) => hall.id === hallId);
-  const [eventKind, setEventKind] = useState<EventKind>('engagement');
+  const [eventKind, setEventKind] = useState<EventKind>(initialBooking ? designerKind(initialBooking.eventType) : initialEventKind ?? 'engagement');
+  const [mood, setMood] = useState<NonNullable<Hall3DProfile['mood']>>(initialDesign?.mood ?? 'evening');
   const [locationKind, setLocationKind] = useState<LocationKind>(halls.length || fixedHallDims ? 'saraya' : 'client');
   const [guests, setGuests] = useState(initialDesign?.guests ?? 250);
   const initialHall = defaultHall;
@@ -510,7 +522,13 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const saveDesign = () => {
     if (!canSave) return;
     try { window.localStorage.setItem(storageKey, JSON.stringify({ width, depth, items, projectName })); } catch {}
-    const design: Hall3DProfile = { width, depth, items, decor, guests };
+    const design: Hall3DProfile = { width, depth, items, decor, guests, mood, updatedAt: new Date().toISOString() };
+    if (workingBooking && onSaveBooking3D) {
+      // Working on a booking: the layout is saved on the booking only.
+      onSaveBooking3D(workingBooking.id, design);
+      setSaved(true); setTimeout(() => setSaved(false), 2200);
+      return;
+    }
     onSaveDesign?.(design);
     if (activeHall && onUpdateHall) {
       if (activePlanId) {
@@ -525,11 +543,23 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const saveAsPlan = () => {
     if (!canSave) return;
     if (!activeHall || !onUpdateHall) { saveDesign(); return; }
-    const plan: SavedHallLayout = { id: `layout-${Date.now()}`, name: projectName.trim() || (isAr ? `مخطط ${eventName}` : `${eventName} layout`), eventType: eventKind, updatedAt: new Date().toISOString(), design: { width, depth, items, decor, guests } };
+    const plan: SavedHallLayout = { id: `layout-${Date.now()}`, name: projectName.trim() || (isAr ? `مخطط ${eventName}` : `${eventName} layout`), eventType: eventKind, updatedAt: new Date().toISOString(), design: { width, depth, items, decor, guests, mood } };
     onUpdateHall({ ...activeHall, savedLayouts: [...(activeHall.savedLayouts || []), plan] });
     setActivePlanId(plan.id); setProjectName(plan.name); setSaved(true); setTimeout(() => setSaved(false), 2200);
   };
-  const openSavedPlan = (plan: SavedHallLayout) => { setActivePlanId(plan.id); setProjectName(plan.name); setEventKind((EVENT_NAMES[plan.eventType as EventKind] ? plan.eventType : 'other') as EventKind); if (!lockedToHall) { setWidth(plan.design.width); setDepth(plan.design.depth); } if (plan.design.decor) setDecor(plan.design.decor); if (plan.design.guests) setGuests(plan.design.guests); setItems(plan.design.items); setHistory([]); setFuture([]); setSelectedId(null); setSaved(true); };
+  // In a booking, a saved plan is a template: it is copied into the booking's layout.
+  const openSavedPlan = (plan: SavedHallLayout) => { if (workingBooking) { commitItems(plan.design.items.map((item) => ({ ...item }))); if (plan.design.decor) setDecor(plan.design.decor); if (plan.design.mood) setMood(plan.design.mood); setSaved(false); return; } setActivePlanId(plan.id); setProjectName(plan.name); if (plan.design.mood) setMood(plan.design.mood); setEventKind((EVENT_NAMES[plan.eventType as EventKind] ? plan.eventType : 'other') as EventKind); if (!lockedToHall) { setWidth(plan.design.width); setDepth(plan.design.depth); } if (plan.design.decor) setDecor(plan.design.decor); if (plan.design.guests) setGuests(plan.design.guests); setItems(plan.design.items); setHistory([]); setFuture([]); setSelectedId(null); setSaved(true); };
+  const openWorkingBooking = (id: string) => {
+    setWorkingBookingId(id);
+    setActivePlanId(null);
+    const booking = bookings.find((entry) => entry.id === id);
+    if (!booking) { setProjectName(''); if (activeHall) { setItems(activeHall.default3D?.items?.length ? activeHall.default3D.items : hallStarter(activeHall, guests)); setDecor(activeHall.default3D?.decor ?? 'royal_gold'); } setHistory([]); setFuture([]); setSelectedId(null); return; }
+    const design = bookingDesign(booking, halls);
+    setProjectName(booking.clientName);
+    setEventKind(designerKind(booking.eventType));
+    setItems(design.items); if (design.decor) setDecor(design.decor); if (design.guests) setGuests(design.guests); if (design.mood) setMood(design.mood);
+    setHistory([]); setFuture([]); setSelectedId(null); setSaved(true);
+  };
   const duplicateSavedPlan = (plan: SavedHallLayout) => { if (!activeHall || !onUpdateHall) return; const copy = { ...plan, id: `layout-${Date.now()}`, name: `${plan.name} ${isAr ? 'نسخة' : 'copy'}`, updatedAt: new Date().toISOString(), design: { ...plan.design, items: plan.design.items.map((item) => ({ ...item, id: `${item.id}-${Date.now()}` })) } }; onUpdateHall({ ...activeHall, savedLayouts: [...(activeHall.savedLayouts || []), copy] }); };
   const deleteSavedPlan = (id: string) => { if (!activeHall || !onUpdateHall) return; onUpdateHall({ ...activeHall, savedLayouts: (activeHall.savedLayouts || []).filter((plan) => plan.id !== id) }); if (activePlanId === id) setActivePlanId(null); };
 
@@ -584,13 +614,13 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <button type="button" onClick={() => setLayoutMode('3d')} className={`px-3 py-2 rounded-lg text-xs font-bold border ${layoutMode === '3d' ? 'bg-amber-400 text-slate-950 border-amber-300' : 'bg-slate-950 text-slate-300 border-slate-700'}`}>{pro ? (isAr ? '3D والتجوّل' : '3D & Walk') : '3D'}</button>
               <button type="button" onClick={() => setClientView(true)} disabled={demo} title={demo ? (isAr ? 'العرض للعميل يتطلب اشتراك فعّال' : 'Client presentation needs an active subscription') : undefined} className="disabled:cursor-not-allowed disabled:opacity-40 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-white">{isAr ? 'عرض العميل' : 'Client View'}</button>
               {activeHall && <button type="button" onClick={saveAsPlan} disabled={!canSave} title={canSave ? undefined : (isAr ? "الحفظ متاح في النسخة الكاملة" : "Saving is in the full version")} className="disabled:cursor-not-allowed disabled:opacity-40 px-3 py-2 rounded-lg border border-amber-400/40 bg-amber-400/10 text-amber-200 text-xs font-bold flex items-center gap-1.5"><Files className="w-3.5 h-3.5" />{isAr ? 'حفظ كخطة' : 'Save as Plan'}</button>}
-              <button type="button" onClick={saveDesign} disabled={!canSave} title={canSave ? undefined : (isAr ? "الحفظ متاح في النسخة الكاملة" : "Saving is in the full version")} className="disabled:cursor-not-allowed disabled:opacity-40 px-3 py-2 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5"><Save className="w-3.5 h-3.5" />{saved ? (isAr ? 'تم الحفظ' : 'Saved') : (isAr ? (activePlanId ? 'تحديث الخطة' : 'حفظ الافتراضي') : (activePlanId ? 'Update Plan' : 'Save Default'))}</button>
+              <button type="button" onClick={saveDesign} disabled={!canSave} title={canSave ? undefined : (isAr ? "الحفظ متاح في النسخة الكاملة" : "Saving is in the full version")} className="disabled:cursor-not-allowed disabled:opacity-40 px-3 py-2 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5"><Save className="w-3.5 h-3.5" />{saved ? (isAr ? 'تم الحفظ' : 'Saved') : workingBooking ? (isAr ? 'حفظ في الحجز' : 'Save to booking') : contextTitle ? (isAr ? 'حفظ' : 'Save') : (isAr ? (activePlanId ? 'تحديث الخطة' : 'حفظ الافتراضي') : (activePlanId ? 'Update Plan' : 'Save Default'))}</button>
             </div>
           </div>
         </div>
       )}
 
-      {!clientView && halls.length > 0 && <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-amber-400/40 bg-slate-950/95 p-3 shadow-xl backdrop-blur"><span className="text-[10px] font-black uppercase tracking-widest text-amber-300">{isAr ? 'الموقع الجاري تعديله' : 'EDITING LOCATION'}</span><select value={locationId} onChange={(e) => { const loc = e.target.value as LocationId; setLocationId(loc); const next = halls.find((hall) => hallLocation(hall) === loc); if (next) { setHallId(next.id); setActivePlanId(null); setProjectName(''); setDecor(next.default3D?.decor ?? 'royal_gold'); setItems(next.default3D?.items?.length ? next.default3D.items : hallStarter(next, guests)); setHistory([]); setFuture([]); } }} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white">{LOCATIONS.map((location) => <option key={location.id} value={location.id}>{isAr ? location.nameAr : location.nameEn}</option>)}</select><select value={hallId} onChange={(e) => { const hall = halls.find((entry) => entry.id === e.target.value); setHallId(e.target.value); setActivePlanId(null); setProjectName(''); if (hall) { setDecor(hall.default3D?.decor ?? 'royal_gold'); setItems(hall.default3D?.items?.length ? hall.default3D.items : hallStarter(hall, guests)); setHistory([]); setFuture([]); } }} className="min-w-40 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white">{locationHalls.map((hall) => <option key={hall.id} value={hall.id}>{isAr ? hall.name : hall.nameEn || hall.name}</option>)}</select><select value={activePlanId || ''} onChange={(e) => { const plan = activeHall?.savedLayouts?.find((entry) => entry.id === e.target.value); if (plan) openSavedPlan(plan); else { setActivePlanId(null); setProjectName(''); if (activeHall?.default3D) { setItems(activeHall.default3D.items); if (activeHall.default3D.decor) setDecor(activeHall.default3D.decor); } } }} className="min-w-36 rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option value="">{isAr ? 'التصميم الافتراضي' : 'Default layout'}</option>{(activeHall?.savedLayouts || []).map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select><span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">{activeHall ? (isAr ? activeHall.name : activeHall.nameEn || activeHall.name) : ''}</span><button type="button" disabled={!history.length} onClick={undo} title="Ctrl+Z" className="rounded-lg border border-slate-700 p-2 text-slate-300 disabled:opacity-40"><Undo2 className="h-4 w-4" /></button><button type="button" disabled={!future.length} onClick={redo} title="Ctrl+Y" className="rounded-lg border border-slate-700 p-2 text-slate-300 disabled:opacity-40"><Redo2 className="h-4 w-4" /></button></div>}
+      {!clientView && halls.length > 0 && <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-amber-400/40 bg-slate-950/95 p-3 shadow-xl backdrop-blur"><span className="text-[10px] font-black uppercase tracking-widest text-amber-300">{isAr ? 'الموقع الجاري تعديله' : 'EDITING LOCATION'}</span><select value={locationId} onChange={(e) => { const loc = e.target.value as LocationId; setLocationId(loc); const next = halls.find((hall) => hallLocation(hall) === loc); if (next) { setHallId(next.id); setWorkingBookingId(''); setActivePlanId(null); setProjectName(''); setDecor(next.default3D?.decor ?? 'royal_gold'); setItems(next.default3D?.items?.length ? next.default3D.items : hallStarter(next, guests)); setHistory([]); setFuture([]); } }} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white">{LOCATIONS.map((location) => <option key={location.id} value={location.id}>{isAr ? location.nameAr : location.nameEn}</option>)}</select><select value={hallId} onChange={(e) => { const hall = halls.find((entry) => entry.id === e.target.value); setHallId(e.target.value); setWorkingBookingId(''); setActivePlanId(null); setProjectName(''); if (hall) { setDecor(hall.default3D?.decor ?? 'royal_gold'); setItems(hall.default3D?.items?.length ? hall.default3D.items : hallStarter(hall, guests)); setHistory([]); setFuture([]); } }} className="min-w-40 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white">{locationHalls.map((hall) => <option key={hall.id} value={hall.id}>{isAr ? hall.name : hall.nameEn || hall.name}</option>)}</select>{onSaveBooking3D && <select value={workingBookingId} onChange={(e) => openWorkingBooking(e.target.value)} aria-label={isAr ? 'تعمل على' : 'Working on'} className={`min-w-44 rounded-lg border px-2 py-2 text-xs font-bold ${workingBooking ? 'border-cyan-400/60 bg-cyan-950/40 text-cyan-100' : 'border-slate-700 bg-slate-900 text-white'}`}><option value="">{isAr ? 'تعمل على: الافتراضي / الخطط' : 'Working on: default / plans'}</option>{bookings.filter((booking) => booking.hallId === hallId && booking.status !== 'cancelled' && (booking.date >= new Date().toISOString().slice(0, 10) || booking.id === workingBookingId)).sort((a, b) => a.date.localeCompare(b.date)).map((booking) => <option key={booking.id} value={booking.id}>{isAr ? 'حجز' : 'Booking'} {booking.code || ''} · {booking.clientName} · {booking.date}</option>)}</select>}<select value={activePlanId || ''} onChange={(e) => { const plan = activeHall?.savedLayouts?.find((entry) => entry.id === e.target.value); if (plan) openSavedPlan(plan); else { setActivePlanId(null); setProjectName(''); if (activeHall?.default3D) { setItems(activeHall.default3D.items); if (activeHall.default3D.decor) setDecor(activeHall.default3D.decor); } } }} className="min-w-36 rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option value="">{isAr ? 'التصميم الافتراضي' : 'Default layout'}</option>{(activeHall?.savedLayouts || []).map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select><span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">{activeHall ? (isAr ? activeHall.name : activeHall.nameEn || activeHall.name) : ''}</span><button type="button" disabled={!history.length} onClick={undo} title="Ctrl+Z" className="rounded-lg border border-slate-700 p-2 text-slate-300 disabled:opacity-40"><Undo2 className="h-4 w-4" /></button><button type="button" disabled={!future.length} onClick={redo} title="Ctrl+Y" className="rounded-lg border border-slate-700 p-2 text-slate-300 disabled:opacity-40"><Redo2 className="h-4 w-4" /></button></div>}
 
       {clientView ? (
         <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
@@ -610,7 +640,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </div>
           <div className="p-2 sm:p-4">
             <div className="mx-auto h-[70vh] min-h-[440px] max-w-6xl">
-              <EventLayout3D items={items} width={width} depth={depth} language={language} hall={scene3D} decor={decor} tier={edition} caption={photoCaption} mode="overview" readOnly watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined} />
+              <EventLayout3D items={items} width={width} depth={depth} language={language} hall={scene3D} decor={decor} tier={edition} caption={photoCaption} initialMood={mood} onMoodChange={setMood} mode="overview" readOnly watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined} />
             </div>
             <p className="mx-auto mt-2 max-w-6xl px-1 text-[11px] leading-5 text-slate-500">{isAr ? 'تصور توضيحي بالمقاسات الحقيقية للقاعة والأثاث؛ الألوان والزهور النهائية يتم اختيارها مع فريق السرايا.' : 'Illustration at the real size of the venue and furniture; final colours and flowers are chosen with the ELSARAYA team.'}</p>
           </div>
@@ -667,7 +697,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
           <section className="order-first min-w-0 rounded-2xl border border-slate-800 bg-slate-900/80 p-2 sm:p-3 lg:order-none">
             <div className="relative flex flex-wrap items-center justify-between gap-2 px-2 py-2">
-              <div className="min-w-0 text-xs font-bold text-white">{activeHall ? `${isAr ? activeHall.name : activeHall.nameEn || activeHall.name} · ` : ''}{eventName} · <span dir="auto">{formatM(width)} × {formatM(depth)} {isAr ? 'م' : 'm'}</span></div>
+              <div className="min-w-0 text-xs font-bold text-white">{(workingBooking || contextTitle) && <span className="me-1.5 inline-flex items-center rounded-full border border-cyan-400/40 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-black text-cyan-100">{workingBooking ? `${isAr ? 'حجز' : 'Booking'} ${workingBooking.code || ''} · ${workingBooking.clientName} · ${workingBooking.date}` : contextTitle}</span>}{activeHall ? `${isAr ? activeHall.name : activeHall.nameEn || activeHall.name} · ` : ''}{eventName} · <span dir="auto">{formatM(width)} × {formatM(depth)} {isAr ? 'م' : 'm'}</span></div>
               <div className="flex shrink-0 items-center gap-2">
                 <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'} · {items.filter((item) => item.type === 'table').reduce((sum, item) => sum + (item.seats || 10), 0)} {isAr ? 'مقعداً' : 'seats'}</div>
                 <button type="button" onClick={() => setMultiMode((on) => !on)} aria-pressed={multiMode} title={isAr ? 'اختيار أكثر من عنصر لنقلها أو تدويرها أو حذفها معاً' : 'Pick several items to move, rotate or delete together'} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-black ${multiMode ? 'border-cyan-300 bg-cyan-300 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-cyan-300/60'}`}><SquareDashedMousePointer className="h-3.5 w-3.5" />{isAr ? (multiMode ? 'وضع التحديد' : 'تحديد متعدد') : (multiMode ? 'Select mode on' : 'Select')}</button>
@@ -691,8 +721,8 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                     </div>
                     <button type="button" onClick={() => setQuickAddOpen(false)} aria-label={isAr ? 'إغلاق' : 'Close'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300"><X className="h-4 w-4" /></button>
                   </div>
-                  <div className="flex shrink-0 gap-1 overflow-x-auto pb-0.5">{chip('all', isAr ? 'الكل' : 'All')}{ITEM_CATEGORIES.map((c) => chip(c.id, isAr ? c.ar : c.en))}{chip('pro', 'PRO')}</div>
-                  <div className="grid min-h-0 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">{list.map((item) => { const Icon = item.icon; const locked = item.pro && !pro; return <button key={item.type} type="button" disabled={locked} onClick={() => addItem(item.type, addQty)} title={locked ? (isAr ? 'متاح في 3D Studio Pro' : 'Available in 3D Studio Pro') : undefined} className={`relative flex min-h-11 items-center gap-1.5 rounded-lg border px-2 text-start text-[10px] ${locked ? 'cursor-not-allowed border-slate-800 text-slate-500' : item.pro ? 'border-amber-400/30 text-slate-100 hover:border-amber-400/70 hover:bg-amber-400/10' : 'border-slate-800 text-slate-200 hover:border-amber-400/60 hover:bg-slate-900'}`}><Icon className={`h-3.5 w-3.5 shrink-0 ${locked ? 'text-slate-600' : 'text-amber-300'}`} /><span className="min-w-0 flex-1 leading-tight">{isAr ? item.labelAr : item.labelEn}</span>{item.pro && <span className={`flex shrink-0 items-center gap-0.5 rounded px-1 text-[8px] font-black ${locked ? 'bg-slate-800 text-slate-400' : 'bg-amber-400/15 text-amber-300'}`}>{locked && <Lock className="h-2.5 w-2.5" />}PRO</span>}</button>; })}{!list.length && <div className="col-span-full py-6 text-center text-[11px] text-slate-500">{isAr ? 'لا يوجد عنصر بهذا الاسم' : 'No item matches'}</div>}</div>
+                  <div className="flex shrink-0 gap-1 overflow-x-auto pb-0.5">{chip('all', isAr ? 'الكل' : 'All')}{ITEM_CATEGORIES.map((c) => chip(c.id, isAr ? c.ar : c.en))}{chip('pro', isAr ? 'برو' : 'PRO')}</div>
+                  <div className="grid min-h-0 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">{list.map((item) => { const Icon = item.icon; const locked = item.pro && !pro; return <button key={item.type} type="button" disabled={locked} onClick={() => addItem(item.type, addQty)} title={locked ? (isAr ? 'متاح في 3D Studio Pro' : 'Available in 3D Studio Pro') : undefined} className={`relative flex min-h-11 items-center gap-1.5 rounded-lg border px-2 text-start text-[10px] ${locked ? 'cursor-not-allowed border-slate-800 text-slate-500' : item.pro ? 'border-amber-400/30 text-slate-100 hover:border-amber-400/70 hover:bg-amber-400/10' : 'border-slate-800 text-slate-200 hover:border-amber-400/60 hover:bg-slate-900'}`}><Icon className={`h-3.5 w-3.5 shrink-0 ${locked ? 'text-slate-600' : 'text-amber-300'}`} /><span className="min-w-0 flex-1 leading-tight">{isAr ? item.labelAr : item.labelEn}</span>{item.pro && <span className={`flex shrink-0 items-center gap-0.5 rounded px-1 text-[8px] font-black ${locked ? 'bg-slate-800 text-slate-400' : 'bg-amber-400/15 text-amber-300'}`}>{locked && <Lock className="h-2.5 w-2.5" />}{isAr ? 'برو' : 'PRO'}</span>}</button>; })}{!list.length && <div className="col-span-full py-6 text-center text-[11px] text-slate-500">{isAr ? 'لا يوجد عنصر بهذا الاسم' : 'No item matches'}</div>}</div>
                   <div className="flex items-center justify-between gap-2 px-1 text-[10px] text-slate-500"><span>{addedFlash ? <span className="font-bold text-emerald-300">{addedFlash}</span> : (isAr ? `${ITEM_CATALOG.filter((item) => pro || !item.pro).length} عنصر متاح · اضغط لإضافة ${addQty}` : `${ITEM_CATALOG.filter((item) => pro || !item.pro).length} items available · tap to add ${addQty}`)}</span>{!pro && <span className="text-amber-300/80">{isAr ? `+${ITEM_CATALOG.filter((item) => item.pro).length} في Pro` : `+${ITEM_CATALOG.filter((item) => item.pro).length} more in Pro`}</span>}</div>
                 </div>;
               })()}
@@ -757,6 +787,8 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   decor={decor}
                   tier={edition}
                   caption={photoCaption}
+                  initialMood={mood}
+                  onMoodChange={setMood}
                   watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined}
                   mode="overview"
                   selectedId={selectedId}
@@ -824,7 +856,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="text-xs text-slate-500">{isAr ? 'اختر عنصراً من المخطط.' : 'Select an item on the plan.'}</div>
             )}
             <div className="mt-5 border-t border-slate-800 pt-3">
-              <button type="button" onClick={() => setSnapToGrid((value) => !value)} className={`mb-3 flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-[10px] font-bold ${snapToGrid ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200' : 'border-slate-700 bg-slate-950 text-slate-400'}`}><span className="flex items-center gap-2"><Grid3X3 className="h-3.5 w-3.5" />{isAr ? 'محاذاة كل 0.5 م' : 'Snap every 0.5 m'}</span><span>{snapToGrid ? 'ON' : 'OFF'}</span></button>
+              <button type="button" onClick={() => setSnapToGrid((value) => !value)} className={`mb-3 flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-[10px] font-bold ${snapToGrid ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200' : 'border-slate-700 bg-slate-950 text-slate-400'}`}><span className="flex items-center gap-2"><Grid3X3 className="h-3.5 w-3.5" />{isAr ? 'محاذاة كل 0.5 م' : 'Snap every 0.5 m'}</span><span>{snapToGrid ? (isAr ? 'تشغيل' : 'ON') : (isAr ? 'إيقاف' : 'OFF')}</span></button>
               <div className="text-[10px] text-slate-500">{isAr ? 'ملخص' : 'Summary'}</div>
               <div className="mt-2 text-xs text-slate-300">{guests} {isAr ? 'ضيف' : 'guests'} · {tableItems.length} {isAr ? 'طاولة' : 'tables'} · {seatTotal} {isAr ? 'مقعداً' : 'seats'}</div>
               {seatTotal < guests && <div className="mt-1 rounded-md bg-red-500/10 px-2 py-1 text-[10px] text-red-200">{isAr ? `ينقص ${guests - seatTotal} مقعداً` : `${guests - seatTotal} seats short`}</div>}
