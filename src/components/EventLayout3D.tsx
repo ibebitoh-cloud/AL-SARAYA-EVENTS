@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Armchair, ArrowDown, Users, Video, ArrowLeft, ArrowRight, ArrowUp, Box, Camera, Clapperboard, Crown, DoorOpen, Eye, Footprints, LayoutGrid, Moon, PartyPopper, Ruler, RotateCcw, RotateCw, Scan, Sparkles, Sun } from 'lucide-react';
+import { Armchair, ArrowDown, Users, Video, ArrowLeft, ArrowRight, ArrowUp, Box, Camera, Clapperboard, Crown, DoorOpen, Eye, Footprints, LayoutGrid, Maximize2, Minimize2, Moon, PartyPopper, Ruler, RotateCcw, RotateCw, Scan, Sparkles, Sun } from 'lucide-react';
 import { DaliLoader } from './DaliLoader';
 import type { HallDimensions } from '../types/venueSystem';
 import { chairPositions, decorStyle, formatM, itemSize, tableFootprint } from '../data/venueModel';
@@ -2180,6 +2180,34 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   useEffect(() => { if (initialMood) setMood(initialMood); }, [initialMood]);
   useEffect(() => { engineRef.current?.setTour?.(tour); }, [tour, ready, view]);
   stopTourRef.current = () => setTour(false);
+  // Full screen: the browser's real full screen where it works, else the 3D fills the window (older tablets, iPhone).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [fullscreen, setFullscreen] = useState<'off' | 'native' | 'window'>('off');
+  useEffect(() => {
+    const doc = document as Document & { webkitFullscreenElement?: Element };
+    const sync = () => { const el = doc.fullscreenElement || doc.webkitFullscreenElement; setFullscreen((f) => el === rootRef.current ? 'native' : f === 'native' ? 'off' : f); };
+    document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync);
+    return () => { document.removeEventListener('fullscreenchange', sync); document.removeEventListener('webkitfullscreenchange', sync); };
+  }, []);
+  useEffect(() => {
+    if (fullscreen !== 'window') return;
+    const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFullscreen('off'); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [fullscreen]);
+  const toggleFullscreen = async () => {
+    const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+    const el = rootRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
+    if (fullscreen === 'native') { try { if (doc.exitFullscreen) await doc.exitFullscreen(); else doc.webkitExitFullscreen?.(); } catch {} setFullscreen('off'); return; }
+    if (fullscreen === 'window') { setFullscreen('off'); return; }
+    try {
+      if (el?.requestFullscreen) { await el.requestFullscreen(); setFullscreen('native'); return; }
+      if (el?.webkitRequestFullscreen) { el.webkitRequestFullscreen(); setFullscreen('native'); return; }
+    } catch {}
+    setFullscreen('window');
+  };
+
   useEffect(() => { if (!toast) return; const t = window.setTimeout(() => setToast(''), 2600); return () => window.clearTimeout(t); }, [toast]);
 
   const pro = tier === 'pro';
@@ -2268,7 +2296,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   const unit = isAr ? 'م' : 'm';
 
   return (
-    <div className="@container relative h-full min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" dir={isAr ? 'rtl' : 'ltr'}>
+    <div ref={rootRef} className={`@container overflow-hidden bg-slate-950 ${fullscreen === 'off' ? 'relative h-full min-h-[420px] rounded-xl border border-slate-700' : fullscreen === 'window' ? 'fixed inset-0 z-[200] h-[100dvh] w-screen' : 'relative h-full w-full'}`} dir={isAr ? 'rtl' : 'ltr'}>
       <div ref={hostRef} data-rotation-ui className="absolute inset-0" />
       {watermark && <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] overflow-hidden">
         {/* Dense tiled text so the whole 3D view is covered and no clean screenshot is possible. */}
@@ -2306,6 +2334,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         <div className="pointer-events-auto flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-950/85 p-1 backdrop-blur">
           <span className={`flex min-h-9 items-center gap-1 rounded-lg px-2.5 text-[10px] font-black tracking-widest ${tier === 'pro' ? 'bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] text-[#0D0D0F]' : 'bg-[#172033] text-[#CFE5FF]'}`}>{tier === 'pro' ? <><Sparkles className="h-3.5 w-3.5" />{isAr ? 'برو' : 'PRO'}</> : (isAr ? 'أساسي' : 'BASIC')}</span>
           {tier === 'pro' && <button type="button" onClick={() => setMeasure((m) => !m)} aria-pressed={measure} title={isAr ? 'المقاسات والأسماء' : 'Measurements & labels'} className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold ${measure ? 'bg-amber-400/15 text-amber-200' : 'text-slate-400 hover:bg-slate-800'}`}><Ruler className="h-3.5 w-3.5" /><span className="hidden sm:inline">{isAr ? 'المقاسات' : 'Measurements'}</span></button>}
+          <button type="button" onClick={toggleFullscreen} aria-pressed={fullscreen !== 'off'} title={fullscreen !== 'off' ? (isAr ? 'خروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Full screen')} aria-label={fullscreen !== 'off' ? (isAr ? 'خروج من ملء الشاشة' : 'Exit full screen') : (isAr ? 'ملء الشاشة' : 'Full screen')} className={`flex h-9 items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-bold ${fullscreen !== 'off' ? 'bg-amber-400 text-slate-950' : 'text-slate-200 hover:bg-slate-800'}`}>{fullscreen !== 'off' ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}<span className="hidden @[520px]:inline">{fullscreen !== 'off' ? (isAr ? 'خروج' : 'Exit') : (isAr ? 'ملء الشاشة' : 'Full screen')}</span></button>
           <button type="button" onClick={() => engineRef.current?.applyView?.(view)} title={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} aria-label={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-200 hover:bg-slate-800"><Scan className="h-4 w-4" /></button>
         </div>
         {pro && <div className="flex w-full basis-full justify-start">
