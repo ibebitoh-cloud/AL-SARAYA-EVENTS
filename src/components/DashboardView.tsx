@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Calendar, Building, Clock, ArrowRight, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { Booking, Hall, Language } from '../types/venueSystem';
 
@@ -7,6 +7,8 @@ interface DashboardViewProps {
   halls: Hall[];
   language: Language;
   onNavigateTab: (tab: any) => void;
+  /** The full booking calendar, shown in place of the simple month grid when the user may see it. */
+  calendar?: ReactNode;
 }
 
 const EVENT_LABELS: Record<string, [string, string]> = {
@@ -30,6 +32,7 @@ export function DashboardView({
   halls,
   language,
   onNavigateTab,
+  calendar,
 }: DashboardViewProps) {
   const isAr = language === 'ar';
   const today = new Date();
@@ -119,6 +122,7 @@ export function DashboardView({
         </div>
       </div>
 
+      {calendar ? <div className="[&>div]:pb-0">{calendar}</div> : (
       <section className="rounded-3xl bg-slate-900/70 border border-slate-800 overflow-visible shadow-2xl">
         <div className="px-4 sm:px-6 py-4 border-b border-slate-800 flex items-center justify-between gap-3">
           <div>
@@ -202,6 +206,7 @@ export function DashboardView({
         </div>
         <div className="px-4 py-3 text-[10px] text-slate-500 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-indigo-400" />{isAr ? 'المناسبات المحجوزة — اضغط لفتح الحجوزات' : 'Booked events — click to open bookings'}</div>
       </section>
+      )}
 
       <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/70 border border-slate-800">
         <div className="flex items-center justify-between mb-4">
