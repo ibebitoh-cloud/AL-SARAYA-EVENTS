@@ -27,6 +27,18 @@ import {
   Utensils,
   Users,
   X,
+  CakeSlice,
+  Disc3,
+  Camera,
+  Flower2,
+  Flower,
+  Footprints,
+  Wine,
+  GlassWater,
+  Cookie,
+  Flame,
+  Heart,
+  Gift,
 } from 'lucide-react';
 import { Hall, Hall3DProfile, HallDimensions, HallLayoutItem, Language, LocationId, SavedHallLayout } from '../types/venueSystem';
 import { CUSTOM_DECOR_FIELDS, DECOR_STYLES, TABLE_PRESETS, encodeCustomDecor, isCustomDecor, autoLayout, chairPositions, decorStyle, defaultDecorFor, formatM, hallDimensions, itemSize, itemSpec, seatedCapacity, tableFootprint } from '../data/venueModel';
@@ -55,6 +67,22 @@ const ITEM_LIBRARY = [
   { type: 'lounge', labelEn: 'Lounge Zone', labelAr: 'منطقة جلوس كبيرة', icon: Users },
   { type: 'led_wall', labelEn: 'Large LED Wall', labelAr: 'جدار شاشة LED كبير', icon: Monitor },
   { type: 'truss', labelEn: 'Lighting Truss', labelAr: 'جسر إضاءة كبير', icon: Sparkles },
+] as const;
+
+/** Extra objects that only 3D Studio Pro offers (drawn in full detail in the Pro 3D view). */
+const PRO_ITEM_LIBRARY = [
+  { type: 'cake', labelEn: 'Wedding Cake', labelAr: 'تورتة الفرح', icon: CakeSlice },
+  { type: 'dj', labelEn: 'DJ Booth', labelAr: 'ركن الدي جي', icon: Disc3 },
+  { type: 'photo_booth', labelEn: 'Photo Booth Wall', labelAr: 'ركن التصوير', icon: Camera },
+  { type: 'flower_arch', labelEn: 'Floral Ring Arch', labelAr: 'قوس ورد دائري', icon: Flower2 },
+  { type: 'aisle', labelEn: 'Bridal Aisle', labelAr: 'ممر الزفة', icon: Footprints },
+  { type: 'cocktail', labelEn: 'Cocktail Table', labelAr: 'طاولة كوكتيل عالية', icon: Wine },
+  { type: 'champagne', labelEn: 'Champagne Tower', labelAr: 'برج كاسات', icon: GlassWater },
+  { type: 'sweets', labelEn: 'Sweets Table', labelAr: 'طاولة الحلويات', icon: Cookie },
+  { type: 'sparklers', labelEn: 'Cold Spark Machine', labelAr: 'ماكينة شرار بارد', icon: Flame },
+  { type: 'love_letters', labelEn: 'LOVE Light Letters', labelAr: 'حروف LOVE مضيئة', icon: Heart },
+  { type: 'ceiling_florals', labelEn: 'Hanging Florals', labelAr: 'ورد معلّق بالسقف', icon: Flower },
+  { type: 'gift_table', labelEn: 'Gift & Guestbook Table', labelAr: 'طاولة الهدايا ودفتر الضيوف', icon: Gift },
 ] as const;
 
 // Ready-made table sets (table + chairs) with real sizes, added in bulk from the designer.
@@ -164,7 +192,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const redo = () => setFuture((stack) => { if (!stack.length) return stack; const next = stack[0]; setHistory((undoStack) => [...undoStack, items]); setItems(next); setSaved(false); return stack.slice(1); });
 
   const addItem = (type: string) => {
-    const source = ITEM_LIBRARY.find((item) => item.type === type);
+    const source = [...ITEM_LIBRARY, ...(pro ? PRO_ITEM_LIBRARY : [])].find((item) => item.type === type);
     if (!source) return;
     const item: LayoutItem = {
       id: `${type}-${Date.now()}`,
@@ -569,7 +597,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                 <button type="button" data-rotation-ui onClick={() => { setRotationMode((active) => !active); setSelectedId(null); }} aria-pressed={rotationMode} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-black ${rotationMode ? 'border-amber-300 bg-amber-300 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-amber-300/60'}`}><RotateCw className="h-3.5 w-3.5" />{isAr ? (rotationMode ? 'وضع التدوير' : 'تدوير') : (rotationMode ? 'Rotate mode on' : 'Rotate')}</button>
                 <button type="button" onClick={() => setQuickAddOpen((open) => !open)} aria-expanded={quickAddOpen} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 text-[10px] font-black text-slate-950 hover:bg-amber-300"><Plus className="h-3.5 w-3.5" />{isAr ? 'إضافة عناصر' : 'Add items'}</button>
               </div>
-              {quickAddOpen && <div className="absolute end-2 top-full z-50 mt-1 grid w-[min(92vw,360px)] grid-cols-2 gap-1.5 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl sm:grid-cols-3">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; return <button key={item.type} type="button" onClick={() => { addItem(item.type); setQuickAddOpen(false); }} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-800 px-2 text-start text-[10px] text-slate-200 hover:border-amber-400/60 hover:bg-slate-900"><Icon className="h-3.5 w-3.5 shrink-0 text-amber-300" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>; })}</div>}
+              {quickAddOpen && <div className="absolute end-2 top-full z-50 mt-1 grid max-h-[70vh] overflow-y-auto w-[min(92vw,360px)] grid-cols-2 gap-1.5 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl sm:grid-cols-3">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; return <button key={item.type} type="button" onClick={() => { addItem(item.type); setQuickAddOpen(false); }} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-800 px-2 text-start text-[10px] text-slate-200 hover:border-amber-400/60 hover:bg-slate-900"><Icon className="h-3.5 w-3.5 shrink-0 text-amber-300" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>; })}{pro && <><div className="col-span-full mt-1 flex items-center gap-1.5 border-t border-amber-400/30 pt-2 text-[9px] font-black tracking-widest text-amber-300"><Sparkles className="h-3 w-3" />PRO OBJECTS</div>{PRO_ITEM_LIBRARY.map((item) => { const Icon = item.icon; return <button key={item.type} type="button" onClick={() => { addItem(item.type); setQuickAddOpen(false); }} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-amber-400/25 px-2 text-start text-[10px] text-slate-100 hover:border-amber-400/70 hover:bg-amber-400/10"><Icon className="h-3.5 w-3.5 shrink-0 text-amber-300" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>; })}</>}</div>}
             </div>
             <div className="relative h-[62vh] min-h-[460px] w-full overflow-hidden rounded-xl border border-slate-700 bg-slate-950 lg:h-[72vh] lg:max-h-[860px]">
               {layoutMode === '2d' ? (

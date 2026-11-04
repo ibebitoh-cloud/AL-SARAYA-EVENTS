@@ -662,11 +662,23 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         inst.castShadow = shadow; inst.receiveShadow = true;
         parent.add(inst);
       };
+      // Fine table details (Pro, not lite): gold chargers, folded napkins, cutlery, chair sashes with a bow.
+      const chargerGeo = own(new THREE.CylinderGeometry(0.17, 0.17, 0.006, 24));
+      const napkinGeo = own((() => { const g = new THREE.ConeGeometry(0.06, 0.13, 3); g.rotateY(Math.PI / 6); return g; })());
+      const cutleryGeo = own(new THREE.BoxGeometry(0.022, 0.006, 0.19));
+      const sashGeo = own(mergeGeometries([
+        tr(new THREE.BoxGeometry(0.4, 0.09, 0.012), 0, 0.72, 0.205),
+        tr(new THREE.SphereGeometry(0.045, 8, 6), 0, 0.72, 0.215),
+        ...[-1, 1].map((sx) => { const g = new THREE.BoxGeometry(0.06, 0.2, 0.01); g.rotateZ(sx * 0.25); g.translate(sx * 0.04, 0.6, 0.215); return g; }),
+      ].map((g) => g.index ? g.toNonIndexed() : g)));
+      M.napkin = std(style.runner, 0.75);
+      M.sash = std(style.runner, 0.55, 0.15);
       const addChairs = (parent: any, item: LayoutItem) => {
         const spots = chairPositions(item).map((c) => ({ x: c.x, y: 0, z: c.z, ry: Math.atan2(c.nx, c.nz) }));
         if (!pro) { instanced(parent, basicChairGeo, M.chair, spots, false); return; }
         instanced(parent, chairFrameGeo, M.chairFrame, spots);
         instanced(parent, chairCushionGeo, M.chair, spots);
+        if (richFlowers) instanced(parent, sashGeo, M.sash, spots, false);
       };
       // Seated guests (Pro "Guests" toggle), so clients can feel how full the hall will be.
       const guestTorso = pro ? own(new THREE.CapsuleGeometry(0.17, 0.32, 3, 8)) : null;
@@ -697,6 +709,9 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const addPlaceSettings = (parent: any, item: LayoutItem, w: number, d: number) => {
         const plates: { x: number; y: number; z: number; ry: number }[] = [];
         const glasses: { x: number; y: number; z: number; ry: number }[] = [];
+        const chargers: { x: number; y: number; z: number; ry: number }[] = [];
+        const napkins: { x: number; y: number; z: number; ry: number }[] = [];
+        const forks: { x: number; y: number; z: number; ry: number }[] = [];
         chairPositions(item).forEach((c) => {
           const inset = item.shape === 'rect' ? 0.22 : 0.25;
           let px = c.x - c.nx * (0.38 + inset);
@@ -706,9 +721,23 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           const gx = px - c.nz * 0.16 - c.nx * 0.12;
           const gz = pz + c.nx * 0.16 - c.nz * 0.12;
           glasses.push({ x: gx, y: 0.83, z: gz, ry: 0 });
+          if (richFlowers) {
+            const ry = Math.atan2(c.nx, c.nz);
+            chargers.push({ x: px, y: 0.757, z: pz, ry: 0 });
+            napkins.push({ x: px, y: 0.8, z: pz, ry });
+            // Fork on one side of the plate, knife on the other (tangent to the seat).
+            forks.push({ x: px - c.nz * 0.2, y: 0.766, z: pz + c.nx * 0.2, ry });
+            forks.push({ x: px + c.nz * 0.2, y: 0.766, z: pz - c.nx * 0.2, ry });
+            glasses.push({ x: gx - c.nz * 0.09, y: 0.83, z: gz + c.nx * 0.09, ry: 0 });
+          }
         });
         instanced(parent, plateGeo, M.plate, plates, false);
         instanced(parent, glassGeo, M.glass, glasses, false);
+        if (richFlowers) {
+          instanced(parent, chargerGeo, M.gold, chargers, false);
+          instanced(parent, napkinGeo, M.napkin, napkins, false);
+          instanced(parent, cutleryGeo, M.silver, forks, false);
+        }
       };
       const addCenterpiece = (parent: any) => {
         if (style.centerpiece === 'tall') {
@@ -725,6 +754,27 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         }
       };
 
+      // ── Pro object resources ──
+      M.icing = std('#FBF7EE', 0.55);
+      M.champagne = std('#E8C468', 0.15, 0.2, { transparent: true, opacity: 0.85 });
+      const coupeGeo = own(mergeGeometries([
+        tr(new THREE.CylinderGeometry(0.05, 0.018, 0.035, 14, 1, true), 0, 0.1, 0),
+        tr(new THREE.CylinderGeometry(0.005, 0.005, 0.08, 6), 0, 0.045, 0),
+        tr(new THREE.CylinderGeometry(0.03, 0.03, 0.004, 12), 0, 0.002, 0),
+      ].map((g) => g.index ? g.toNonIndexed() : g)));
+      const wineGeo = own(tr(new THREE.CylinderGeometry(0.044, 0.02, 0.022, 12), 0, 0.098, 0));
+      const domeGeo = own(new THREE.SphereGeometry(0.16, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2));
+      const sweetGeo = own(new THREE.SphereGeometry(0.03, 8, 6));
+      const bulbGeo2 = own(new THREE.SphereGeometry(0.03, 8, 6));
+      const signTexture = canvasTexture(512, 180, (ctx) => {
+        ctx.clearRect(0, 0, 512, 180);
+        ctx.fillStyle = '#FFF4DE'; ctx.shadowColor = '#FFD08A'; ctx.shadowBlur = 18;
+        ctx.font = 'italic 600 110px "Readex Pro", "Cairo", serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('Forever', 256, 92);
+      });
+      const sparkMat = own(new THREE.PointsMaterial({ color: '#FFD9A0', size: lite ? 0.06 : 0.045, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
+      /** Cold-spark fountains, animated in Party lighting. */
+      const sparks: { pts: any; pos: Float32Array; vel: Float32Array; life: Float32Array }[] = [];
       const tableNumbers = new Map<string, number>();
       /** Dance floor materials, so Party mode can make them glow. */
       const danceMats: any[] = [];
@@ -888,6 +938,181 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           const heads = Math.max(2, Math.floor(w / 1.6));
           for (let i = 0; i < heads; i++) { const x = -w / 2 + (w / heads) * (i + 0.5); box(group, 0.25, 0.3, 0.25, M.black, x, h - 0.35); cyl(group, 0.08, 0.02, M.lens, x, h - 0.51, 0, false); }
           labelY = h + 0.6;
+        } else if (pro && item.type === 'cake') {
+          // Round cake table with a skirt, a four-tier cake with gold bands, cascading roses and candles.
+          const r = w / 2;
+          mesh(group, unitCyl, M.linen, [0, 0.75, 0], [r, 0.025, r]);
+          const skirt = new THREE.Mesh(own(new THREE.CylinderGeometry(r, r + 0.08, 0.74, 40, 1, true)), M.linen);
+          skirt.position.y = 0.37; skirt.castShadow = true; group.add(skirt);
+          let y = 0.77;
+          const tiers = [0.3, 0.24, 0.18, 0.12];
+          tiers.forEach((tr2, i) => {
+            const th = 0.2 - i * 0.015;
+            cyl(group, tr2, th, M.icing, 0, y + th / 2);
+            cyl(group, tr2 + 0.004, 0.02, M.gold, 0, y + 0.012, 0, false);
+            for (let k = 0; k < 3; k++) { const a = i * 1.3 + k * 0.5; rose(group, 0.05, k % 2 ? M.flowerAccent : M.flower, Math.cos(a) * (tr2 + 0.01), y + th * 0.6, Math.sin(a) * (tr2 + 0.01)); }
+            y += th;
+          });
+          flowerCluster(group, 0, y + 0.06, 0, 0.09);
+          for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; cyl(group, 0.025, 0.12, M.candle, Math.cos(a) * (r - 0.12), 0.83, Math.sin(a) * (r - 0.12), false); }
+          labelY = y + 0.5;
+        } else if (pro && item.type === 'dj') {
+          // DJ booth: glowing LED front, decks and a mixer, tall speakers either side.
+          box(group, w, 1.0, d, M.black, 0, 0.5);
+          mesh(group, own(new THREE.PlaneGeometry(w - 0.1, 0.8)), M.led, [0, 0.5, d / 2 + 0.006], undefined, false);
+          box(group, w + 0.06, 0.04, d + 0.06, M.gold, 0, 1.02);
+          for (const x of [-w * 0.28, w * 0.28]) { cyl(group, 0.16, 0.03, M.silver, x, 1.06, 0); cyl(group, 0.14, 0.012, M.black, x, 1.08, 0, false); }
+          box(group, 0.35, 0.06, 0.3, M.silver, 0, 1.07);
+          for (const x of [-w / 2 - 0.45, w / 2 + 0.45]) {
+            box(group, 0.5, 1.6, 0.45, M.black, x, 0.8);
+            for (const [yy, rr] of [[0.5, 0.17], [1.15, 0.1]] as const) { const cone = mesh(group, unitCyl, M.silver, [x, yy, 0.23], [rr, 0.01, rr], false); cone.rotation.x = Math.PI / 2; }
+          }
+          labelY = 2;
+        } else if (pro && item.type === 'photo_booth') {
+          // Flower wall with a glowing sign, plus a ring light on a stand.
+          const ph = 2.4;
+          box(group, w, ph, 0.14, M.backdrop, 0, ph / 2, 0);
+          if (richFlowers) {
+            const cols = Math.max(4, Math.round(w / 0.17)), rows = Math.round(ph / 0.17);
+            for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+              const list = (i * 3 + j * 5) % 7 === 0 ? roseBatch.accent : roseBatch.main;
+              const jitter = ((i * 31 + j * 17) % 10) / 100;
+              pushOriented(list, -w / 2 + (w / cols) * (i + 0.5), (ph / rows) * (j + 0.5), 0.1 + jitter, 0, 0.2, 1, 0.075 + jitter * 0.2, i + j);
+            }
+          } else box(group, w - 0.1, ph - 0.1, 0.02, M.flower, 0, ph / 2, 0.08, false);
+          M.sign = M.sign || std('#FFFFFF', 0.4, 0, { map: signTexture, transparent: true, emissive: new THREE.Color('#FFFFFF'), emissiveMap: signTexture, emissiveIntensity: 2.4 });
+          mesh(group, own(new THREE.PlaneGeometry(Math.min(2.2, w * 0.7), Math.min(2.2, w * 0.7) * 0.35)), M.sign, [0, ph * 0.62, 0.22], undefined, false);
+          const ring = new THREE.Mesh(own(new THREE.TorusGeometry(0.22, 0.025, 8, 32)), M.warmGlow);
+          ring.position.set(w / 2 - 0.2, 1.6, d - 0.2); group.add(ring);
+          cyl(group, 0.015, 1.5, M.black, w / 2 - 0.2, 0.75, d - 0.2);
+          labelY = ph + 0.5;
+        } else if (pro && item.type === 'flower_arch') {
+          // Round arch ring covered in roses, on a gold base.
+          const R = Math.min(1.3, w / 2), cy = R + 0.25;
+          const ringMesh = new THREE.Mesh(own(new THREE.TorusGeometry(R, 0.04, 8, 48)), M.gold);
+          ringMesh.position.y = cy; ringMesh.castShadow = true; group.add(ringMesh);
+          box(group, R * 1.6, 0.08, 0.5, M.gold, 0, 0.04);
+          // Roses cover the top and the left side heavily, lighter elsewhere; the bottom stays open.
+          const n = richFlowers ? 90 : 24;
+          for (let i = 0; i < n; i++) {
+            const a = (i / n) * Math.PI * 2;
+            if (Math.sin(a) < -0.8) continue;
+            const heavy = Math.sin(a) > 0.1 || Math.cos(a) < -0.5;
+            if (!heavy && i % 3) continue;
+            for (let k = 0; k < (heavy && richFlowers ? 2 : 1); k++) {
+              const rr = R + (k ? 0.09 : -0.02), off = k ? -0.06 : 0.06;
+              rose(group, heavy ? 0.21 : 0.17, (i + k) % 4 ? M.flower : M.flowerAccent, Math.cos(a + k * 0.03) * rr, cy + Math.sin(a + k * 0.03) * rr, off);
+            }
+            if (i % 2 === 0) rose(group, 0.14, M.leaf, Math.cos(a) * (R + 0.12), cy + Math.sin(a) * (R + 0.12), -0.02);
+          }
+          labelY = cy + R + 0.5;
+        } else if (pro && item.type === 'aisle') {
+          // Runner with candle lanterns and short flower stands on both sides.
+          box(group, Math.max(0.8, w - 0.4), 0.012, d, M.runner, 0, 0.006, 0, false);
+          const steps = Math.max(2, Math.floor(d / 1.5));
+          for (let i = 0; i <= steps; i++) {
+            const z = -d / 2 + (d / steps) * i;
+            for (const x of [-w / 2, w / 2]) {
+              if (i % 2 === 0) { cyl(group, 0.15, 0.03, M.gold, x, 0.015, z); cyl(group, 0.02, 0.7, M.gold, x, 0.35, z); flowerCluster(group, x, 0.85, z, 0.2); }
+              else { cyl(group, 0.1, 0.32, M.glass, x, 0.16, z, false); cyl(group, 0.04, 0.12, M.candle, x, 0.08, z, false); }
+            }
+          }
+          labelY = 1.4;
+        } else if (pro && item.type === 'cocktail') {
+          // High table in a stretch cover, with a candle.
+          cyl(group, w / 2, 0.03, M.linen, 0, 1.08);
+          const cover = new THREE.Mesh(own(new THREE.CylinderGeometry(w / 2, w / 2 - 0.05, 1.06, 28, 1, true)), M.linen);
+          cover.position.y = 0.53; cover.castShadow = true; group.add(cover);
+          cyl(group, w / 2 - 0.02, 0.02, M.runner, 0, 0.54, 0, false);
+          cyl(group, 0.06, 0.12, M.glass, 0, 1.16, 0, false); cyl(group, 0.025, 0.08, M.candle, 0, 1.14, 0, false);
+          labelY = 1.6;
+        } else if (pro && item.type === 'champagne') {
+          // Round table and a five-level coupe tower.
+          const r = w / 2;
+          mesh(group, unitCyl, M.linen, [0, 0.75, 0], [r, 0.025, r]);
+          const skirt = new THREE.Mesh(own(new THREE.CylinderGeometry(r, r + 0.06, 0.74, 32, 1, true)), M.linen);
+          skirt.position.y = 0.37; group.add(skirt);
+          const spots: { x: number; y: number; z: number; ry: number }[] = [];
+          const levels = 5, pitch = 0.11;
+          for (let L = 0; L < levels; L++) { const n = levels - L; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) spots.push({ x: (i - (n - 1) / 2) * pitch, y: 0.77 + L * 0.11, z: (j - (n - 1) / 2) * pitch, ry: 0 }); }
+          instanced(group, coupeGeo, M.glass, spots, false);
+          instanced(group, wineGeo, M.champagne, spots, false);
+          labelY = 0.77 + levels * 0.11 + 0.5;
+        } else if (pro && item.type === 'sweets') {
+          // Dessert table: cake stands with glass domes, sweets and a low flower runner.
+          box(group, w, 0.025, d, M.linen, 0, 0.75); box(group, w, 0.73, d, M.linen, 0, 0.365);
+          box(group, w * 0.92, 0.006, Math.min(0.3, d * 0.4), M.runner, 0, 0.766, 0, false);
+          const n = Math.max(3, Math.floor(w / 0.55));
+          const sweet: { x: number; y: number; z: number; ry: number }[] = [];
+          for (let i = 0; i < n; i++) {
+            const x = -w / 2 + (w / n) * (i + 0.5), hh = 0.12 + (i % 2) * 0.12;
+            cyl(group, 0.02, hh, M.gold, x, 0.76 + hh / 2); cyl(group, 0.17, 0.015, M.gold, x, 0.77 + hh);
+            for (let k = 0; k < 7; k++) { const a = k * 0.9; sweet.push({ x: x + Math.cos(a) * 0.09, y: 0.8 + hh, z: Math.sin(a) * 0.09, ry: 0 }); }
+            if (i % 2 === 0) { const dome = new THREE.Mesh(domeGeo, M.glass); dome.position.set(x, 0.775 + hh, 0); group.add(dome); }
+          }
+          instanced(group, sweetGeo, M.flowerAccent, sweet, false);
+          flowerCluster(group, 0, 0.86, 0.18, 0.16);
+          labelY = 1.5;
+        } else if (pro && item.type === 'sparklers') {
+          // Cold spark fountain: the machine, and sparks that fire in Party lighting.
+          box(group, 0.36, 0.22, 0.36, M.black, 0, 0.11);
+          cyl(group, 0.05, 0.04, M.silver, 0, 0.24);
+          const count = lite ? 60 : 160;
+          const geo = new THREE.BufferGeometry();
+          const posArr = new Float32Array(count * 3);
+          geo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+          const pts = new THREE.Points(geo, sparkMat);
+          pts.position.y = 0.26; pts.frustumCulled = false; pts.visible = false;
+          pts.userData.ownGeo = true;
+          group.add(pts);
+          sparks.push({ pts, pos: posArr, vel: new Float32Array(count * 3), life: new Float32Array(count).map(() => Math.random()) });
+          labelY = 0.9;
+        } else if (pro && item.type === 'love_letters') {
+          // Marquee letters L O V E with glowing bulbs.
+          const lh = 1.0, lw = Math.min(0.7, w / 4.4), gap = (w - lw * 4) / 3, t = 0.12, dz = 0.12;
+          const bulbs: { x: number; y: number; z: number; ry: number }[] = [];
+          const stroke = (x0: number, y0: number, x1: number, y1: number) => {
+            const len = Math.hypot(x1 - x0, y1 - y0);
+            const m = mesh(group, unitBox, M.gold, [(x0 + x1) / 2, (y0 + y1) / 2, 0], [t, len + t, dz]);
+            m.rotation.z = -Math.atan2(x1 - x0, y1 - y0);
+            const nb = Math.max(2, Math.round(len / 0.14));
+            for (let i = 0; i <= nb; i++) bulbs.push({ x: x0 + ((x1 - x0) * i) / nb, y: y0 + ((y1 - y0) * i) / nb, z: dz / 2 + 0.02, ry: 0 });
+          };
+          const lx = (k: number) => -w / 2 + k * (lw + gap);
+          const b = 0.05;
+          // L
+          stroke(lx(0), b, lx(0), b + lh); stroke(lx(0), b, lx(0) + lw, b);
+          // O
+          { const cx = lx(1) + lw / 2, cy = b + lh / 2; const o = new THREE.Mesh(own(new THREE.TorusGeometry(lw / 2 - t / 2, t / 2, 8, 32)), M.gold); o.position.set(cx, cy, 0); o.scale.set(1, lh / lw, 1); o.castShadow = true; group.add(o);
+            for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; bulbs.push({ x: cx + Math.cos(a) * (lw / 2 - t / 2), y: cy + Math.sin(a) * (lw / 2 - t / 2) * (lh / lw), z: dz / 2 + 0.02, ry: 0 }); } }
+          // V
+          stroke(lx(2), b + lh, lx(2) + lw / 2, b); stroke(lx(2) + lw / 2, b, lx(2) + lw, b + lh);
+          // E
+          stroke(lx(3), b, lx(3), b + lh); stroke(lx(3), b + lh, lx(3) + lw, b + lh); stroke(lx(3), b + lh / 2, lx(3) + lw * 0.8, b + lh / 2); stroke(lx(3), b, lx(3) + lw, b);
+          instanced(group, bulbGeo2, M.warmGlow, bulbs, false);
+          labelY = lh + 0.6;
+        } else if (pro && item.type === 'ceiling_florals') {
+          // A cloud of roses hanging from the ceiling with trailing strands.
+          const top = outdoor ? 4.2 : Math.max(2.6, ceilingM) - 0.25;
+          const r = Math.min(w, d) / 2;
+          cyl(group, 0.01, 0.25, M.gold, 0, top + 0.12, 0, false);
+          flowerCluster(group, 0, top - r * 0.35, 0, r * 0.55);
+          const strands = richFlowers ? 14 : 6;
+          for (let i = 0; i < strands; i++) {
+            const a = (i / strands) * Math.PI * 2, rr = r * (0.5 + (i % 3) * 0.17);
+            const len = 0.6 + (i % 4) * 0.25;
+            for (let k = 0; k < 5; k++) rose(group, 0.1, k % 2 ? M.flowerAccent : M.flower, Math.cos(a) * rr, top - r * 0.4 - (len * k) / 5, Math.sin(a) * rr);
+          }
+          labelY = top - r - 1.2;
+        } else if (pro && item.type === 'gift_table') {
+          // Gift boxes with ribbons, a guestbook, a lantern and flowers.
+          box(group, w, 0.025, d, M.linen, 0, 0.75); box(group, w, 0.73, d, M.linen, 0, 0.365);
+          const gifts: [number, number, number, string][] = [[-w * 0.32, 0.28, 0.24, '#F4F1EA'], [-w * 0.18, 0.2, 0.18, style.flowerAccent], [-w * 0.3, 0.16, 0.14, style.runner]];
+          gifts.forEach(([x, gw, gh, c], i) => { const gm = std(c, 0.6); box(group, gw, gh, gw, gm, x, 0.762 + gh / 2 + (i === 2 ? 0.24 : 0), i === 2 ? 0.02 : 0); box(group, gw + 0.01, gh + 0.01, 0.03, M.gold, x, 0.762 + gh / 2 + (i === 2 ? 0.24 : 0), i === 2 ? 0.02 : 0, false); });
+          box(group, 0.36, 0.03, 0.26, M.ivory, w * 0.12, 0.78); box(group, 0.36, 0.005, 0.02, M.gold, w * 0.12, 0.8, 0.0, false);
+          cyl(group, 0.08, 0.3, M.glass, w * 0.36, 0.91, 0, false); cyl(group, 0.03, 0.1, M.candle, w * 0.36, 0.82, 0, false);
+          flowerCluster(group, -w * 0.02, 0.88, -0.1, 0.14);
+          labelY = 1.5;
         } else {
           box(group, w, 0.9, d, M.ivory, 0, 0.45);
           labelY = 1.4;
@@ -917,6 +1142,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           if (child.userData?.label) { child.material.map?.dispose(); child.material.dispose(); }
           if (child.material?.userData?.own) { child.material.map?.dispose(); child.material.dispose(); }
           if (child.isInstancedMesh) child.dispose?.();
+          if (child.userData?.ownGeo) child.geometry?.dispose?.();
         });
       };
 
@@ -925,6 +1151,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         for (let i = labelSprites.length - 1; i >= 0; i--) if (!isInScene(labelSprites[i])) labelSprites.splice(i, 1);
         tableNumbers.clear();
         danceMats.length = 0;
+        sparks.length = 0;
         let n = 0;
         itemsRef.current.forEach((item) => { if (item.type === 'table') tableNumbers.set(item.id, ++n); });
         // Draw floor-level items first so tables sit visually on top of dance floors.
@@ -1400,6 +1627,25 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           spots.forEach((sp, i) => { sp.target.position.set(rig.cx + Math.sin(t * 0.8 + i * 2) * rig.r, 0, rig.cz + Math.cos(t * 0.6 + i * 2) * rig.r); });
           danceMats.forEach((mat, i) => { mat.emissive.setHSL((t * 0.08 + i * 0.2) % 1, 0.8, 0.5); mat.emissiveIntensity = 0.35 + 0.2 * Math.sin(t * 4); });
         }
+        const sparkOn = pro && moodRef.current === 'party';
+        for (const sp of sparks) {
+          sp.pts.visible = sparkOn;
+          if (!sparkOn) continue;
+          const n = sp.life.length;
+          for (let i = 0; i < n; i++) {
+            sp.life[i] -= dt * 0.9;
+            const k = i * 3;
+            if (sp.life[i] <= 0) {
+              sp.life[i] = 0.6 + Math.random() * 0.6;
+              sp.pos[k] = 0; sp.pos[k + 1] = 0; sp.pos[k + 2] = 0;
+              const a = Math.random() * Math.PI * 2, spread = Math.random() * 0.35;
+              sp.vel[k] = Math.cos(a) * spread; sp.vel[k + 1] = 4.2 + Math.random() * 1.6; sp.vel[k + 2] = Math.sin(a) * spread;
+            }
+            sp.vel[k + 1] -= 6 * dt;
+            sp.pos[k] += sp.vel[k] * dt; sp.pos[k + 1] = Math.max(0, sp.pos[k + 1] + sp.vel[k + 1] * dt); sp.pos[k + 2] += sp.vel[k + 2] * dt;
+          }
+          sp.pts.geometry.attributes.position.needsUpdate = true;
+        }
         const selectedGroup = selectedIdRef.current ? itemRoot.children.find((child: any) => child.userData?.itemId === selectedIdRef.current) : null;
         if (selectedGroup && !walk.active) {
           const fp = selectedGroup.userData.footprint || { w: 1, d: 1 };
@@ -1430,6 +1676,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       };
       raf = requestAnimationFrame(animate);
 
+      // Dev only: lets the screenshot tests point the camera.
+      if (import.meta.env.DEV) (window as any).__saraya3d = { camera, orbit, walk, W, D };
       engineRef.current = {
         rebuild, applyView, applyMeasure, applyMood, snapshot, record,
         shot: (shot: Shot3D) => goShot(shot),
