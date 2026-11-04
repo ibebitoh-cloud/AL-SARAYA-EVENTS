@@ -26,6 +26,14 @@ interface CustomerSuccessStoriesProps {
   testimonials?: CoupleTestimonial[];
 }
 
+const AR_MONTHS: Record<string, string> = {
+  'يناير': 'January', 'فبراير': 'February', 'مارس': 'March', 'أبريل': 'April', 'مايو': 'May', 'يونيو': 'June',
+  'يوليو': 'July', 'أغسطس': 'August', 'سبتمبر': 'September', 'أكتوبر': 'October', 'نوفمبر': 'November', 'ديسمبر': 'December',
+};
+/** Story dates are stored in Arabic ("سبتمبر 2025"); show the English month on the English site. */
+const storyDate = (date: string, isAr: boolean) =>
+  isAr ? date : date.replace(/[\u0600-\u06FF]+/g, (word) => AR_MONTHS[word] ?? word);
+
 export function CustomerSuccessStories({
   language,
   theme = 'dark',
@@ -148,7 +156,7 @@ export function CustomerSuccessStories({
                     ))}
                   </div>
                   <span className="text-[11px] text-slate-400 font-medium">
-                    {story.eventDate}
+                    {storyDate(story.eventDate, isAr)}
                   </span>
                 </div>
 
@@ -255,7 +263,7 @@ export function CustomerSuccessStories({
                       {isAr ? activeStory.coupleNamesAr : activeStory.coupleNamesEn}
                     </h3>
                     <p className="mt-1 text-xs text-slate-400 font-medium">
-                      {isAr ? activeStory.hallNameAr : activeStory.hallNameEn} · {activeStory.eventDate}
+                      {isAr ? activeStory.hallNameAr : activeStory.hallNameEn} · {storyDate(activeStory.eventDate, isAr)}
                     </p>
                   </div>
 

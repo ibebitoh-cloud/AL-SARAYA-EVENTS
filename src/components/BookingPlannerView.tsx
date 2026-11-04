@@ -16,6 +16,8 @@ interface Props {
   priceBook: PriceBook;
   language: Language;
   onBack: () => void;
+  /** Selling-prices-only users: hide deposit, paid, balance and security deposit, as on the Bookings screen. */
+  hidePayments?: boolean;
 }
 
 const card = 'rounded-3xl border border-slate-800 bg-slate-900/70 p-5 sm:p-6';
@@ -31,7 +33,7 @@ const statusCls: Record<string, string> = {
  * the client has not picked yet (for reference). Read only: bookings are edited by admin users on the Bookings screen.
  * Selling prices only; costs and wages are never shown here.
  */
-export function BookingPlannerView({ booking, halls, services, priceBook, language, onBack }: Props) {
+export function BookingPlannerView({ booking, halls, services, priceBook, language, onBack, hidePayments = false }: Props) {
   const { isAr, tr, egp } = makeTr(language);
   const hall = halls.find((h) => h.id === booking.hallId);
   const hallName = hall ? (isAr ? hall.name : hall.nameEn || hall.name) : booking.hallName || tr('مكان العميل', 'Client venue');
@@ -106,10 +108,12 @@ export function BookingPlannerView({ booking, halls, services, priceBook, langua
           {row(tr('الخدمات', 'Services'), egp(booking.services.reduce((sum, s) => sum + (Number(s.totalPrice) || 0), 0)))}
           {totals.percent > 0 && row(<span className="inline-flex items-center gap-1">{tr('الخصم', 'Discount')} <Lock className="h-3 w-3 text-slate-500" /></span>, `${totals.percent}% (−${egp(totals.discount)})`)}
           {row(tr('الإجمالي', 'Total'), <span className="text-amber-200">{egp(totals.total)}</span>)}
+          {!hidePayments && <>
           {row(tr('العربون', 'Deposit'), egp(booking.deposit))}
           {row(tr('المدفوع', 'Paid'), <span className="text-emerald-300">{egp(booking.paidAmount)}</span>)}
           {row(tr('المتبقي', 'Remaining'), <span className="text-rose-300">{egp(booking.remainingAmount)}</span>)}
           {row(tr('التأمين', 'Security deposit'), booking.securityDeposit ? `${egp(booking.securityDeposit)} · ${({ held: tr('محتجز', 'Held'), refunded: tr('تم الرد', 'Refunded'), deducted: tr('مخصوم', 'Deducted') } as Record<string, string>)[booking.securityDepositStatus] || ''}` : '')}
+          </>}
         </section>
       </div>
 

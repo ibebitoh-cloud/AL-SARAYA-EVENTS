@@ -175,16 +175,17 @@ export function InvoicePrintModal({ isOpen, onClose, booking, language = 'ar', c
                   <span>{tr('المدفوع حتى الآن', 'Paid so far')}:</span>
                   <span className="font-mono font-bold whitespace-nowrap">− {egp(booking.paidAmount)}</span>
                 </div>
-                <div className="flex justify-between gap-3 text-amber-300 print:text-amber-800">
-                  <span>{tr('التأمين (مسترد)', 'Security deposit (refundable)')}:</span>
-                  <span className="font-mono font-bold whitespace-nowrap">+ {egp(booking.securityDeposit)}</span>
-                </div>
                 <div className="flex justify-between gap-3 text-sm font-extrabold text-white print:text-black pt-2 border-t border-slate-800 print:border-gray-400">
                   <span>{tr('المبلغ المتبقي للتحصيل', 'Balance due')}:</span>
                   <span className="font-mono text-base text-rose-400 print:text-black whitespace-nowrap">
                     {egp(booking.remainingAmount)}
                   </span>
                 </div>
+                {/* The refundable security deposit is handled on its own and is not part of the balance above. */}
+                {booking.securityDeposit > 0 && <div className="flex justify-between gap-3 text-[11px] text-amber-300 print:text-amber-800">
+                  <span>{tr('التأمين المسترد (منفصل عن المتبقي)', 'Refundable security deposit (separate from the balance)')}:</span>
+                  <span className="font-mono font-bold whitespace-nowrap">{egp(booking.securityDeposit)}</span>
+                </div>}
               </div>
             </div>
 
