@@ -90,9 +90,9 @@ export function Studio3DProView({ language, halls, onUpdateHall, bookings, onSav
       {/* Preview: what Pro looks like next to the basic Event Designer. */}
       <figure className="mt-5">
         <div className="relative overflow-hidden rounded-2xl border border-amber-400/40 bg-[#0D0D0F]">
-          <img src={previewPro} alt={isAr ? 'استوديو 3D برو: ترتيب فرح' : '3D Studio Pro view of a wedding layout'} className="block aspect-[16/10] w-full object-cover" loading="lazy" />
+          <img src={previewPro} alt={isAr ? 'استوديو 3D برو: ترابيزة فرح بإضاءة المساء' : '3D Studio Pro: a wedding table in Evening lighting'} className="block aspect-[16/10] w-full object-cover" loading="lazy" />
           <span className="absolute start-3 top-3 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] px-2.5 py-1 text-[10px] font-black tracking-widest text-[#0D0D0F]"><Sparkles className="h-3 w-3" />PRO</span>
-          <div className="absolute bottom-3 end-3 w-[34%] max-w-[220px] overflow-hidden rounded-xl border border-slate-600 bg-[#08111D] shadow-2xl">
+          <div className="absolute bottom-3 right-3 w-[34%] max-w-[220px] overflow-hidden rounded-xl border border-slate-600 bg-[#08111D] shadow-2xl">
             <img src={previewBasic} alt={isAr ? 'عرض 3D الأساسي لنفس القاعة' : 'Basic 3D view of the same hall'} className="block aspect-[4/3] w-full object-cover" loading="lazy" />
             <span className="absolute start-2 top-2 rounded-md bg-[#172033] px-2 py-0.5 text-[9px] font-black tracking-widest text-[#CFE5FF]">BASIC</span>
           </div>
