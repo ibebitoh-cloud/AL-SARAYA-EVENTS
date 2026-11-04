@@ -155,6 +155,9 @@ export function EventLayoutDesigner({ language, initialDesign: initialDesignProp
   });
   const [autoBuilderOpen, setAutoBuilderOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  // The plan / 3D box: brought into view after an add so the new item shows at once, with the Add panel still open.
+  const sceneBoxRef = useRef<HTMLDivElement>(null);
+  const revealScene = () => requestAnimationFrame(() => { const box = sceneBoxRef.current; if (!box) return; const r = box.getBoundingClientRect(); if (r.top + r.height * 0.6 > window.innerHeight) box.scrollIntoView({ behavior: 'smooth', block: 'end' }); });
   const [addQuery, setAddQuery] = useState('');
   const [addCat, setAddCat] = useState<ItemCategory | 'all' | 'pro'>('all');
   const [addQty, setAddQty] = useState(1);
@@ -214,6 +217,7 @@ export function EventLayoutDesigner({ language, initialDesign: initialDesignProp
     setSelectedIds(added.map((item) => item.id));
     setAddedFlash(`+${qty} ${isAr ? source.labelAr : source.labelEn}`);
     setSaved(false);
+    revealScene();
   };
 
   // Adds `qty` copies of a table set in a grid, spaced by the set's real footprint (table + chairs).
@@ -711,7 +715,7 @@ export function EventLayoutDesigner({ language, initialDesign: initialDesignProp
                   .filter((item) => !q || item.labelEn.toLowerCase().includes(q) || item.labelAr.includes(addQuery.trim()) || item.type.includes(q))
                   .sort((a, b) => (pro ? 0 : Number(Boolean(a.pro)) - Number(Boolean(b.pro))));
                 const chip = (id: ItemCategory | 'all' | 'pro', label: string) => <button key={id} type="button" onClick={() => setAddCat(id)} aria-pressed={addCat === id} className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${addCat === id ? 'border-amber-300 bg-amber-300 text-slate-950' : 'border-slate-700 text-slate-300 hover:border-amber-300/60'}`}>{label}</button>;
-                return <div className="absolute end-2 top-full z-50 mt-1 flex max-h-[74vh] w-[min(94vw,560px)] flex-col gap-2 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl">
+                return <div data-add-panel className="flex w-full basis-full flex-col gap-1.5 rounded-xl border border-amber-400/30 bg-slate-950 p-2">
                   <div className="flex shrink-0 items-center gap-1.5">
                     <label className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2"><Search className="h-3.5 w-3.5 shrink-0 text-slate-500" /><input value={addQuery} onChange={(e) => setAddQuery(e.target.value)} placeholder={isAr ? 'ابحث عن عنصر…' : 'Search items…'} className="min-h-9 w-full bg-transparent text-xs text-white outline-none" /></label>
                     <div className="flex shrink-0 items-center rounded-lg border border-slate-700 bg-slate-900" title={isAr ? 'العدد المضاف في كل مرة' : 'How many to add each tap'}>
@@ -722,7 +726,7 @@ export function EventLayoutDesigner({ language, initialDesign: initialDesignProp
                     <button type="button" onClick={() => setQuickAddOpen(false)} aria-label={isAr ? 'إغلاق' : 'Close'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300"><X className="h-4 w-4" /></button>
                   </div>
                   <div className="flex shrink-0 gap-1 overflow-x-auto pb-0.5">{chip('all', isAr ? 'الكل' : 'All')}{ITEM_CATEGORIES.map((c) => chip(c.id, isAr ? c.ar : c.en))}{chip('pro', isAr ? 'برو' : 'PRO')}</div>
-                  <div className="grid min-h-0 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">{list.map((item) => { const Icon = item.icon; const locked = item.pro && !pro; return <button key={item.type} type="button" disabled={locked} onClick={() => addItem(item.type, addQty)} title={locked ? (isAr ? 'متاح في 3D Studio Pro' : 'Available in 3D Studio Pro') : undefined} className={`relative flex min-h-11 items-center gap-1.5 rounded-lg border px-2 text-start text-[10px] ${locked ? 'cursor-not-allowed border-slate-800 text-slate-500' : item.pro ? 'border-amber-400/30 text-slate-100 hover:border-amber-400/70 hover:bg-amber-400/10' : 'border-slate-800 text-slate-200 hover:border-amber-400/60 hover:bg-slate-900'}`}><Icon className={`h-3.5 w-3.5 shrink-0 ${locked ? 'text-slate-600' : 'text-amber-300'}`} /><span className="min-w-0 flex-1 leading-tight">{isAr ? item.labelAr : item.labelEn}</span>{item.pro && <span className={`flex shrink-0 items-center gap-0.5 rounded px-1 text-[8px] font-black ${locked ? 'bg-slate-800 text-slate-400' : 'bg-amber-400/15 text-amber-300'}`}>{locked && <Lock className="h-2.5 w-2.5" />}{isAr ? 'برو' : 'PRO'}</span>}</button>; })}{!list.length && <div className="col-span-full py-6 text-center text-[11px] text-slate-500">{isAr ? 'لا يوجد عنصر بهذا الاسم' : 'No item matches'}</div>}</div>
+                  <div className="grid auto-cols-[8.5rem] grid-flow-col grid-rows-2 gap-1.5 overflow-x-auto pb-1">{list.map((item) => { const Icon = item.icon; const locked = item.pro && !pro; return <button key={item.type} type="button" disabled={locked} onClick={() => addItem(item.type, addQty)} title={locked ? (isAr ? 'متاح في 3D Studio Pro' : 'Available in 3D Studio Pro') : undefined} className={`relative flex min-h-11 items-center gap-1.5 rounded-lg border px-2 text-start text-[10px] ${locked ? 'cursor-not-allowed border-slate-800 text-slate-500' : item.pro ? 'border-amber-400/30 text-slate-100 hover:border-amber-400/70 hover:bg-amber-400/10' : 'border-slate-800 text-slate-200 hover:border-amber-400/60 hover:bg-slate-900'}`}><Icon className={`h-3.5 w-3.5 shrink-0 ${locked ? 'text-slate-600' : 'text-amber-300'}`} /><span className="min-w-0 flex-1 leading-tight">{isAr ? item.labelAr : item.labelEn}</span>{item.pro && <span className={`flex shrink-0 items-center gap-0.5 rounded px-1 text-[8px] font-black ${locked ? 'bg-slate-800 text-slate-400' : 'bg-amber-400/15 text-amber-300'}`}>{locked && <Lock className="h-2.5 w-2.5" />}{isAr ? 'برو' : 'PRO'}</span>}</button>; })}{!list.length && <div className="col-span-full py-6 text-center text-[11px] text-slate-500">{isAr ? 'لا يوجد عنصر بهذا الاسم' : 'No item matches'}</div>}</div>
                   <div className="flex items-center justify-between gap-2 px-1 text-[10px] text-slate-500"><span>{addedFlash ? <span className="font-bold text-emerald-300">{addedFlash}</span> : (isAr ? `${ITEM_CATALOG.filter((item) => pro || !item.pro).length} عنصر متاح · اضغط لإضافة ${addQty}` : `${ITEM_CATALOG.filter((item) => pro || !item.pro).length} items available · tap to add ${addQty}`)}</span>{!pro && <span className="text-amber-300/80">{isAr ? `+${ITEM_CATALOG.filter((item) => item.pro).length} في Pro` : `+${ITEM_CATALOG.filter((item) => item.pro).length} more in Pro`}</span>}</div>
                 </div>;
               })()}
@@ -742,7 +746,7 @@ export function EventLayoutDesigner({ language, initialDesign: initialDesignProp
               </div>}
               {multiMode && !selectedIds.length && <div className="w-full basis-full rounded-lg border border-cyan-400/30 bg-cyan-400/5 px-2 py-1.5 text-[10px] text-cyan-100">{isAr ? 'اضغط على العناصر لتحديدها، أو اسحب على مكان فاضي في المخطط 2D لتحديد مجموعة.' : 'Tap items to pick them, or drag across an empty part of the 2D plan to box-select.'} <button type="button" onClick={selectAll} className="ms-1 font-black underline">{isAr ? 'تحديد الكل' : 'Select all'}</button></div>}
             </div>
-            <div className="relative h-[62vh] min-h-[460px] w-full overflow-hidden rounded-xl border border-slate-700 bg-slate-950 lg:h-[72vh] lg:max-h-[860px]">
+            <div ref={sceneBoxRef} className="relative h-[62vh] min-h-[460px] w-full overflow-hidden rounded-xl border border-slate-700 bg-slate-950 lg:h-[72vh] lg:max-h-[860px]">
               {layoutMode === '2d' ? (
                 <div className="absolute inset-0 px-8 pb-9 pt-12 sm:px-10">
                   <div className="flex h-full w-full items-center justify-center" style={{ containerType: 'size' }}>
