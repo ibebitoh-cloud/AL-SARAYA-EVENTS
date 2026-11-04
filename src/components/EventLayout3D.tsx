@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, Footprints, LayoutGrid, Ruler, RotateCcw, RotateCw, Scan, Sparkles } from 'lucide-react';
+import { Armchair, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, Camera, Clapperboard, Crown, DoorOpen, Eye, Footprints, LayoutGrid, Moon, PartyPopper, Ruler, RotateCcw, RotateCw, Scan, Sparkles, Sun } from 'lucide-react';
 import { DaliLoader } from './DaliLoader';
 import type { HallDimensions } from '../types/venueSystem';
 import { chairPositions, decorStyle, formatM, itemSize, tableFootprint } from '../data/venueModel';
+import { isLiteMode } from '../utils/liteMode';
 
 type LayoutItem = {
   id: string;
@@ -19,6 +20,10 @@ type LayoutItem = {
 };
 
 export type View3D = 'plan' | '3d' | 'walk';
+/** Pro lighting scenes. */
+export type Mood3D = 'day' | 'evening' | 'party';
+/** Pro camera shots: eye level from the entrance, from the kosha, from a guest table, or high from a corner. */
+type Shot3D = 'entrance' | 'stage' | 'guest' | 'aerial';
 
 type Props = {
   items: LayoutItem[];
@@ -43,15 +48,19 @@ type Props = {
   onMove?: (id: string, x: number, y: number) => void;
   onRotate?: (id: string, delta?: number) => void;
   onViewChange?: (view: View3D) => void;
+  /** Pro: hall name / event shown on the bottom strip of a saved photo. */
+  caption?: string;
 };
 
 const THREE_URL = 'three';
 const CONTROLS_URL = 'three/addons/controls/OrbitControls.js';
 const UTILS_URL = 'three/addons/utils/BufferGeometryUtils.js';
+const ROOM_ENV_URL = 'three/addons/environments/RoomEnvironment.js';
+const MOOD_KEY = 'saraya-3d-pro-mood';
 
 const modeToView = (mode?: Props['mode'], tier: Props['tier'] = 'basic'): View3D => (mode === 'pov' && tier === 'pro' ? 'walk' : mode === 'plan' ? 'plan' : '3d');
 
-export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, watermark, selectedId, rotationMode = false, onSelect, onMove, onRotate, onViewChange }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, watermark, caption, selectedId, rotationMode = false, onSelect, onMove, onRotate, onViewChange }: Props) {
   const isAr = language === 'ar';
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
@@ -59,6 +68,15 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   const [failed, setFailed] = useState(false);
   const [view, setView] = useState<View3D>(() => modeToView(mode, tier));
   const [measure, setMeasure] = useState(true);
+  const [mood, setMood] = useState<Mood3D>(() => { try { const m = window.localStorage.getItem(MOOD_KEY); return m === 'evening' || m === 'party' ? m : 'day'; } catch { return 'day'; } });
+  const [tour, setTour] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [toast, setToast] = useState('');
+  const moodRef = useRef(mood);
+  moodRef.current = mood;
+  const tourRef = useRef(tour);
+  tourRef.current = tour;
+  const shotRef = useRef<Shot3D | null>(null);
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const selectedIdRef = useRef(selectedId);
@@ -78,6 +96,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   const measureRef = useRef(measure);
   measureRef.current = measure;
   const walkInput = useRef({ forward: 0, right: 0 });
+  const stopTourRef = useRef(() => {});
   const rotationBarRef = useRef<HTMLDivElement | null>(null);
 
   const ceilingM = hall?.outdoor ? 0 : hall?.ceilingM ?? 4.5;
@@ -112,6 +131,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const pro = tier === 'pro';
       const style = pro ? decorStyle(decorId) : { ...decorStyle('classic_white'), centerpiece: 'none' as const };
       const coarse = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+      // Lite mode (old tablets such as the 2016 Galaxy Tab A): lower resolution, smaller shadows, no reflections, fewer lights.
+      const lite = isLiteMode();
       const host = hostRef.current;
       const scene = new THREE.Scene();
       // Basic keeps the original navy look; Pro uses the brand black and gold.
@@ -121,14 +142,29 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       scene.fog = fog;
 
       const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 800);
-      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2));
+      const renderer = new THREE.WebGLRenderer({ antialias: !lite, powerPreference: 'high-performance' });
+      const basePixelRatio = lite ? 1 : Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2);
+      renderer.setPixelRatio(basePixelRatio);
       renderer.shadowMap.enabled = pro;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = outdoor ? 0.95 : 1.05;
       host.replaceChildren(renderer.domElement);
+      // Pro: soft studio reflections so gold, silver, glass and marble look real.
+      let envTexture: any = null;
+      if (pro && !lite) {
+        try {
+          const { RoomEnvironment } = await import(/* @vite-ignore */ ROOM_ENV_URL);
+          const pmrem = new THREE.PMREMGenerator(renderer);
+          const room = new RoomEnvironment();
+          envTexture = pmrem.fromScene(room, 0.04).texture;
+          scene.environment = envTexture;
+          scene.environmentIntensity = 0.45;
+          room.traverse?.((o: any) => { o.geometry?.dispose?.(); o.material?.dispose?.(); });
+          pmrem.dispose();
+        } catch { /* Reflections are optional. */ }
+      }
       Object.assign(renderer.domElement.style, { width: '100%', height: '100%', display: 'block', cursor: 'grab', touchAction: 'none' });
 
       // ── Shared resources (kept for the life of the view; per-item parts are disposed on rebuild) ──
@@ -240,12 +276,15 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       surround.rotation.x = -Math.PI / 2; surround.position.y = -0.11; scene.add(surround);
 
       // ── Lights ──
-      scene.add(pro ? new THREE.HemisphereLight(0xfff1dc, 0x2a2420, outdoor ? 1.1 : 1.5) : new THREE.HemisphereLight(0xcfe5ff, 0x172033, 1.8));
-      scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+      const hemi = pro ? new THREE.HemisphereLight(0xfff1dc, 0x2a2420, outdoor ? 1.1 : 1.5) : new THREE.HemisphereLight(0xcfe5ff, 0x172033, 1.8);
+      scene.add(hemi);
+      const ambient = new THREE.AmbientLight(0xffffff, 0.18);
+      scene.add(ambient);
       const key = new THREE.DirectionalLight(0xfff4e6, outdoor ? 1.6 : 2.0);
       key.position.set(W * 0.25, Math.max(W, D) * 1.1, D * 0.35);
       key.castShadow = pro;
-      key.shadow.mapSize.set(coarse ? 1024 : 2048, coarse ? 1024 : 2048);
+      const shadowSize = lite ? 512 : coarse ? 1024 : 2048;
+      key.shadow.mapSize.set(shadowSize, shadowSize);
       const half = Math.max(W, D) / 2 + 2;
       Object.assign(key.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 1, far: Math.max(W, D) * 3 });
       key.shadow.bias = -0.0004;
@@ -310,7 +349,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         const bulbGeo = own(new THREE.SphereGeometry(0.07, 10, 8));
         const rodGeo = own(new THREE.CylinderGeometry(0.012, 0.012, 1.0, 6));
         const crystalGeo = own(new THREE.SphereGeometry(0.28, 16, 12));
-        const crystalMat = std('#FFF3D6', 0.2, 0.1, { emissive: new THREE.Color('#FFD08A'), emissiveIntensity: 0.7, transparent: true, opacity: 0.9 });
+        const crystalMat = M.crystal = std('#FFF3D6', 0.2, 0.1, { emissive: new THREE.Color('#FFD08A'), emissiveIntensity: 0.7, transparent: true, opacity: 0.9 });
         const spacing = 7;
         const cols = pro ? Math.max(1, Math.round(W / spacing)) : 0;
         const rows = Math.max(1, Math.round(D / spacing));
@@ -322,6 +361,28 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           const rod = new THREE.Mesh(rodGeo, M.gold); rod.position.y = 0.6; ch.add(rod);
           ch.position.set(-W / 2 + (W / cols) * (c + 0.5), wallH - 1.2, -D / 2 + (D / rows) * (r + 0.5));
           archGroup.add(ch);
+        }
+        if (pro) {
+          // Coffered ceiling with recessed down-lights. Seen from below only (walk-through); from above it is see-through.
+          const ceilTex = canvasTexture(256, 256, (ctx) => {
+            ctx.fillStyle = '#EFE8DA'; ctx.fillRect(0, 0, 256, 256);
+            ctx.fillStyle = '#E2D8C5'; ctx.fillRect(14, 14, 228, 228);
+            ctx.strokeStyle = 'rgba(196,154,82,.9)'; ctx.lineWidth = 5; ctx.strokeRect(14, 14, 228, 228);
+            ctx.strokeStyle = 'rgba(140,106,46,.55)'; ctx.lineWidth = 3; ctx.strokeRect(0, 0, 256, 256);
+          }, [W / 3.5, D / 3.5]);
+          const glowTex = canvasTexture(256, 256, (ctx) => {
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 256, 256);
+            for (const [x, y] of [[70, 70], [186, 70], [70, 186], [186, 186]]) {
+              const g = ctx.createRadialGradient(x, y, 0, x, y, 16);
+              g.addColorStop(0, '#FFF6E0'); g.addColorStop(0.5, '#FFD9A0'); g.addColorStop(1, 'rgba(0,0,0,0)');
+              ctx.fillStyle = g; ctx.fillRect(x - 16, y - 16, 32, 32);
+            }
+          }, [W / 3.5, D / 3.5]);
+          M.ceiling = std('#FFFFFF', 0.85, 0, { map: ceilTex, emissive: new THREE.Color('#FFFFFF'), emissiveMap: glowTex, emissiveIntensity: 1.2 });
+          const ceiling = new THREE.Mesh(own(new THREE.PlaneGeometry(W + 0.4, D + 0.4)), M.ceiling);
+          ceiling.rotation.x = Math.PI / 2;
+          ceiling.position.y = wallH;
+          archGroup.add(ceiling);
         }
       } else {
         // Open-air: hedge (garden), glass railing (roof) or planters (pool deck), plus festoon lights.
@@ -534,6 +595,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       };
 
       const tableNumbers = new Map<string, number>();
+      /** Dance floor materials, so Party mode can make them glow. */
+      const danceMats: any[] = [];
       const buildItem = (item: LayoutItem) => {
         const group = new THREE.Group();
         group.userData.itemId = item.id;
@@ -620,6 +683,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           labelY = 0.4;
         } else if (item.type === 'dance') {
           const floorMesh = mesh(group, unitBox, M.dance.clone(), [0, 0.015, 0], [w, 0.03, d], false);
+          floorMesh.material.emissive = new THREE.Color('#000000');
+          danceMats.push(floorMesh.material);
           const tex = floorMesh.material.map = danceTexture.clone();
           tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(w / 1.2, d / 1.2); tex.needsUpdate = true;
           floorMesh.material.userData.own = true;
@@ -726,12 +791,14 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         while (itemRoot.children.length) { const child = itemRoot.children[0]; itemRoot.remove(child); disposeObject(child); }
         for (let i = labelSprites.length - 1; i >= 0; i--) if (!isInScene(labelSprites[i])) labelSprites.splice(i, 1);
         tableNumbers.clear();
+        danceMats.length = 0;
         let n = 0;
         itemsRef.current.forEach((item) => { if (item.type === 'table') tableNumbers.set(item.id, ++n); });
         // Draw floor-level items first so tables sit visually on top of dance floors.
         [...itemsRef.current].sort((a, b) => (a.type === 'dance' ? -1 : 0) - (b.type === 'dance' ? -1 : 0)).forEach((item) => itemRoot.add(buildItem(item)));
         applyMeasure();
         scaleLabels();
+        placeRig();
       };
       const isInScene = (obj: any) => { let o = obj; while (o) { if (o === scene) return true; o = o.parent; } return false; };
       const applyMeasure = () => {
@@ -748,7 +815,81 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       outline.visible = false;
       scene.add(outline);
 
+      // ── Pro lighting scenes: warm pools of light for Evening, moving colour beams for Party ──
+      const lightTop = outdoor ? 4.4 : Math.max(2.4, ceilingM) - 0.3;
+      const warmLights: any[] = [];
+      const warmCount = !pro ? 0 : lite ? 2 : 4;
+      for (let i = 0; i < warmCount; i++) {
+        const l = new THREE.PointLight(0xffc27a, 0, Math.max(W, D) * 0.75, 1.6);
+        const cx = warmCount === 2 ? 0 : (i % 2 ? 1 : -1) * W / 4;
+        const cz = warmCount === 2 ? (i ? 1 : -1) * D / 4 : (i < 2 ? -1 : 1) * D / 4;
+        l.position.set(cx, lightTop - 0.4, cz);
+        scene.add(l); warmLights.push(l);
+      }
+      const partyColors = [0xff3d8b, 0x3db8ff, 0xb05cff, 0xffc43d, 0x3dffb4, 0xff6a3d];
+      const beamCount = !pro ? 0 : lite ? 3 : 6;
+      const beamGroup = new THREE.Group();
+      beamGroup.visible = false;
+      scene.add(beamGroup);
+      const beamLen = lightTop;
+      const beamGeo = own(new THREE.ConeGeometry(1.15, beamLen, 24, 1, true));
+      beamGeo.translate(0, -beamLen / 2, 0);
+      const beams: { pivot: any; mat: any; phase: number }[] = [];
+      for (let i = 0; i < beamCount; i++) {
+        const mat = own(new THREE.MeshBasicMaterial({ color: partyColors[i % partyColors.length], transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        const pivot = new THREE.Group();
+        const cone = new THREE.Mesh(beamGeo, mat);
+        pivot.add(cone);
+        const head = new THREE.Mesh(own(new THREE.SphereGeometry(0.12, 10, 8)), own(new THREE.MeshBasicMaterial({ color: partyColors[i % partyColors.length] })));
+        pivot.add(head);
+        beamGroup.add(pivot);
+        beams.push({ pivot, mat, phase: (i / Math.max(1, beamCount)) * Math.PI * 2 });
+      }
+      const spots: any[] = [];
+      if (pro && !lite) for (let i = 0; i < 2; i++) {
+        const sp = new THREE.SpotLight(partyColors[i], 0, Math.max(W, D), 0.45, 0.6, 1.2);
+        sp.position.set(0, lightTop, 0);
+        scene.add(sp); scene.add(sp.target); spots.push(sp);
+      }
+      const rig = { cx: 0, cz: -D * 0.15, r: 3 };
+      const placeRig = () => {
+        const dance = itemsRef.current.find((it) => it.type === 'dance');
+        if (dance) {
+          const { w, d } = itemSize(dance);
+          rig.cx = ((dance.x - 50) / 100) * W; rig.cz = ((dance.y - 50) / 100) * D; rig.r = Math.max(1.5, Math.min(w, d) / 2);
+        }
+        beams.forEach((b, i) => {
+          const a = b.phase;
+          b.pivot.position.set(rig.cx + Math.cos(a) * (rig.r + 1.2), lightTop, rig.cz + Math.sin(a) * (rig.r + 1.2) * (i % 2 ? 1 : 0.8));
+        });
+      };
+      const MOODS: Record<Mood3D, { hemi: number; amb: number; key: number; env: number; warm: number; glow: number; wash: number; exposure: number; bg: number }> = {
+        day: { hemi: envTexture ? (outdoor ? 0.9 : 1.15) : outdoor ? 1.1 : 1.5, amb: 0.18, key: outdoor ? 1.6 : 2.0, env: 0.45, warm: 0, glow: 1, wash: 0.55, exposure: outdoor ? 0.95 : 1.05, bg: 0x0d0d0f },
+        evening: { hemi: 0.32, amb: 0.06, key: outdoor ? 0.25 : 0.35, env: 0.12, warm: lite ? 34 : 22, glow: 1.8, wash: 0.95, exposure: 1.15, bg: outdoor ? 0x090c16 : 0x0a0a0c },
+        party: { hemi: 0.09, amb: 0.03, key: 0.08, env: 0.05, warm: lite ? 8 : 4, glow: 1.4, wash: 1, exposure: 1.2, bg: outdoor ? 0x07060f : 0x060608 },
+      };
+      const applyMood = (m: Mood3D) => {
+        if (!pro) return;
+        const c = MOODS[m];
+        hemi.intensity = c.hemi; ambient.intensity = c.amb; key.intensity = c.key;
+        if (envTexture) scene.environmentIntensity = c.env;
+        warmLights.forEach((l) => { l.intensity = c.warm; });
+        M.warmGlow.emissiveIntensity = 2.2 * c.glow;
+        M.candle.emissiveIntensity = 0.9 * c.glow;
+        if (M.crystal) M.crystal.emissiveIntensity = 0.7 * c.glow;
+        if (M.ceiling) M.ceiling.emissiveIntensity = m === 'day' ? 1.2 : m === 'evening' ? 2 : 0.8;
+        washMat.opacity = c.wash;
+        if (m !== 'party') washMat.color.set(style.uplight);
+        renderer.toneMappingExposure = c.exposure;
+        scene.background = new THREE.Color(c.bg);
+        fog.color.set(c.bg);
+        beamGroup.visible = m === 'party';
+        spots.forEach((sp) => { sp.intensity = m === 'party' ? 120 : 0; });
+        if (m !== 'party') danceMats.forEach((mat) => { mat.emissive.set('#000000'); mat.emissiveIntensity = 0; });
+      };
+
       rebuild();
+      applyMood(moodRef.current);
 
       // ── Controls ──
       const orbit = new OrbitControls(camera, renderer.domElement);
@@ -756,7 +897,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       orbit.dampingFactor = 0.08;
       orbit.maxDistance = Math.max(W, D) * 3;
       orbit.minDistance = 2;
-      const walk = { active: false, yaw: 0, pitch: 0 };
+      const walk = { active: false, yaw: 0, pitch: 0, height: 1.6, tween: null as null | { t: number; from: { x: number; y: number; z: number; yaw: number; pitch: number }; to: { x: number; y: number; z: number; yaw: number; pitch: number } } };
+      orbit.autoRotateSpeed = 0.7;
       const keys = new Set<string>();
       const typing = (e: KeyboardEvent) => ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName);
       const onKeyDown = (e: KeyboardEvent) => { if (walk.active && !typing(e)) { keys.add(e.code); if (e.code.startsWith('Arrow')) e.preventDefault(); } };
@@ -804,13 +946,117 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         } else {
           camera.fov = camera.aspect < 0.9 ? 70 : 62;
           camera.updateProjectionMatrix();
-          walk.yaw = 0; walk.pitch = -0.06;
+          walk.yaw = 0; walk.pitch = -0.06; walk.height = 1.6; walk.tween = null;
           camera.position.set(0, 1.6, D / 2 - 1.6);
         }
+        orbit.autoRotate = next === '3d' && tourRef.current;
+        const shot = shotRef.current;
+        shotRef.current = null;
+        if (shot) goShot(shot, next === 'walk' ? false : true);
         scaleLabels();
       };
 
+      // ── Pro camera shots ──
+      const worldOf = (item: LayoutItem) => ({ x: ((item.x - 50) / 100) * W, z: ((item.y - 50) / 100) * D });
+      const yawTo = (fx: number, fz: number, tx: number, tz: number) => Math.atan2(-(tx - fx), -(tz - fz));
+      const clampIn = (v: number, half: number) => Math.max(-half + 0.5, Math.min(half - 0.5, v));
+      const shotPose = (shot: Shot3D) => {
+        const list = itemsRef.current;
+        const stage = list.find((it) => it.type === 'stage');
+        const st = stage ? worldOf(stage) : { x: 0, z: -D / 2 + 3 };
+        if (shot === 'stage' && stage) {
+          // From the kosha sofa, at seated eye height on the stage, looking out at the guests.
+          const { d } = itemSize(stage);
+          const r = -(stage.rotation * Math.PI) / 180;
+          const lx = 0, lz = -d / 2 + 1.5;
+          const x = st.x + lx * Math.cos(r) + lz * Math.sin(r);
+          const z = st.z - lx * Math.sin(r) + lz * Math.cos(r);
+          const ax = st.x + Math.sin(r) * 10, az = st.z + Math.cos(r) * 10;
+          return { x: clampIn(x, W / 2), y: 0.6 + 1.25, z: clampIn(z, D / 2), yaw: yawTo(x, z, ax, az), pitch: 0.12 };
+        }
+        if (shot === 'guest') {
+          // From the far side of a mid-room table, seated, facing the stage.
+          const tables = list.filter((it) => it.type === 'table').map((it) => ({ it, p: worldOf(it) }));
+          if (tables.length) {
+            tables.sort((a, b) => Math.hypot(a.p.x - st.x, a.p.z - st.z) - Math.hypot(b.p.x - st.x, b.p.z - st.z));
+            const { it, p } = tables[Math.floor(tables.length * 0.45)];
+            // Sit at the side of the table (not behind the centrepiece), towards the middle of the hall.
+            const dx = p.x - st.x, dz = p.z - st.z, len = Math.hypot(dx, dz) || 1;
+            const off = itemSize(it).w / 2 + 0.6;
+            const side = p.x > 0 ? -1 : 1;
+            const px = (-dz / len) * side, pz = (dx / len) * side;
+            const x = clampIn(p.x + px * off + (dx / len) * 0.3, W / 2), z = clampIn(p.z + pz * off + (dz / len) * 0.3, D / 2);
+            return { x, y: 1.2, z, yaw: yawTo(x, z, st.x, st.z), pitch: -0.03 };
+          }
+        }
+        // Entrance (also the fallback): a step inside the entrance arch, looking at the stage.
+        const ent = list.find((it) => it.type === 'entrance');
+        const e = ent ? worldOf(ent) : { x: 0, z: D / 2 - 1 };
+        const dx = st.x - e.x, dz = st.z - e.z, len = Math.hypot(dx, dz) || 1;
+        const x = clampIn(e.x + (dx / len) * 1.2, W / 2), z = clampIn(e.z + (dz / len) * 1.2, D / 2);
+        return { x, y: 1.65, z, yaw: yawTo(x, z, st.x, st.z), pitch: -0.05 };
+      };
+      const goShot = (shot: Shot3D, instant = false) => {
+        if (shot === 'aerial') {
+          const dist = Math.max(W, D) * (camera.aspect < 0.9 ? 1.25 : 0.78);
+          camera.position.set(-W * 0.38, dist * 0.8, D * 0.58);
+          orbit.target.set(0, 0, -D * 0.06);
+          orbit.update();
+          return;
+        }
+        const to = shotPose(shot);
+        const from = { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: walk.yaw, pitch: walk.pitch };
+        if (instant) { walk.tween = null; Object.assign(walk, { yaw: to.yaw, pitch: to.pitch, height: to.y }); camera.position.set(to.x, to.y, to.z); return; }
+        // Turn the short way round.
+        let dy = to.yaw - from.yaw;
+        while (dy > Math.PI) dy -= Math.PI * 2;
+        while (dy < -Math.PI) dy += Math.PI * 2;
+        walk.tween = { t: 0, from, to: { ...to, yaw: from.yaw + dy } };
+      };
+
+      // ── Pro HD photo: renders at high resolution and adds an ELSARAYA EVENTS caption strip ──
+      const snapshot = async (info: { title: string; detail: string }) => {
+        const r = host.getBoundingClientRect();
+        const targetW = lite ? 1600 : 2560;
+        const ratio = Math.min(3, Math.max(1, targetW / Math.max(1, r.width)));
+        renderer.setPixelRatio(ratio);
+        renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
+        const wasVisible = outline.visible;
+        outline.visible = false;
+        renderer.render(scene, camera);
+        const shotCanvas = document.createElement('canvas');
+        const cw = renderer.domElement.width, chh = renderer.domElement.height;
+        const strip = Math.round(cw * 0.06);
+        shotCanvas.width = cw; shotCanvas.height = chh + strip;
+        const ctx = shotCanvas.getContext('2d')!;
+        ctx.drawImage(renderer.domElement, 0, 0);
+        outline.visible = wasVisible;
+        renderer.setPixelRatio(basePixelRatio);
+        renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
+        const g = ctx.createLinearGradient(0, chh, cw, chh);
+        g.addColorStop(0, '#0D0D0F'); g.addColorStop(1, '#17140F');
+        ctx.fillStyle = g; ctx.fillRect(0, chh, cw, strip);
+        const gold = ctx.createLinearGradient(0, chh, cw, chh);
+        gold.addColorStop(0, '#E9CF94'); gold.addColorStop(0.5, '#C49A52'); gold.addColorStop(1, '#8C6A2E');
+        ctx.fillStyle = gold; ctx.fillRect(0, chh, cw, Math.max(2, strip * 0.04));
+        const pad = strip * 0.45;
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#E9CF94';
+        ctx.font = `600 ${Math.round(strip * 0.34)}px "Readex Pro", "Cairo", sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.fillText('ELSARAYA EVENTS', pad, chh + strip * 0.4);
+        ctx.fillStyle = '#B9B4AA';
+        ctx.font = `400 ${Math.round(strip * 0.2)}px "Readex Pro", "Cairo", sans-serif`;
+        ctx.fillText(info.title, pad, chh + strip * 0.74);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#F4F1EA';
+        ctx.font = `500 ${Math.round(strip * 0.24)}px "Readex Pro", "Cairo", sans-serif`;
+        ctx.fillText(info.detail, cw - pad, chh + strip * 0.5);
+        return await new Promise<Blob | null>((resolve) => shotCanvas.toBlob(resolve, 'image/jpeg', 0.92));
+      };
+
       // ── Picking, dragging and walk-look ──
+      const stopTour = () => stopTourRef.current();
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
       const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -824,6 +1070,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       };
       const onPointerDown = (e: PointerEvent) => {
+        if (tourRef.current) stopTour();
         if (walk.active) {
           looking = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, yaw: walk.yaw, pitch: walk.pitch };
           try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
@@ -941,8 +1188,21 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           camera.position.z += (fz * f + fx * s) * speed;
           camera.position.x = Math.max(-W / 2 + 0.4, Math.min(W / 2 - 0.4, camera.position.x));
           camera.position.z = Math.max(-D / 2 + 0.4, Math.min(D / 2 - 0.4, camera.position.z));
-          camera.position.y = 1.6;
-          look.set(camera.position.x + fx * Math.cos(walk.pitch), 1.6 - Math.sin(walk.pitch), camera.position.z + fz * Math.cos(walk.pitch));
+          if (walk.tween) {
+            // Glide to a camera shot.
+            const tw = walk.tween;
+            tw.t = Math.min(1, tw.t + dt / 1.1);
+            const k = tw.t < 0.5 ? 2 * tw.t * tw.t : 1 - Math.pow(-2 * tw.t + 2, 2) / 2;
+            camera.position.x = tw.from.x + (tw.to.x - tw.from.x) * k;
+            camera.position.z = tw.from.z + (tw.to.z - tw.from.z) * k;
+            walk.height = tw.from.y + (tw.to.y - tw.from.y) * k;
+            walk.yaw = tw.from.yaw + (tw.to.yaw - tw.from.yaw) * k;
+            walk.pitch = tw.from.pitch + (tw.to.pitch - tw.from.pitch) * k;
+            if (tw.t >= 1 || f || s || looking) walk.tween = null;
+          } else if (f || s) walk.height += (1.6 - walk.height) * Math.min(1, dt * 3);
+          camera.position.y = walk.height;
+          const fx2 = -Math.sin(walk.yaw), fz2 = -Math.cos(walk.yaw);
+          look.set(camera.position.x + fx2 * Math.cos(walk.pitch), walk.height - Math.sin(walk.pitch), camera.position.z + fz2 * Math.cos(walk.pitch));
           camera.lookAt(look);
         } else {
           orbit.update();
@@ -953,6 +1213,17 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           wg.group.visible = viewRef.current === 'plan' ? false : walk.active || !outside;
         }
         archGroup.visible = viewRef.current !== 'plan';
+        if (pro && moodRef.current === 'party') {
+          const t = now / 1000;
+          beams.forEach((b, i) => {
+            b.pivot.rotation.x = Math.sin(t * 0.9 + b.phase) * 0.55;
+            b.pivot.rotation.z = Math.cos(t * 0.7 + b.phase * 1.3) * 0.55;
+            b.mat.opacity = 0.2 + 0.1 * (0.5 + 0.5 * Math.sin(t * 3 + i));
+          });
+          washMat.color.setHSL((t * 0.05) % 1, 0.85, 0.6);
+          spots.forEach((sp, i) => { sp.target.position.set(rig.cx + Math.sin(t * 0.8 + i * 2) * rig.r, 0, rig.cz + Math.cos(t * 0.6 + i * 2) * rig.r); });
+          danceMats.forEach((mat, i) => { mat.emissive.setHSL((t * 0.08 + i * 0.2) % 1, 0.8, 0.5); mat.emissiveIntensity = 0.35 + 0.2 * Math.sin(t * 4); });
+        }
         const selectedGroup = selectedIdRef.current ? itemRoot.children.find((child: any) => child.userData?.itemId === selectedIdRef.current) : null;
         if (selectedGroup && !walk.active) {
           const fp = selectedGroup.userData.footprint || { w: 1, d: 1 };
@@ -978,7 +1249,11 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       };
       raf = requestAnimationFrame(animate);
 
-      engineRef.current = { rebuild, applyView, applyMeasure };
+      engineRef.current = {
+        rebuild, applyView, applyMeasure, applyMood, snapshot,
+        shot: (shot: Shot3D) => goShot(shot),
+        setTour: (on: boolean) => { orbit.autoRotate = on && viewRef.current === '3d'; },
+      };
       setReady(true);
 
       cleanup = () => {
@@ -994,6 +1269,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         orbit.dispose();
         disposeObject(scene);
         disposables.forEach((d) => d.dispose?.());
+        envTexture?.dispose?.();
         renderer.dispose();
         engineRef.current = null;
       };
@@ -1009,6 +1285,48 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   useEffect(() => { engineRef.current?.rebuild?.(); }, [items]);
   useEffect(() => { engineRef.current?.applyView?.(view); onViewChange?.(view); }, [view, ready]);
   useEffect(() => { engineRef.current?.applyMeasure?.(); }, [measure, ready]);
+  useEffect(() => { engineRef.current?.applyMood?.(mood); try { window.localStorage.setItem(MOOD_KEY, mood); } catch {} }, [mood, ready]);
+  useEffect(() => { engineRef.current?.setTour?.(tour); }, [tour, ready, view]);
+  stopTourRef.current = () => setTour(false);
+  useEffect(() => { if (!toast) return; const t = window.setTimeout(() => setToast(''), 2600); return () => window.clearTimeout(t); }, [toast]);
+
+  const pro = tier === 'pro';
+  const tableCount = items.filter((item) => item.type === 'table').length;
+  const seatCount = items.reduce((sum, item) => sum + (item.type === 'table' ? item.seats || 0 : item.type === 'chairs' ? 1 : 0), 0);
+  const goShot = (shot: Shot3D) => {
+    const target: View3D = shot === 'aerial' ? '3d' : 'walk';
+    if (shot !== 'aerial') setTour(false);
+    shotRef.current = shot;
+    if (view === target) { shotRef.current = null; engineRef.current?.shot?.(shot); } else setView(target);
+  };
+  const toggleTour = () => {
+    const next = !tour;
+    setTour(next);
+    if (next && view !== '3d') setView('3d');
+  };
+  const savePhoto = async () => {
+    if (!engineRef.current?.snapshot || photoBusy || watermark) return;
+    setPhotoBusy(true);
+    try {
+      const detail = `${formatM(width)} × ${formatM(depth)} m · ${tableCount} tables · ${seatCount} seats`;
+      const blob: Blob | null = await engineRef.current.snapshot({ title: caption || '3D event design', detail });
+      if (!blob) throw new Error('no image');
+      const name = `ELSARAYA-3D-${new Date().toISOString().slice(0, 10)}.jpg`;
+      const file = new File([blob], name, { type: 'image/jpeg' });
+      const nav = navigator as Navigator & { canShare?: (data: { files: File[] }) => boolean };
+      if ((window.matchMedia?.('(pointer: coarse)').matches) && nav.canShare?.({ files: [file] })) {
+        // Phones and tablets: open the share sheet (WhatsApp, Gallery…).
+        try { await nav.share({ files: [file], title: 'ELSARAYA EVENTS' }); setToast(isAr ? 'تمت المشاركة' : 'Photo shared'); return; } catch (err) { if ((err as Error)?.name === 'AbortError') return; }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setToast(isAr ? 'تم حفظ الصورة بدقة عالية' : 'HD photo saved');
+    } catch {
+      setToast(isAr ? 'تعذّر حفظ الصورة' : 'The photo could not be saved');
+    } finally { setPhotoBusy(false); }
+  };
 
   const holdMove = (forward: number, right: number) => ({
     onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); walkInput.current = { forward, right }; },
@@ -1016,6 +1334,17 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
     onPointerLeave: () => { walkInput.current = { forward: 0, right: 0 }; },
     onPointerCancel: () => { walkInput.current = { forward: 0, right: 0 }; },
   });
+  const moodButtons: { id: Mood3D; icon: typeof Box; en: string; ar: string }[] = [
+    { id: 'day', icon: Sun, en: 'Day', ar: 'نهار' },
+    { id: 'evening', icon: Moon, en: 'Evening', ar: 'مساء' },
+    { id: 'party', icon: PartyPopper, en: 'Party', ar: 'حفلة' },
+  ];
+  const shotButtons: { id: Shot3D; icon: typeof Box; en: string; ar: string }[] = [
+    { id: 'entrance', icon: DoorOpen, en: 'Entrance', ar: 'المدخل' },
+    { id: 'stage', icon: Crown, en: 'Kosha', ar: 'الكوشة' },
+    { id: 'guest', icon: Armchair, en: 'Guest seat', ar: 'مقعد ضيف' },
+    { id: 'aerial', icon: Eye, en: 'Aerial', ar: 'من أعلى' },
+  ];
   const viewButtons: { id: View3D; icon: typeof Box; en: string; ar: string }[] = [
     { id: 'plan', icon: LayoutGrid, en: 'Plan', ar: 'مسقط' },
     { id: '3d', icon: Box, en: '3D', ar: '3D' },
@@ -1029,7 +1358,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   const unit = isAr ? 'م' : 'm';
 
   return (
-    <div className="relative h-full min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="@container relative h-full min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950" dir={isAr ? 'rtl' : 'ltr'}>
       <div ref={hostRef} data-rotation-ui className="absolute inset-0" />
       {watermark && <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] overflow-hidden">
         {/* Dense tiled text so the whole 3D view is covered and no clean screenshot is possible. */}
@@ -1042,7 +1371,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           ))}
         </div>
         </div>
-        <div className="absolute inset-x-3 top-16 flex justify-center">
+        <div className="absolute inset-x-3 top-28 flex justify-center">
           <div className="max-w-md rounded-xl border border-amber-400/40 bg-[#0D0D0F]/85 px-4 py-2.5 text-center backdrop-blur">
             <div className="text-[11px] font-black tracking-widest text-amber-200">{isAr ? 'معاينة فقط · الاشتراك غير مفعّل' : 'PREVIEW ONLY · SUBSCRIPTION NOT ACTIVE'}</div>
             <div className="mt-1 text-[10px] leading-4 text-slate-300">{isAr ? 'هذا العرض غير قابل للاستخدام مع العملاء بدون اشتراك 3D Studio Pro فعّال. الحفظ والعرض للعميل متوقفان.' : 'This view can’t be used with clients without an active 3D Studio Pro subscription. Saving and client presentation are locked.'}</div>
@@ -1065,11 +1394,33 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           {tier === 'pro' && <button type="button" onClick={() => setMeasure((m) => !m)} aria-pressed={measure} title={isAr ? 'المقاسات والأسماء' : 'Measurements & labels'} className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold ${measure ? 'bg-amber-400/15 text-amber-200' : 'text-slate-400 hover:bg-slate-800'}`}><Ruler className="h-3.5 w-3.5" /><span className="hidden sm:inline">{isAr ? 'المقاسات' : 'Measurements'}</span></button>}
           <button type="button" onClick={() => engineRef.current?.applyView?.(view)} title={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} aria-label={isAr ? 'إعادة ضبط الكاميرا' : 'Reset camera'} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-200 hover:bg-slate-800"><Scan className="h-4 w-4" /></button>
         </div>
+        {pro && <div className="flex w-full basis-full justify-start">
+        {/* Pro studio bar: lighting scenes, camera shots, cinematic tour and HD photo. Scrolls sideways on phones. */}
+        <div className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-xl border border-amber-400/30 bg-[#0D0D0F]/85 p-1 backdrop-blur [scrollbar-width:none]" role="toolbar" aria-label={isAr ? 'أدوات برو' : 'Pro tools'}>
+          <div className="flex shrink-0 items-center gap-0.5" role="group" aria-label={isAr ? 'الإضاءة' : 'Lighting'}>
+            {moodButtons.map(({ id, icon: Icon, en, ar }) => (
+              <button key={id} type="button" onClick={() => setMood(id)} aria-pressed={mood === id} title={isAr ? ar : en} className={`flex min-h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-[11px] font-bold ${mood === id ? 'bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] text-[#0D0D0F]' : 'text-slate-200 hover:bg-slate-800'}`}><Icon className="h-3.5 w-3.5" /><span className={mood === id ? '' : 'hidden @lg:inline'}>{isAr ? ar : en}</span></button>
+            ))}
+          </div>
+          <span className="mx-0.5 h-5 w-px shrink-0 bg-slate-700" aria-hidden="true" />
+          <div className="flex shrink-0 items-center gap-0.5" role="group" aria-label={isAr ? 'لقطات الكاميرا' : 'Camera shots'}>
+            {shotButtons.map(({ id, icon: Icon, en, ar }) => (
+              <button key={id} type="button" onClick={() => goShot(id)} title={isAr ? `لقطة: ${ar}` : `Shot: ${en}`} aria-label={isAr ? `لقطة: ${ar}` : `Camera shot: ${en}`} className="flex min-h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-slate-200 hover:bg-slate-800"><Icon className="h-3.5 w-3.5 text-amber-200" /><span className="hidden @4xl:inline">{isAr ? ar : en}</span></button>
+            ))}
+          </div>
+          <span className="mx-0.5 h-5 w-px shrink-0 bg-slate-700" aria-hidden="true" />
+          <button type="button" onClick={toggleTour} aria-pressed={tour} title={isAr ? 'جولة سينمائية تلقائية' : 'Cinematic auto tour'} className={`flex min-h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-[11px] font-bold ${tour ? 'bg-amber-400/20 text-amber-200' : 'text-slate-200 hover:bg-slate-800'}`}><Clapperboard className="h-3.5 w-3.5" /><span className="hidden @md:inline">{isAr ? 'جولة' : 'Tour'}</span></button>
+          <button type="button" onClick={savePhoto} disabled={!ready || photoBusy || Boolean(watermark)} title={watermark ? (isAr ? 'حفظ الصور يتطلب اشتراك فعّال' : 'HD photos need an active subscription') : (isAr ? 'حفظ صورة بدقة عالية لإرسالها للعميل' : 'Save an HD photo to send to the client')} className="flex min-h-8 shrink-0 items-center gap-1 rounded-lg bg-amber-400 px-2.5 text-[11px] font-black text-slate-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"><Camera className="h-3.5 w-3.5" />{photoBusy ? '…' : (isAr ? 'صورة HD' : 'HD photo')}</button>
+        </div>
+      </div>}
       </div>
+
+      {toast && <div role="status" className="pointer-events-none absolute inset-x-0 top-24 z-30 flex justify-center"><span className="rounded-full border border-amber-400/50 bg-[#0D0D0F]/95 px-4 py-1.5 text-xs font-bold text-amber-100 shadow-xl">{toast}</span></div>}
 
       <div className="pointer-events-none absolute bottom-2 start-2 z-10 max-w-[calc(100%-1rem)] space-y-1">
         {tier === 'pro' && <div className="w-fit rounded-lg border border-slate-700 bg-slate-950/85 px-2.5 py-1.5 text-[10px] font-bold text-amber-200" dir="auto">
           {formatM(width)} × {formatM(depth)} {unit}{!outdoor && ceilingM ? ` · ${isAr ? 'الارتفاع' : 'ceiling'} ${formatM(ceilingM)} ${unit}` : ` · ${isAr ? 'مكان مفتوح' : 'open air'}`} · {formatM(width * depth)} {isAr ? 'م²' : 'm²'}
+          {tableCount > 0 && <span className="hidden text-slate-300 @md:inline"> · {tableCount} {isAr ? 'طاولة' : 'tables'} · {seatCount} {isAr ? 'مقعد' : 'seats'}</span>}
         </div>}
         <div className="w-fit rounded-lg bg-slate-950/70 px-2.5 py-1 text-[10px] text-slate-300">{hint}</div>
       </div>

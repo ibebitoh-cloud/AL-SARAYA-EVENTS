@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Clock, Footprints, KeyRound, Lock, Palette, Presentation, Sparkles, X } from 'lucide-react';
+import { Box, Camera, Clapperboard, Clock, Footprints, KeyRound, Lock, Moon, Palette, Presentation, Sparkles, X } from 'lucide-react';
 import type { Hall, Language } from '../types/venueSystem';
 import { EventLayoutDesigner } from './EventLayoutDesigner';
 import { BrandLogo } from './BrandLogo';
@@ -76,6 +76,10 @@ export function Studio3DProView({ halls, onUpdateHall }: Props) {
     { icon: Footprints, en: 'Walk-through at eye level, on phones too', ar: 'تجوّل داخل القاعة بمستوى نظر الضيف، حتى على الموبايل' },
     { icon: Box, en: 'Rich detail: place settings, centrepieces, kosha flowers, chandeliers and lighting', ar: 'تفاصيل غنية: أطباق وكؤوس، سنترات، ورد الكوشة، نجف وإضاءة' },
     { icon: Presentation, en: 'Client presentation view to win the booking', ar: 'عرض احترافي للعميل لإقناعه بالحجز' },
+    { icon: Moon, en: 'Lighting scenes: Day, Evening glow and Party beams on the dance floor', ar: 'مشاهد إضاءة: نهار، مساء، وحفلة بإضاءة ملونة على منصة الرقص' },
+    { icon: Clapperboard, en: 'One-tap camera shots (entrance, kosha, guest seat, aerial) and a cinematic auto tour', ar: 'لقطات كاميرا بلمسة (المدخل، الكوشة، مقعد ضيف، من أعلى) وجولة سينمائية تلقائية' },
+    { icon: Camera, en: 'HD photos with the ELSARAYA EVENTS caption, ready to send on WhatsApp', ar: 'صور بدقة عالية باسم السرايا جاهزة للإرسال على واتساب' },
+    { icon: Sparkles, en: 'Real reflections on gold, glass and marble, and a coffered ceiling in the walk-through', ar: 'انعكاسات حقيقية على الذهب والزجاج والرخام، وسقف بإضاءة في التجوّل' },
   ];
   const ended = demo.used > 0;
   return (

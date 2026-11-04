@@ -460,6 +460,8 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     return <span className={`absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap rounded-[3px] border px-0.5 text-[9px] font-bold leading-none ${tone[item.type] || 'border-slate-300/50 bg-slate-300/10 text-slate-100'}`} style={pattern}><span className="truncate" style={{ transform: `rotate(${-item.rotation}deg)` }}>{label}</span></span>;
   };
 
+  // Bottom line of a Pro HD photo: the project name, or the hall and the event.
+  const photoCaption = [projectName.trim() || (activeHall ? activeHall.nameEn || activeHall.name : ''), EVENT_NAMES[eventKind][0], `${guests} guests`, pro ? decorStyle(decor).en : ''].filter(Boolean).join(' · ');
   const title = pro ? (isAr ? 'استوديو 3D برو' : '3D Studio Pro') : (isAr ? 'مصمم مخطط المناسبة' : 'Event Layout Designer');
   const subtitle = isAr ? 'خطط أي مناسبة في قاعة السرايا أو في موقع العميل خلال دقائق.' : 'Plan any event at an ELSARAYA venue or at the client’s location in minutes.';
 
@@ -504,7 +506,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </div>
           <div className="p-2 sm:p-4">
             <div className="mx-auto h-[70vh] min-h-[440px] max-w-6xl">
-              <EventLayout3D items={items} width={width} depth={depth} language={language} hall={scene3D} decor={decor} tier={edition} mode="overview" readOnly watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined} />
+              <EventLayout3D items={items} width={width} depth={depth} language={language} hall={scene3D} decor={decor} tier={edition} caption={photoCaption} mode="overview" readOnly watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined} />
             </div>
             <p className="mx-auto mt-2 max-w-6xl px-1 text-[11px] leading-5 text-slate-500">{isAr ? 'تصور توضيحي بالمقاسات الحقيقية للقاعة والأثاث؛ الألوان والزهور النهائية يتم اختيارها مع فريق السرايا.' : 'Illustration at the real size of the venue and furniture; final colours and flowers are chosen with the ELSARAYA team.'}</p>
           </div>
@@ -609,6 +611,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   hall={scene3D}
                   decor={decor}
                   tier={edition}
+                  caption={photoCaption}
                   watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined}
                   mode="overview"
                   selectedId={selectedId}
