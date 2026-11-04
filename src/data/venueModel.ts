@@ -90,6 +90,19 @@ export const ITEM_SPECS: Record<string, ItemSpec> = {
   lounge: { type: 'lounge', labelEn: 'Lounge', labelAr: 'منطقة جلوس', widthM: 3.2, depthM: 2.6, heightM: 0.8, resizable: true },
   led_wall: { type: 'led_wall', labelEn: 'LED Wall', labelAr: 'جدار LED', widthM: 6, depthM: 0.4, heightM: 3.4, resizable: true },
   truss: { type: 'truss', labelEn: 'Lighting Truss', labelAr: 'جسر إضاءة', widthM: 10, depthM: 0.4, heightM: 5, resizable: true },
+  // 3D Studio Pro objects
+  cake: { type: 'cake', labelEn: 'Wedding Cake', labelAr: 'تورتة الفرح', widthM: 1.2, depthM: 1.2, heightM: 1.9, resizable: false },
+  dj: { type: 'dj', labelEn: 'DJ Booth', labelAr: 'ركن الدي جي', widthM: 2.4, depthM: 1, heightM: 1.2, resizable: true },
+  photo_booth: { type: 'photo_booth', labelEn: 'Photo Booth Wall', labelAr: 'ركن التصوير', widthM: 3, depthM: 1.2, heightM: 2.6, resizable: true },
+  flower_arch: { type: 'flower_arch', labelEn: 'Floral Ring Arch', labelAr: 'قوس ورد دائري', widthM: 2.6, depthM: 0.8, heightM: 2.8, resizable: false },
+  aisle: { type: 'aisle', labelEn: 'Bridal Aisle', labelAr: 'ممر الزفة', widthM: 1.6, depthM: 10, heightM: 1.2, resizable: true },
+  cocktail: { type: 'cocktail', labelEn: 'Cocktail Table', labelAr: 'طاولة كوكتيل عالية', widthM: 0.7, depthM: 0.7, heightM: 1.1, resizable: false },
+  champagne: { type: 'champagne', labelEn: 'Champagne Tower', labelAr: 'برج كاسات', widthM: 1, depthM: 1, heightM: 1.5, resizable: false },
+  sweets: { type: 'sweets', labelEn: 'Sweets Table', labelAr: 'طاولة الحلويات', widthM: 3, depthM: 0.8, heightM: 1.2, resizable: true },
+  sparklers: { type: 'sparklers', labelEn: 'Cold Spark Machine', labelAr: 'ماكينة شرار بارد', widthM: 0.4, depthM: 0.4, heightM: 0.3, resizable: false },
+  love_letters: { type: 'love_letters', labelEn: 'LOVE Light Letters', labelAr: 'حروف LOVE مضيئة', widthM: 3, depthM: 0.3, heightM: 1.2, resizable: false },
+  ceiling_florals: { type: 'ceiling_florals', labelEn: 'Hanging Florals', labelAr: 'ورد معلّق بالسقف', widthM: 2.4, depthM: 2.4, heightM: 1.2, resizable: true },
+  gift_table: { type: 'gift_table', labelEn: 'Gift & Guestbook Table', labelAr: 'طاولة الهدايا ودفتر الضيوف', widthM: 1.8, depthM: 0.7, heightM: 0.76, resizable: true },
 };
 
 export const itemSpec = (type: string): ItemSpec => ITEM_SPECS[type] || { type, labelEn: type, labelAr: type, widthM: 2.4, depthM: 0.9, heightM: 1, resizable: true };
