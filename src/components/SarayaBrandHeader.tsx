@@ -352,37 +352,6 @@ export function SarayaBrandHeader({
                   </button>
                 </div>
 
-                {/* Prominent Admin Portal Card at Top of Drawer */}
-                <div className="mt-5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.click(600);
-                      setMobileMenuOpen(false);
-                      onOpenManagementPortal();
-                    }}
-                    className={`flex items-center justify-between w-full rounded-2xl p-3.5 text-start transition-all shadow-sm ${
-                      isDark
-                        ? 'border border-amber-500/35 bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 text-slate-100 hover:border-amber-400/60'
-                        : 'border border-amber-900/20 bg-gradient-to-r from-amber-100/70 via-amber-50 to-white text-slate-900 hover:border-amber-800/40'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-md">
-                        <Shield className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <div className="text-sm font-bold text-amber-500">
-                          {isAr ? 'دخول الإدارة' : 'Admin Portal'}
-                        </div>
-                        <div className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                          {isAr ? 'لوحة تحكم القاعات والموظفين' : 'Halls, Bookings & Staff'}
-                        </div>
-                      </div>
-                    </div>
-                    <Arrow className="h-4 w-4 text-amber-500 shrink-0" />
-                  </button>
-                </div>
 
                 {/* Navigation Items */}
                 <nav className="mt-5 flex flex-col gap-1.5">
@@ -482,7 +451,7 @@ export function SarayaBrandHeader({
                   </button>
                 </div>
 
-                {/* Social Channels & Staff Portal */}
+                {/* Social Channels */}
                 <div className="flex items-center justify-between text-xs pt-2 text-slate-400">
                   <div className="flex items-center gap-3">
                     <a
@@ -505,17 +474,6 @@ export function SarayaBrandHeader({
                     </a>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      onOpenManagementPortal();
-                    }}
-                    className="flex items-center gap-1.5 hover:text-amber-400 font-semibold"
-                  >
-                    <Shield className="h-3.5 w-3.5 text-amber-500" />
-                    <span>{isAr ? 'دخول الإدارة' : 'Admin Portal'}</span>
-                  </button>
                 </div>
               </div>
             </motion.div>
