@@ -27,22 +27,16 @@ import {
   Utensils,
   Users,
   X,
-  CakeSlice,
-  Disc3,
-  Camera,
-  Flower2,
-  Flower,
-  Footprints,
-  Wine,
-  GlassWater,
-  Cookie,
-  Flame,
-  Heart,
-  Gift,
+  Lock,
+  Search,
+  Minus,
+  SquareDashedMousePointer,
+  ListChecks,
 } from 'lucide-react';
 import { Hall, Hall3DProfile, HallDimensions, HallLayoutItem, Language, LocationId, SavedHallLayout } from '../types/venueSystem';
 import { CUSTOM_DECOR_FIELDS, DECOR_STYLES, TABLE_PRESETS, encodeCustomDecor, isCustomDecor, autoLayout, chairPositions, decorStyle, defaultDecorFor, formatM, hallDimensions, itemSize, itemSpec, seatedCapacity, tableFootprint } from '../data/venueModel';
 import { EventLayout3D } from './EventLayout3D';
+import { ITEM_CATALOG, ITEM_CATEGORIES, ItemCategory, catalogItem } from '../data/itemCatalog';
 import { LOCATIONS, hallLocation } from '../data/locations';
 import { BrandLogo } from './BrandLogo';
 
@@ -52,38 +46,8 @@ type LocationKind = 'saraya' | 'client' | 'custom';
 
 type LayoutItem = HallLayoutItem;
 
-const ITEM_LIBRARY = [
-  { type: 'table', labelEn: 'Round Table', labelAr: 'طاولة دائرية', icon: Users },
-  { type: 'chairs', labelEn: 'Chairs', labelAr: 'كراسي', icon: Armchair },
-  { type: 'stage', labelEn: 'Stage', labelAr: 'منصة', icon: Presentation },
-  { type: 'screen', labelEn: 'LED Screen', labelAr: 'شاشة LED', icon: Monitor },
-  { type: 'podium', labelEn: 'Podium', labelAr: 'منصة خطاب', icon: ScreenShare },
-  { type: 'dance', labelEn: 'Dance Floor', labelAr: 'منصة رقص', icon: Move3d },
-  { type: 'buffet', labelEn: 'Buffet', labelAr: 'بوفيه', icon: Sparkles },
-  { type: 'registration', labelEn: 'Registration', labelAr: 'تسجيل', icon: DoorOpen },
-  { type: 'entrance', labelEn: 'Entrance Portal', labelAr: 'بوابة دخول كبيرة', icon: DoorOpen },
-  { type: 'exit', labelEn: 'Exit Portal', labelAr: 'بوابة خروج كبيرة', icon: DoorOpen },
-  { type: 'bar', labelEn: 'Service Bar', labelAr: 'بار ضيافة كبير', icon: Utensils },
-  { type: 'lounge', labelEn: 'Lounge Zone', labelAr: 'منطقة جلوس كبيرة', icon: Users },
-  { type: 'led_wall', labelEn: 'Large LED Wall', labelAr: 'جدار شاشة LED كبير', icon: Monitor },
-  { type: 'truss', labelEn: 'Lighting Truss', labelAr: 'جسر إضاءة كبير', icon: Sparkles },
-] as const;
-
-/** Extra objects that only 3D Studio Pro offers (drawn in full detail in the Pro 3D view). */
-const PRO_ITEM_LIBRARY = [
-  { type: 'cake', labelEn: 'Wedding Cake', labelAr: 'تورتة الفرح', icon: CakeSlice },
-  { type: 'dj', labelEn: 'DJ Booth', labelAr: 'ركن الدي جي', icon: Disc3 },
-  { type: 'photo_booth', labelEn: 'Photo Booth Wall', labelAr: 'ركن التصوير', icon: Camera },
-  { type: 'flower_arch', labelEn: 'Floral Ring Arch', labelAr: 'قوس ورد دائري', icon: Flower2 },
-  { type: 'aisle', labelEn: 'Bridal Aisle', labelAr: 'ممر الزفة', icon: Footprints },
-  { type: 'cocktail', labelEn: 'Cocktail Table', labelAr: 'طاولة كوكتيل عالية', icon: Wine },
-  { type: 'champagne', labelEn: 'Champagne Tower', labelAr: 'برج كاسات', icon: GlassWater },
-  { type: 'sweets', labelEn: 'Sweets Table', labelAr: 'طاولة الحلويات', icon: Cookie },
-  { type: 'sparklers', labelEn: 'Cold Spark Machine', labelAr: 'ماكينة شرار بارد', icon: Flame },
-  { type: 'love_letters', labelEn: 'LOVE Light Letters', labelAr: 'حروف LOVE مضيئة', icon: Heart },
-  { type: 'ceiling_florals', labelEn: 'Hanging Florals', labelAr: 'ورد معلّق بالسقف', icon: Flower },
-  { type: 'gift_table', labelEn: 'Gift & Guestbook Table', labelAr: 'طاولة الهدايا ودفتر الضيوف', icon: Gift },
-] as const;
+/** Smallest gap left between copies when several of one item are added at once. */
+const BULK_GAP_M = 0.6;
 
 // Ready-made table sets (table + chairs) with real sizes, added in bulk from the designer.
 const TABLE_SETS = TABLE_PRESETS;
@@ -151,7 +115,21 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const dimsRef = useRef({ width, depth });
   dimsRef.current = { width, depth };
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Selection: one item, or many for bulk move / rotate / duplicate / delete. The last one picked is the "primary".
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selectedId = selectedIds.length ? selectedIds[selectedIds.length - 1] : null;
+  const setSelectedId = (id: string | null) => setSelectedIds(id ? [id] : []);
+  const toggleSelected = (id: string) => setSelectedIds((prev) => prev.includes(id) ? prev.filter((entry) => entry !== id) : [...prev, id]);
+  const selectedIdsRef = useRef(selectedIds);
+  selectedIdsRef.current = selectedIds;
+  const bulk = selectedIds.length > 1;
+  const [multiMode, setMultiMode] = useState(false);
+  const multiModeRef = useRef(multiMode);
+  multiModeRef.current = multiMode;
+  const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const marqueeRef = useRef<{ pointerId: number; x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const dialRef = useRef<{ id: string; pointerId: number; startClientX: number; startRotation: number } | null>(null);
+  const itemsRef = useRef<LayoutItem[]>([]);
   const [rotationMode, setRotationMode] = useState(false);
   const rotationModeRef = useRef(rotationMode);
   rotationModeRef.current = rotationMode;
@@ -165,8 +143,13 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   });
   const [autoBuilderOpen, setAutoBuilderOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [addQuery, setAddQuery] = useState('');
+  const [addCat, setAddCat] = useState<ItemCategory | 'all' | 'pro'>('all');
+  const [addQty, setAddQty] = useState(1);
+  const [addedFlash, setAddedFlash] = useState('');
+  useEffect(() => { if (!addedFlash) return; const t = window.setTimeout(() => setAddedFlash(''), 1800); return () => window.clearTimeout(t); }, [addedFlash]);
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number } | null>(null);
+  const dragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; startClientX: number; startClientY: number; startX: number; startY: number; x: number; y: number; others: { id: string; el: HTMLElement; startX: number; startY: number; x: number; y: number }[] } | null>(null);
   const rotationDragRef = useRef<{ id: string; el: HTMLButtonElement; pointerId: number; centerX: number; centerY: number; startAngle: number; startRotation: number; rotation: number } | null>(null);
 
   useEffect(() => {
@@ -175,6 +158,7 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     } catch {}
   }, [width, depth, items, projectName]);
 
+  itemsRef.current = items;
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const eventName = EVENT_NAMES[eventKind][isAr ? 1 : 0];
 
@@ -195,21 +179,28 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   const undo = () => setHistory((stack) => { if (!stack.length) return stack; const previous = stack[stack.length - 1]; setFuture((redoStack) => [items, ...redoStack]); setItems(previous); setSaved(false); return stack.slice(0, -1); });
   const redo = () => setFuture((stack) => { if (!stack.length) return stack; const next = stack[0]; setHistory((undoStack) => [...undoStack, items]); setItems(next); setSaved(false); return stack.slice(1); });
 
-  const addItem = (type: string) => {
-    const source = [...ITEM_LIBRARY, ...(pro ? PRO_ITEM_LIBRARY : [])].find((item) => item.type === type);
-    if (!source) return;
-    const item: LayoutItem = {
-      id: `${type}-${Date.now()}`,
-      type,
-      labelEn: source.labelEn,
-      labelAr: source.labelAr,
-      x: 50,
-      y: 45,
-      rotation: 0,
-      ...(type === 'table' ? { seats: 10, shape: 'round' as const, widthM: 1.8, depthM: 1.8 } : {}),
-    };
-    commitItems((prev) => [...prev, item]);
-    setSelectedId(item.id);
+  // Adds `qty` copies of an item in a neat grid around the middle of the hall, spaced by the item's real size.
+  const addItem = (type: string, qty = 1) => {
+    const source = catalogItem(type);
+    if (!source || (source.pro && !pro) || qty < 1) return;
+    const base = { type, labelEn: source.labelEn, labelAr: source.labelAr, rotation: 0, ...(type === 'table' ? { seats: 10, shape: 'round' as const, widthM: 1.8, depthM: 1.8 } : {}) };
+    const fp = type === 'table' ? tableFootprint({ type: 'table', seats: 10, shape: 'round', widthM: 1.8, depthM: 1.8 }) : itemSize({ type });
+    const gap = Math.min(BULK_GAP_M, Math.max(0.15, Math.max(fp.w, fp.d) * 0.3));
+    const stepX = fp.w + gap;
+    const stepY = fp.d + gap;
+    const cols = Math.max(1, Math.min(qty, Math.floor((width * 0.85) / stepX) || 1));
+    const rows = Math.ceil(qty / cols);
+    const stamp = Date.now();
+    const added: LayoutItem[] = Array.from({ length: qty }, (_, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const xM = (col - (cols - 1) / 2) * stepX;
+      const yM = (row - (rows - 1) / 2) * stepY - depth * 0.05;
+      return { ...base, id: `${type}-${stamp}-${i}`, x: Math.max(3, Math.min(97, (xM / width + 0.5) * 100)), y: Math.max(3, Math.min(97, (yM / depth + 0.5) * 100)) };
+    });
+    commitItems((prev) => [...prev, ...added]);
+    setSelectedIds(added.map((item) => item.id));
+    setAddedFlash(`+${qty} ${isAr ? source.labelAr : source.labelEn}`);
     setSaved(false);
   };
 
@@ -257,15 +248,17 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     setSaved(false);
   };
 
+  // Rotates the item (or the whole selection when the item is part of it). The item stays selected so it can be turned again.
   const rotateItem = (id: string, delta: number) => {
-    commitItems((prev) => prev.map((item) => item.id === id ? { ...item, rotation: item.rotation + delta } : item));
-    setSelectedId(null);
-    setRotationMode(false);
+    const ids = selectedIdsRef.current.includes(id) ? selectedIdsRef.current : [id];
+    commitItems((prev) => prev.map((item) => ids.includes(item.id) ? { ...item, rotation: Math.round(item.rotation + delta) } : item));
   };
+  const rotateSelection = (delta: number) => { const id = selectedIdsRef.current[selectedIdsRef.current.length - 1]; if (id) rotateItem(id, delta); };
 
   const nudge = (dx: number, dy: number) => {
-    if (!selected) return;
-    updateSelected({ x: Math.max(5, Math.min(95, selected.x + dx)), y: Math.max(5, Math.min(95, selected.y + dy)) });
+    const ids = selectedIdsRef.current;
+    if (!ids.length) return;
+    commitItems((prev) => prev.map((item) => ids.includes(item.id) ? { ...item, x: Math.max(2, Math.min(98, item.x + dx)), y: Math.max(2, Math.min(98, item.y + dy)) } : item));
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>, item: LayoutItem) => {
@@ -275,8 +268,18 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-    setSelectedId(item.id);
-    if (rotationModeRef.current) {
+    // Select mode (or Shift / Ctrl) adds or removes items; dragging any selected item moves the whole selection.
+    const current = selectedIdsRef.current;
+    const wasSelected = current.includes(item.id);
+    const additive = multiModeRef.current || event.shiftKey || event.ctrlKey || event.metaKey;
+    let groupIds: string[];
+    if (additive) {
+      toggleSelected(item.id);
+      if (wasSelected) return;
+      groupIds = [...current, item.id];
+    } else if (wasSelected && current.length > 1) groupIds = current;
+    else { setSelectedId(item.id); groupIds = [item.id]; }
+    if (rotationModeRef.current && groupIds.length === 1) {
       const rect = event.currentTarget.getBoundingClientRect();
       rotationDragRef.current = {
         id: item.id,
@@ -302,6 +305,11 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       startY: item.y,
       x: item.x,
       y: item.y,
+      others: groupIds.filter((id) => id !== item.id).map((id) => {
+        const other = itemsRef.current.find((entry) => entry.id === id);
+        const el = canvas.querySelector<HTMLElement>(`[data-item-id="${id}"]`);
+        return other && el ? { id, el, startX: other.x, startY: other.y, x: other.x, y: other.y } : null;
+      }).filter(Boolean) as { id: string; el: HTMLElement; startX: number; startY: number; x: number; y: number }[],
     };
 
     event.currentTarget.style.transition = 'none';
@@ -310,6 +318,22 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   const updateDragFromPointer = (clientX: number, clientY: number, pointerId: number) => {
+    const dial = dialRef.current;
+    if (dial && dial.pointerId === pointerId) {
+      // Rotation dial: drag sideways to turn, snapping every 5°.
+      const rotation = Math.round((dial.startRotation + (clientX - dial.startClientX) * 0.75) / 5) * 5;
+      setItems((prev) => prev.map((item) => item.id === dial.id ? { ...item, rotation } : item));
+      return;
+    }
+    const box = marqueeRef.current;
+    if (box && box.pointerId === pointerId) {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      box.x1 = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+      box.y1 = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+      setMarquee({ x0: box.x0, y0: box.y0, x1: box.x1, y1: box.y1 });
+      return;
+    }
     const rotating = rotationDragRef.current;
     if (rotating && rotating.pointerId === pointerId) {
       const angle = Math.atan2(clientY - rotating.centerY, clientX - rotating.centerX);
@@ -338,9 +362,29 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     // so releasing it does not cause a second snap from a pixel transform.
     drag.el.style.left = `${drag.x}%`;
     drag.el.style.top = `${drag.y}%`;
+    for (const other of drag.others) {
+      other.x = Math.max(2, Math.min(98, other.startX + drag.x - drag.startX));
+      other.y = Math.max(2, Math.min(98, other.startY + drag.y - drag.startY));
+      other.el.style.left = `${other.x}%`;
+      other.el.style.top = `${other.y}%`;
+    }
   };
 
   const finishDrag = (clientX: number, clientY: number, pointerId: number) => {
+    const dial = dialRef.current;
+    if (dial && dial.pointerId === pointerId) { dialRef.current = null; setSaved(false); return; }
+    const box = marqueeRef.current;
+    if (box && box.pointerId === pointerId) {
+      updateDragFromPointer(clientX, clientY, pointerId);
+      marqueeRef.current = null;
+      setMarquee(null);
+      const [x0, x1] = [Math.min(box.x0, box.x1), Math.max(box.x0, box.x1)];
+      const [y0, y1] = [Math.min(box.y0, box.y1), Math.max(box.y0, box.y1)];
+      if (x1 - x0 < 0.5 && y1 - y0 < 0.5) return;
+      const inside = itemsRef.current.filter((item) => item.x >= x0 && item.x <= x1 && item.y >= y0 && item.y <= y1).map((item) => item.id);
+      setSelectedIds((prev) => [...prev.filter((id) => !inside.includes(id)), ...inside]);
+      return;
+    }
     const rotating = rotationDragRef.current;
     if (rotating && rotating.pointerId === pointerId) {
       updateDragFromPointer(clientX, clientY, pointerId);
@@ -359,8 +403,11 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     const finalX = drag.x;
     const finalY = drag.y;
     const element = drag.el;
-    commitItems((prev) => prev.map((item) => item.id === drag.id ? { ...item, x: finalX, y: finalY } : item));
-    setSaved(false);
+    const moves = new Map<string, { x: number; y: number }>([[drag.id, { x: finalX, y: finalY }], ...drag.others.map((other) => [other.id, { x: other.x, y: other.y }] as [string, { x: number; y: number }])]);
+    if (finalX !== drag.startX || finalY !== drag.startY) {
+      commitItems((prev) => prev.map((item) => { const m = moves.get(item.id); return m ? { ...item, ...m } : item; }));
+      setSaved(false);
+    }
 
     try { element.releasePointerCapture(drag.pointerId); } catch {}
     element.style.left = `${finalX}%`;
@@ -369,9 +416,10 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
     dragRef.current = null;
   };
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!selected || ['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement)?.tagName)) return;
+  const keyHandlerRef = useRef<(event: KeyboardEvent) => void>(() => {});
+  keyHandlerRef.current = (event: KeyboardEvent) => {
+      if (!selectedIdsRef.current.length || ['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement)?.tagName)) return;
+      if (event.key.toLowerCase() === 'r' && !event.ctrlKey && !event.metaKey) { event.preventDefault(); rotateSelection(event.shiftKey ? -15 : 15); }
       const step = event.shiftKey ? 2.5 : 0.5;
       if (event.key === 'ArrowUp') { event.preventDefault(); nudge(0, -step); }
       if (event.key === 'ArrowDown') { event.preventDefault(); nudge(0, step); }
@@ -381,8 +429,11 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicateSelected(); }
       if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelected(); }
-      if (event.key === 'Escape') { setSelectedId(null); setRotationMode(false); }
-    };
+      if (event.key === 'Escape') { setSelectedId(null); setRotationMode(false); setMultiMode(false); }
+  };
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => keyHandlerRef.current(event);
 
     const onWindowPointerMove = (event: PointerEvent) => updateDragFromPointer(event.clientX, event.clientY, event.pointerId);
     const onWindowPointerUp = (event: PointerEvent) => finishDrag(event.clientX, event.clientY, event.pointerId);
@@ -414,18 +465,39 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
   };
 
   const duplicateSelected = () => {
-    if (!selected) return;
-    const copy: LayoutItem = { ...selected, id: `${selected.type}-${Date.now()}`, x: Math.min(90, selected.x + 8), y: Math.min(90, selected.y + 6) };
-    commitItems((prev) => [...prev, copy]);
-    setSelectedId(copy.id);
+    const ids = selectedIdsRef.current;
+    if (!ids.length) return;
+    const stamp = Date.now();
+    const copies: LayoutItem[] = itemsRef.current.filter((item) => ids.includes(item.id)).map((item, i) => ({ ...item, id: `${item.type}-${stamp}-${i}`, x: Math.min(97, item.x + 6), y: Math.min(97, item.y + 5) }));
+    commitItems((prev) => [...prev, ...copies]);
+    setSelectedIds(copies.map((item) => item.id));
     setSaved(false);
   };
 
   const deleteSelected = () => {
-    if (!selected) return;
-    commitItems((prev) => prev.filter((item) => item.id !== selected.id));
+    const ids = selectedIdsRef.current;
+    if (!ids.length) return;
+    commitItems((prev) => prev.filter((item) => !ids.includes(item.id)));
     setSelectedId(null);
     setSaved(false);
+  };
+  const selectAll = () => setSelectedIds(itemsRef.current.map((item) => item.id));
+  const selectSameType = (type: string) => setSelectedIds(itemsRef.current.filter((item) => item.type === type).map((item) => item.id));
+  const startDial = (event: React.PointerEvent, item: LayoutItem) => {
+    event.preventDefault(); event.stopPropagation();
+    commitItems((prev) => prev);
+    dialRef.current = { id: item.id, pointerId: event.pointerId, startClientX: event.clientX, startRotation: item.rotation };
+  };
+  // Tap on an empty part of the 2D plan: clears the selection, or starts a selection box in Select mode.
+  const onPlanPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || event.target !== event.currentTarget) return;
+    if (!multiModeRef.current && !event.shiftKey) { setSelectedId(null); return; }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    marqueeRef.current = { pointerId: event.pointerId, x0: x, y0: y, x1: x, y1: y };
+    setMarquee({ x0: x, y0: y, x1: x, y1: y });
+    event.preventDefault();
   };
 
   const [autoTable, setAutoTable] = useState('round180-10');
@@ -598,16 +670,53 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
               <div className="min-w-0 text-xs font-bold text-white">{activeHall ? `${isAr ? activeHall.name : activeHall.nameEn || activeHall.name} · ` : ''}{eventName} · <span dir="auto">{formatM(width)} × {formatM(depth)} {isAr ? 'م' : 'm'}</span></div>
               <div className="flex shrink-0 items-center gap-2">
                 <div className="text-[10px] text-slate-500">{items.length} {isAr ? 'عنصر' : 'items'} · {items.filter((item) => item.type === 'table').reduce((sum, item) => sum + (item.seats || 10), 0)} {isAr ? 'مقعداً' : 'seats'}</div>
-                <button type="button" data-rotation-ui onClick={() => { setRotationMode((active) => !active); setSelectedId(null); }} aria-pressed={rotationMode} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-black ${rotationMode ? 'border-amber-300 bg-amber-300 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-amber-300/60'}`}><RotateCw className="h-3.5 w-3.5" />{isAr ? (rotationMode ? 'وضع التدوير' : 'تدوير') : (rotationMode ? 'Rotate mode on' : 'Rotate')}</button>
+                <button type="button" onClick={() => setMultiMode((on) => !on)} aria-pressed={multiMode} title={isAr ? 'اختيار أكثر من عنصر لنقلها أو تدويرها أو حذفها معاً' : 'Pick several items to move, rotate or delete together'} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-black ${multiMode ? 'border-cyan-300 bg-cyan-300 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-cyan-300/60'}`}><SquareDashedMousePointer className="h-3.5 w-3.5" />{isAr ? (multiMode ? 'وضع التحديد' : 'تحديد متعدد') : (multiMode ? 'Select mode on' : 'Select')}</button>
+                <button type="button" data-rotation-ui onClick={() => setRotationMode((active) => !active)} aria-pressed={rotationMode} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-black ${rotationMode ? 'border-amber-300 bg-amber-300 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-200 hover:border-amber-300/60'}`}><RotateCw className="h-3.5 w-3.5" />{isAr ? (rotationMode ? 'وضع التدوير' : 'تدوير') : (rotationMode ? 'Rotate mode on' : 'Rotate')}</button>
                 <button type="button" onClick={() => setQuickAddOpen((open) => !open)} aria-expanded={quickAddOpen} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 text-[10px] font-black text-slate-950 hover:bg-amber-300"><Plus className="h-3.5 w-3.5" />{isAr ? 'إضافة عناصر' : 'Add items'}</button>
               </div>
-              {quickAddOpen && <div className="absolute end-2 top-full z-50 mt-1 grid max-h-[70vh] overflow-y-auto w-[min(92vw,360px)] grid-cols-2 gap-1.5 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl sm:grid-cols-3">{ITEM_LIBRARY.map((item) => { const Icon = item.icon; return <button key={item.type} type="button" onClick={() => { addItem(item.type); setQuickAddOpen(false); }} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-800 px-2 text-start text-[10px] text-slate-200 hover:border-amber-400/60 hover:bg-slate-900"><Icon className="h-3.5 w-3.5 shrink-0 text-amber-300" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>; })}{pro && <><div className="col-span-full mt-1 flex items-center gap-1.5 border-t border-amber-400/30 pt-2 text-[9px] font-black tracking-widest text-amber-300"><Sparkles className="h-3 w-3" />PRO OBJECTS</div>{PRO_ITEM_LIBRARY.map((item) => { const Icon = item.icon; return <button key={item.type} type="button" onClick={() => { addItem(item.type); setQuickAddOpen(false); }} className="flex min-h-10 items-center gap-1.5 rounded-lg border border-amber-400/25 px-2 text-start text-[10px] text-slate-100 hover:border-amber-400/70 hover:bg-amber-400/10"><Icon className="h-3.5 w-3.5 shrink-0 text-amber-300" /><span className="truncate">{isAr ? item.labelAr : item.labelEn}</span></button>; })}</>}</div>}
+              {quickAddOpen && (() => {
+                const q = addQuery.trim().toLowerCase();
+                const list = ITEM_CATALOG
+                  .filter((item) => addCat === 'all' || (addCat === 'pro' ? item.pro : item.cat === addCat))
+                  .filter((item) => !q || item.labelEn.toLowerCase().includes(q) || item.labelAr.includes(addQuery.trim()) || item.type.includes(q))
+                  .sort((a, b) => (pro ? 0 : Number(Boolean(a.pro)) - Number(Boolean(b.pro))));
+                const chip = (id: ItemCategory | 'all' | 'pro', label: string) => <button key={id} type="button" onClick={() => setAddCat(id)} aria-pressed={addCat === id} className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${addCat === id ? 'border-amber-300 bg-amber-300 text-slate-950' : 'border-slate-700 text-slate-300 hover:border-amber-300/60'}`}>{label}</button>;
+                return <div className="absolute end-2 top-full z-50 mt-1 flex max-h-[74vh] w-[min(94vw,560px)] flex-col gap-2 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl">
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <label className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2"><Search className="h-3.5 w-3.5 shrink-0 text-slate-500" /><input value={addQuery} onChange={(e) => setAddQuery(e.target.value)} placeholder={isAr ? 'ابحث عن عنصر…' : 'Search items…'} className="min-h-9 w-full bg-transparent text-xs text-white outline-none" /></label>
+                    <div className="flex shrink-0 items-center rounded-lg border border-slate-700 bg-slate-900" title={isAr ? 'العدد المضاف في كل مرة' : 'How many to add each tap'}>
+                      <button type="button" onClick={() => setAddQty((n) => Math.max(1, n - 1))} aria-label={isAr ? 'أقل' : 'Fewer'} className="flex h-9 w-8 items-center justify-center text-slate-300"><Minus className="h-3.5 w-3.5" /></button>
+                      <input type="number" min={1} max={100} value={addQty} onChange={(e) => setAddQty(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} aria-label={isAr ? 'العدد' : 'Quantity'} className="w-10 bg-transparent text-center text-xs font-black text-white outline-none" />
+                      <button type="button" onClick={() => setAddQty((n) => Math.min(100, n + 1))} aria-label={isAr ? 'أكثر' : 'More'} className="flex h-9 w-8 items-center justify-center text-slate-300"><Plus className="h-3.5 w-3.5" /></button>
+                    </div>
+                    <button type="button" onClick={() => setQuickAddOpen(false)} aria-label={isAr ? 'إغلاق' : 'Close'} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 text-slate-300"><X className="h-4 w-4" /></button>
+                  </div>
+                  <div className="flex shrink-0 gap-1 overflow-x-auto pb-0.5">{chip('all', isAr ? 'الكل' : 'All')}{ITEM_CATEGORIES.map((c) => chip(c.id, isAr ? c.ar : c.en))}{chip('pro', 'PRO')}</div>
+                  <div className="grid min-h-0 grid-cols-2 gap-1.5 overflow-y-auto sm:grid-cols-3">{list.map((item) => { const Icon = item.icon; const locked = item.pro && !pro; return <button key={item.type} type="button" disabled={locked} onClick={() => addItem(item.type, addQty)} title={locked ? (isAr ? 'متاح في 3D Studio Pro' : 'Available in 3D Studio Pro') : undefined} className={`relative flex min-h-11 items-center gap-1.5 rounded-lg border px-2 text-start text-[10px] ${locked ? 'cursor-not-allowed border-slate-800 text-slate-500' : item.pro ? 'border-amber-400/30 text-slate-100 hover:border-amber-400/70 hover:bg-amber-400/10' : 'border-slate-800 text-slate-200 hover:border-amber-400/60 hover:bg-slate-900'}`}><Icon className={`h-3.5 w-3.5 shrink-0 ${locked ? 'text-slate-600' : 'text-amber-300'}`} /><span className="min-w-0 flex-1 leading-tight">{isAr ? item.labelAr : item.labelEn}</span>{item.pro && <span className={`flex shrink-0 items-center gap-0.5 rounded px-1 text-[8px] font-black ${locked ? 'bg-slate-800 text-slate-400' : 'bg-amber-400/15 text-amber-300'}`}>{locked && <Lock className="h-2.5 w-2.5" />}PRO</span>}</button>; })}{!list.length && <div className="col-span-full py-6 text-center text-[11px] text-slate-500">{isAr ? 'لا يوجد عنصر بهذا الاسم' : 'No item matches'}</div>}</div>
+                  <div className="flex items-center justify-between gap-2 px-1 text-[10px] text-slate-500"><span>{addedFlash ? <span className="font-bold text-emerald-300">{addedFlash}</span> : (isAr ? `${ITEM_CATALOG.filter((item) => pro || !item.pro).length} عنصر متاح · اضغط لإضافة ${addQty}` : `${ITEM_CATALOG.filter((item) => pro || !item.pro).length} items available · tap to add ${addQty}`)}</span>{!pro && <span className="text-amber-300/80">{isAr ? `+${ITEM_CATALOG.filter((item) => item.pro).length} في Pro` : `+${ITEM_CATALOG.filter((item) => item.pro).length} more in Pro`}</span>}</div>
+                </div>;
+              })()}
+              {selectedIds.length > 0 && (bulk || multiMode) && <div data-rotation-ui className="flex w-full basis-full flex-wrap items-center gap-1 rounded-lg border border-cyan-400/40 bg-cyan-400/10 px-2 py-1.5 text-[10px] text-cyan-100">
+                <span className="me-1 font-black">{selectedIds.length} {isAr ? 'محدد' : 'selected'}</span>
+                <button type="button" onClick={() => rotateSelection(-15)} title={isAr ? 'تدوير 15° لليسار' : 'Rotate 15° left'} className="flex h-8 items-center gap-0.5 rounded-md border border-cyan-300/30 px-1.5 hover:bg-cyan-300/10"><RotateCcw className="h-3.5 w-3.5" />15</button>
+                <button type="button" onClick={() => rotateSelection(15)} title={isAr ? 'تدوير 15° لليمين' : 'Rotate 15° right'} className="flex h-8 items-center gap-0.5 rounded-md border border-cyan-300/30 px-1.5 hover:bg-cyan-300/10"><RotateCw className="h-3.5 w-3.5" />15</button>
+                <button type="button" onClick={() => rotateSelection(90)} className="flex h-8 items-center rounded-md border border-cyan-300/30 px-1.5 font-black hover:bg-cyan-300/10">90°</button>
+                <button type="button" onClick={() => nudge(0, -2)} aria-label={isAr ? 'لأعلى' : 'Move up'} className="flex h-8 w-8 items-center justify-center rounded-md border border-cyan-300/30 hover:bg-cyan-300/10"><ChevronUp className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => nudge(0, 2)} aria-label={isAr ? 'لأسفل' : 'Move down'} className="flex h-8 w-8 items-center justify-center rounded-md border border-cyan-300/30 hover:bg-cyan-300/10"><ChevronDown className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => nudge(-2, 0)} aria-label={isAr ? 'لليسار' : 'Move left'} className="flex h-8 w-8 items-center justify-center rounded-md border border-cyan-300/30 hover:bg-cyan-300/10"><ChevronLeft className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => nudge(2, 0)} aria-label={isAr ? 'لليمين' : 'Move right'} className="flex h-8 w-8 items-center justify-center rounded-md border border-cyan-300/30 hover:bg-cyan-300/10"><ChevronRight className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={duplicateSelected} className="flex h-8 items-center gap-1 rounded-md border border-cyan-300/30 px-1.5 hover:bg-cyan-300/10"><Copy className="h-3.5 w-3.5" />{isAr ? 'نسخ' : 'Duplicate'}</button>
+                <button type="button" onClick={deleteSelected} className="flex h-8 items-center gap-1 rounded-md border border-red-400/40 px-1.5 text-red-200 hover:bg-red-400/10"><Trash2 className="h-3.5 w-3.5" />{isAr ? 'حذف' : 'Delete'}</button>
+                <button type="button" onClick={selectAll} className="flex h-8 items-center gap-1 rounded-md border border-cyan-300/30 px-1.5 hover:bg-cyan-300/10"><ListChecks className="h-3.5 w-3.5" />{isAr ? 'تحديد الكل' : 'All'}</button>
+                <button type="button" onClick={() => { setSelectedId(null); setMultiMode(false); }} className="ms-auto flex h-8 items-center gap-1 rounded-md px-1.5 text-cyan-200 hover:bg-cyan-300/10"><X className="h-3.5 w-3.5" />{isAr ? 'إلغاء' : 'Clear'}</button>
+              </div>}
+              {multiMode && !selectedIds.length && <div className="w-full basis-full rounded-lg border border-cyan-400/30 bg-cyan-400/5 px-2 py-1.5 text-[10px] text-cyan-100">{isAr ? 'اضغط على العناصر لتحديدها، أو اسحب على مكان فاضي في المخطط 2D لتحديد مجموعة.' : 'Tap items to pick them, or drag across an empty part of the 2D plan to box-select.'} <button type="button" onClick={selectAll} className="ms-1 font-black underline">{isAr ? 'تحديد الكل' : 'Select all'}</button></div>}
             </div>
             <div className="relative h-[62vh] min-h-[460px] w-full overflow-hidden rounded-xl border border-slate-700 bg-slate-950 lg:h-[72vh] lg:max-h-[860px]">
               {layoutMode === '2d' ? (
                 <div className="absolute inset-0 px-8 pb-9 pt-12 sm:px-10">
                   <div className="flex h-full w-full items-center justify-center" style={{ containerType: 'size' }}>
-                    <div ref={canvasRef} dir="ltr" className="relative rounded-sm border-2 border-amber-200/60" style={{ width: `min(100cqw, calc(100cqh * ${width / depth}))`, aspectRatio: `${width} / ${depth}`, touchAction: 'none', background: '#16161A' }}>
+                    <div ref={canvasRef} dir="ltr" onPointerDown={onPlanPointerDown} className="relative rounded-sm border-2 border-amber-200/60" style={{ width: `min(100cqw, calc(100cqh * ${width / depth}))`, aspectRatio: `${width} / ${depth}`, touchAction: 'none', background: '#16161A' }}>
                       <div className="pointer-events-none absolute inset-0" style={{ opacity: snapToGrid ? 0.9 : 0.6, backgroundImage: 'linear-gradient(to right, rgba(233,207,148,.10) 1px, transparent 1px), linear-gradient(to bottom, rgba(233,207,148,.10) 1px, transparent 1px), linear-gradient(to right, rgba(233,207,148,.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(233,207,148,.28) 1px, transparent 1px)', backgroundSize: `${100 / width}% ${100 / depth}%, ${100 / width}% ${100 / depth}%, ${500 / width}% ${500 / depth}%, ${500 / width}% ${500 / depth}%` }} />
                       {Array.from({ length: Math.floor(width / 5) + 1 }, (_, i) => i * 5).map((m) => <span key={`rx${m}`} className="pointer-events-none absolute -top-4 -translate-x-1/2 text-[9px] tabular-nums text-amber-200/70" style={{ left: `${(m / width) * 100}%` }}>{m}</span>)}
                       {Array.from({ length: Math.floor(depth / 5) + 1 }, (_, i) => i * 5).map((m) => <span key={`rz${m}`} className="pointer-events-none absolute -left-1 -translate-x-full -translate-y-1/2 text-[9px] tabular-nums text-amber-200/70" style={{ top: `${(m / depth) * 100}%` }}>{m}</span>)}
@@ -619,16 +728,20 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                         const size = itemSize(item);
                         const fp = isTable ? tableFootprint(item) : { w: size.w, d: size.d };
                         return (
-                          <button key={item.id} type="button" data-rotation-ui onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} title={`${isAr ? item.labelAr : item.labelEn} · ${formatM(size.w)}×${formatM(size.d)} m`} className={`absolute select-none ${rotationMode ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'} touch-none ${selectedId === item.id ? 'z-10 outline outline-2 outline-offset-2 outline-amber-400' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${(fp.w / width) * 100}%`, height: `${(fp.d / depth) * 100}%`, minWidth: 6, minHeight: 4, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
+                          <button key={item.id} type="button" data-rotation-ui data-item-id={item.id} onPointerDown={(event) => handlePointerDown(event, item)} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} title={`${isAr ? item.labelAr : item.labelEn} · ${formatM(size.w)}×${formatM(size.d)} m`} className={`absolute select-none ${rotationMode ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'} touch-none ${selectedId === item.id ? 'z-10 outline outline-2 outline-offset-2 outline-amber-400' : selectedIds.includes(item.id) ? 'z-10 outline outline-2 outline-offset-2 outline-cyan-300' : ''}`} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${(fp.w / width) * 100}%`, height: `${(fp.d / depth) * 100}%`, minWidth: 6, minHeight: 4, transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`, willChange: 'transform', transition: 'none', touchAction: 'none', userSelect: 'none' }}>
                             {renderPlanShape(item, fp, size, tableNumber.get(item.id))}
                           </button>
                         );
                       })}
-                      {rotationMode && selected && <div data-rotation-ui className="pointer-events-none absolute z-40" style={{ left: `${selected.x}%`, top: `${selected.y}%`, transform: selected.y < 20 ? 'translate(-50%, 40px)' : 'translate(-50%, calc(-100% - 10px))' }}>
-                        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" onPointerDown={(event) => event.stopPropagation()}>
-                          <button type="button" onClick={() => rotateItem(selected.id, -15)} title={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
-                          <span className="min-w-10 text-center text-[10px] font-bold tabular-nums text-white">{((selected.rotation % 360) + 360) % 360}°</span>
-                          <button type="button" onClick={() => rotateItem(selected.id, 15)} title={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
+                      {marquee && <div className="pointer-events-none absolute z-30 border border-cyan-300 bg-cyan-300/15" style={{ left: `${Math.min(marquee.x0, marquee.x1)}%`, top: `${Math.min(marquee.y0, marquee.y1)}%`, width: `${Math.abs(marquee.x1 - marquee.x0)}%`, height: `${Math.abs(marquee.y1 - marquee.y0)}%` }} />}
+                      {selected && !bulk && <div data-rotation-ui className="pointer-events-none absolute z-40" style={{ left: `${selected.x}%`, top: `${selected.y}%`, transform: selected.y < 20 ? 'translate(-50%, 40px)' : 'translate(-50%, calc(-100% - 14px))' }}>
+                        <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" onPointerDown={(event) => event.stopPropagation()}>
+                          <button type="button" onClick={() => rotateItem(selected.id, -45)} title={isAr ? 'تدوير 45° لليسار' : 'Rotate 45° left'} aria-label={isAr ? 'تدوير 45° لليسار' : 'Rotate 45° left'} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800"><RotateCcw className="h-3.5 w-3.5" />45</button>
+                          <button type="button" onClick={() => rotateItem(selected.id, -15)} title={isAr ? 'تدوير 15° لليسار' : 'Rotate 15° left'} aria-label={isAr ? 'تدوير 15° لليسار' : 'Rotate 15° left'} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800"><RotateCcw className="h-3.5 w-3.5" />15</button>
+                          <span onPointerDown={(event) => startDial(event, selected)} title={isAr ? 'اسحب يمين أو شمال للتدوير' : 'Drag left or right to turn'} className="flex h-8 min-w-12 cursor-ew-resize touch-none select-none items-center justify-center gap-1 rounded-full bg-amber-400/15 px-2 text-[10px] font-black tabular-nums text-white"><RotateCw className="h-3 w-3 text-amber-300" />{((Math.round(selected.rotation) % 360) + 360) % 360}°</span>
+                          <button type="button" onClick={() => rotateItem(selected.id, 15)} title={isAr ? 'تدوير 15° لليمين' : 'Rotate 15° right'} aria-label={isAr ? 'تدوير 15° لليمين' : 'Rotate 15° right'} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800"><RotateCw className="h-3.5 w-3.5" />15</button>
+                          <button type="button" onClick={() => rotateItem(selected.id, 45)} title={isAr ? 'تدوير 45° لليمين' : 'Rotate 45° right'} aria-label={isAr ? 'تدوير 45° لليمين' : 'Rotate 45° right'} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800"><RotateCw className="h-3.5 w-3.5" />45</button>
+                          <button type="button" onClick={() => rotateItem(selected.id, 90)} title={isAr ? 'ربع لفة' : 'Quarter turn'} aria-label={isAr ? 'ربع لفة' : 'Quarter turn'} data-quarter className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800">+90°</button>
                         </div>
                       </div>}
                     </div>
@@ -647,8 +760,15 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   watermark={demo ? (language === 'ar' ? 'نسخة تجريبية · يتطلب اشتراك' : 'DEMO · SUBSCRIPTION REQUIRED') : undefined}
                   mode="overview"
                   selectedId={selectedId}
+                  selectedIds={selectedIds}
+                  multiSelect={multiMode}
                   rotationMode={rotationMode}
-                  onSelect={(id) => { setSelectedId(id); if (!id) setRotationMode(false); }}
+                  onSelect={(id, toggle) => { if (toggle && id) toggleSelected(id); else setSelectedId(id); if (!id) setRotationMode(false); }}
+                  onMoveMany={(moves) => {
+                    const byId = new Map(moves.map((m) => [m.id, m]));
+                    commitItems((prev) => prev.map((item) => { const m = byId.get(item.id); return m ? { ...item, x: m.x, y: m.y } : item; }));
+                    setSaved(false);
+                  }}
                   onMove={(id, x, y) => {
                     commitItems((prev) => prev.map((item) => item.id === id ? { ...item, x, y } : item));
                     setSaved(false);
@@ -660,14 +780,21 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
           </section>
 
           <aside className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
-            <div className="text-xs font-bold text-white mb-3">{isAr ? 'العنصر المحدد' : 'Selected Item'}</div>
-            {selected ? (
+            <div className="text-xs font-bold text-white mb-3">{bulk ? (isAr ? 'العناصر المحددة' : 'Selected Items') : (isAr ? 'العنصر المحدد' : 'Selected Item')}</div>
+            {bulk ? (
+              <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/5 p-3 text-[10px] text-cyan-100">
+                <div className="text-sm font-black text-white">{selectedIds.length} {isAr ? 'عنصر' : 'items'}</div>
+                <div className="mt-1 space-y-0.5 text-slate-300">{Object.entries(items.filter((item) => selectedIds.includes(item.id)).reduce<Record<string, number>>((acc, item) => { const name = isAr ? item.labelAr : item.labelEn; acc[name] = (acc[name] || 0) + 1; return acc; }, {})).slice(0, 8).map(([name, n]) => <div key={name} className="flex justify-between gap-2"><span className="truncate">{name}</span><span className="tabular-nums text-cyan-200">×{n}</span></div>)}</div>
+                <p className="mt-2 leading-4 text-slate-400">{isAr ? 'اسحب أي عنصر محدد لنقلهم كلهم. استخدم الشريط فوق المخطط للتدوير والنسخ والحذف.' : 'Drag any selected item to move them all. Use the bar above the plan to rotate, duplicate or delete.'}</p>
+                <button type="button" onClick={deleteSelected} className="mt-3 w-full rounded-lg border border-red-900/60 bg-red-950/30 py-2 text-xs font-bold text-red-300 flex items-center justify-center gap-2"><Trash2 className="w-3.5 h-3.5" />{isAr ? `حذف ${selectedIds.length}` : `Delete ${selectedIds.length}`}</button>
+              </div>
+            ) : selected ? (
               <>
                 <div className="rounded-lg bg-slate-950 border border-slate-800 p-3">
                   <label className="block text-[10px] text-slate-500">{isAr ? 'اسم العنصر' : 'Item name'}<input value={isAr ? selected.labelAr : selected.labelEn} onChange={(event) => updateSelected(isAr ? { labelAr: event.target.value } : { labelEn: event.target.value })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs font-bold text-white outline-none focus:border-amber-400" /></label>
                   {selected.type === 'table' && <label className="mt-2 block text-[10px] text-slate-500">{isAr ? 'عدد المقاعد' : 'Seats'}<input type="number" min={1} max={40} value={selected.seats || 10} onChange={(event) => updateSelected({ seats: Math.max(1, Math.min(40, Number(event.target.value) || 1)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-white outline-none focus:border-amber-400" /></label>}
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                <div>
                 <div className="mt-2 grid grid-cols-3 gap-1.5">
                   <label className="text-[9px] text-slate-500">{isAr ? 'من اليسار م' : 'From left m'}<input type="number" step={0.1} min={0} max={width} value={toMetres(selected).x.toFixed(1)} onChange={(event) => updateSelected({ x: Math.max(0, Math.min(100, ((Number(event.target.value) || 0) / width) * 100)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] text-white" /></label>
                   <label className="text-[9px] text-slate-500">{isAr ? 'من الواجهة م' : 'From front m'}<input type="number" step={0.1} min={0} max={depth} value={toMetres(selected).y.toFixed(1)} onChange={(event) => updateSelected({ y: Math.max(0, Math.min(100, ((Number(event.target.value) || 0) / depth) * 100)) })} className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] text-white" /></label>
@@ -690,7 +817,8 @@ export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onC
                   <button type="button" onClick={() => duplicateSelected()} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><Copy className="w-4 h-4" /></button>
                   <button type="button" onClick={() => nudge(isAr ? -3 : 3, 0)} className="p-2 rounded-lg bg-slate-800 text-slate-200 flex justify-center"><ChevronRight className="w-4 h-4" /></button>
                 </div>
-                <button type="button" onClick={deleteSelected} className="mt-3 w-full rounded-lg border border-red-900/60 bg-red-950/30 py-2 text-xs font-bold text-red-300 flex items-center justify-center gap-2"><Trash2 className="w-3.5 h-3.5" />{isAr ? 'حذف' : 'Delete'}</button>
+                <button type="button" onClick={() => selectSameType(selected.type)} className="mt-3 w-full rounded-lg border border-cyan-400/30 bg-cyan-400/5 py-2 text-[10px] font-bold text-cyan-200 flex items-center justify-center gap-1.5"><ListChecks className="w-3.5 h-3.5" />{isAr ? `تحديد كل (${items.filter((item) => item.type === selected.type).length})` : `Select all like this (${items.filter((item) => item.type === selected.type).length})`}</button>
+                <button type="button" onClick={deleteSelected} className="mt-2 w-full rounded-lg border border-red-900/60 bg-red-950/30 py-2 text-xs font-bold text-red-300 flex items-center justify-center gap-2"><Trash2 className="w-3.5 h-3.5" />{isAr ? 'حذف' : 'Delete'}</button>
               </>
             ) : (
               <div className="text-xs text-slate-500">{isAr ? 'اختر عنصراً من المخطط.' : 'Select an item on the plan.'}</div>
