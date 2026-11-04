@@ -42,3 +42,22 @@ export const isProLicensed = () => {
   if (PRO_3D.unlocked) return true;
   try { return window.localStorage.getItem(PRO_3D_LICENSE_KEY) === PRO_3D.activationKeyHash; } catch { return false; }
 };
+
+/**
+ * Client proposals (Export proposal) — a paid add-on by DALI STUDIO.
+ *
+ * While `unlocked` is false every proposal is a demo: each page carries a DEMO mark.
+ * Entering the activation key on the proposal screen removes the mark on this browser.
+ * Keys work like the 3D Studio Pro key above: only the SHA-256 hash is kept here.
+ */
+export const PROPOSAL_PRO = {
+  unlocked: false,
+  activationKeyHash: '389b3691f2ed1d8bce32e930ec80190b278ad6b0ae792d348173d108578195e2',
+};
+
+export const PROPOSAL_LICENSE_KEY = 'saraya-proposal-license-v1';
+
+export const isProposalLicensed = () => {
+  if (PROPOSAL_PRO.unlocked) return true;
+  try { return window.localStorage.getItem(PROPOSAL_LICENSE_KEY) === PROPOSAL_PRO.activationKeyHash; } catch { return false; }
+};

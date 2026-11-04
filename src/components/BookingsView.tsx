@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Clock,
   Sparkles,
+  FileDown,
 } from 'lucide-react';
 import { Booking, BookingStatus, EventType, Hall, Language, PriceBook, ServiceDefinition } from '../types/venueSystem';
 import { BookingEditModal } from './BookingEditModal';
@@ -23,6 +24,7 @@ import { TiltCard } from './TiltCard';
 import { sound } from '../utils/soundEffects';
 import { eventDetailsSummary } from '../data/eventTypes';
 import { locationName } from '../data/locations';
+import { ProposalExportModal, sampleProposalBooking } from './ProposalExportModal';
 
 interface BookingsViewProps {
   bookings: Booking[];
@@ -46,6 +48,8 @@ interface BookingsViewProps {
   /** May save an edit over a double-booking warning. */
   canOverrideConflict?: boolean;
   currentUser?: { id: string; name: string } | null;
+  /** Company phone and places, printed on client proposals. */
+  company?: { phone?: string; whatsapp?: string; locationsAr?: string; locationsEn?: string };
 }
 
 export function BookingsView({
@@ -65,9 +69,11 @@ export function BookingsView({
   canDiscount = false,
   canOverrideConflict = false,
   currentUser,
+  company,
 }: BookingsViewProps) {
   const { isAr, tr, egp } = makeTr(language);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [proposal, setProposal] = useState<{ booking: Booking; sample: boolean } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
@@ -142,6 +148,18 @@ export function BookingsView({
               </button>
             ))}
           </div>
+
+          {/* Sample client proposal, works with no bookings (demo data) */}
+          <button
+            onClick={() => {
+              sound.click(600);
+              setProposal({ booking: sampleProposalBooking(isAr), sample: true });
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-amber-400/50 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20 transition-all cursor-pointer whitespace-nowrap"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            <span>{tr('عرض نموذجي للعميل', 'Sample proposal')}</span>
+          </button>
 
           {/* New Booking CTA */}
           <button
@@ -236,6 +254,17 @@ export function BookingsView({
                     <Receipt className="w-3.5 h-3.5" />
                     <span>{tr('الفاتورة الرسمية', 'Invoice')}</span>
                   </button>
+
+                  <button
+                    onClick={() => {
+                      sound.click(650);
+                      setProposal({ booking: bk, sample: false });
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 text-slate-950 text-xs font-black shadow-md transition-all cursor-pointer"
+                  >
+                    <FileDown className="w-3.5 h-3.5" />
+                    <span>{tr('تصدير عرض للعميل', 'Export proposal')}</span>
+                  </button>
                 </div>
               </div>
 
@@ -313,6 +342,7 @@ export function BookingsView({
         )}
       </div>
       {editingBooking && onEditBooking && <BookingEditModal booking={editingBooking} bookings={bookings} halls={halls} services={services} priceBook={priceBook} canDiscount={canDiscount} canOverrideConflict={canOverrideConflict} currentUser={currentUser} language={language} onClose={() => setEditingBooking(null)} onSave={(b) => { onEditBooking(b); setEditingBooking(null); }} onDelete={onDeleteBooking ? () => { onDeleteBooking(editingBooking.id); setEditingBooking(null); } : undefined} />}
+      {proposal && <ProposalExportModal key={proposal.booking.id} booking={proposal.booking} isSample={proposal.sample} onClose={() => setProposal(null)} language={language} halls={halls} services={services} company={company} />}
     </div>
   );
 }
