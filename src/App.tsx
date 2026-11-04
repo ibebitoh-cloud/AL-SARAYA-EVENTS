@@ -16,6 +16,7 @@ import {
   INITIAL_CLIENTS,
 } from './data/mockVenueData';
 import { INITIAL_EVENTS } from './data/mockEvents';
+import { isProLicensed } from './data/proFeatures';
 import {
   Booking, BookingStatus, PaymentReceipt, Expense, InventoryItem, Employee,
   ServiceDefinition, VenueTab, Language, Hall, PriceBook, ClientProfile,
@@ -31,7 +32,6 @@ import { SarayaBrandHeader } from './components/SarayaBrandHeader';
 const BeamWordmarkFooter = lazy(() => import('./components/ui/beam-wordmark-footer'));
 import { DaliCredit, DaliOverlayCredit } from './components/DaliCredit';
 import { NearViewport } from './components/ui/near-viewport';
-import { SAMPLE_BOOKINGS, markSamplesMerged, mergeSampleEvents } from './data/sampleEvents';
 import { DaliLoader, DaliLoaderOverlay, GlobalDaliLoader } from './components/DaliLoader';
 import { BrandLogo, BRAND_LOGOS } from './components/BrandLogo';
 import { HoneyEmberBackground } from './components/ui/honey-ember-background';
@@ -91,7 +91,7 @@ const uniqueEventPhotos = (items: VenuePhoto[]) => {
 // De-duplicate at the application boundary so every screen receives the same clean booking list.
 // The venue is "اركان", never "آركين": fix the old spelling in data saved before the rename.
 if (typeof window !== 'undefined') {
-  for (const key of ['saraya-halls-v2', 'saraya-bookings-v3', 'saraya-contracts-v1', 'saraya-company-profile', 'saraya-clients-v1', 'saraya-prepared-operations-v1', 'saraya-payments-v2', 'saraya-expenses-v2', 'saraya-site-content-v1']) {
+  for (const key of ['saraya-halls-v2', 'saraya-bookings-v4', 'saraya-contracts-v2', 'saraya-company-profile', 'saraya-clients-v2', 'saraya-prepared-operations-v1', 'saraya-payments-v3', 'saraya-expenses-v3', 'saraya-site-content-v1']) {
     try {
       const raw = window.localStorage.getItem(key);
       if (raw && raw.includes('آركين')) window.localStorage.setItem(key, raw.split('آركين').join('اركان'));
@@ -183,16 +183,15 @@ export default function App() {
   const [bookings, setBookings] = useState<Booking[]>(() => {
     if (typeof window === 'undefined') return dedupeBookings(INITIAL_BOOKINGS);
     try {
-      const saved = JSON.parse(window.localStorage.getItem('saraya-bookings-v3') || 'null');
-      return dedupeBookings(mergeSampleEvents(Array.isArray(saved) ? saved : INITIAL_BOOKINGS, SAMPLE_BOOKINGS, 'bookings'));
+      const saved = JSON.parse(window.localStorage.getItem('saraya-bookings-v4') || 'null');
+      return dedupeBookings(Array.isArray(saved) ? saved : INITIAL_BOOKINGS);
     } catch {
       return dedupeBookings(INITIAL_BOOKINGS);
     }
   });
   useEffect(() => {
     try {
-      window.localStorage.setItem('saraya-bookings-v3', JSON.stringify(dedupeBookings(bookings)));
-      markSamplesMerged('bookings');
+      window.localStorage.setItem('saraya-bookings-v4', JSON.stringify(dedupeBookings(bookings)));
     } catch (error) {
       console.warn('Bookings could not be saved locally:', error);
     }
@@ -211,7 +210,7 @@ export default function App() {
     const onStorage = (event: StorageEvent) => {
       if (!event.newValue) return;
       try {
-        if (event.key === 'saraya-bookings-v3') { const next = JSON.parse(event.newValue); if (Array.isArray(next)) setBookings(dedupeBookings(next)); }
+        if (event.key === 'saraya-bookings-v4') { const next = JSON.parse(event.newValue); if (Array.isArray(next)) setBookings(dedupeBookings(next)); }
         if (event.key === NOTIFICATIONS_KEY) { const next = JSON.parse(event.newValue); if (Array.isArray(next)) setNotifications(next); }
       } catch { /* Ignore malformed data from another tab. */ }
     };
@@ -257,11 +256,11 @@ export default function App() {
   });
   const [payments, setPayments] = useState<PaymentReceipt[]>(() => {
     if (typeof window === 'undefined') return INITIAL_PAYMENTS;
-    try { return JSON.parse(window.localStorage.getItem('saraya-payments-v2') || '') || INITIAL_PAYMENTS; } catch { return INITIAL_PAYMENTS; }
+    try { return JSON.parse(window.localStorage.getItem('saraya-payments-v3') || '') || INITIAL_PAYMENTS; } catch { return INITIAL_PAYMENTS; }
   });
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     if (typeof window === 'undefined') return INITIAL_EXPENSES;
-    try { return JSON.parse(window.localStorage.getItem('saraya-expenses-v2') || '') || INITIAL_EXPENSES; } catch { return INITIAL_EXPENSES; }
+    try { return JSON.parse(window.localStorage.getItem('saraya-expenses-v3') || '') || INITIAL_EXPENSES; } catch { return INITIAL_EXPENSES; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-services', JSON.stringify(servicesCatalogue)); }, [servicesCatalogue]);
   // Separate full price list per location (Arcane / Porto), edited by the manager in "قوائم الأسعار".
@@ -278,15 +277,15 @@ export default function App() {
   });
   useEffect(() => { if (pendingFinancePriceBook) window.localStorage.setItem('saraya-pending-finance-prices', JSON.stringify(pendingFinancePriceBook)); else window.localStorage.removeItem('saraya-pending-finance-prices'); }, [pendingFinancePriceBook]);
   useEffect(() => { window.localStorage.setItem('saraya-price-book-v1', JSON.stringify(priceBook)); }, [priceBook]);
-  useEffect(() => { window.localStorage.setItem('saraya-payments-v2', JSON.stringify(payments)); }, [payments]);
-  useEffect(() => { window.localStorage.setItem('saraya-expenses-v2', JSON.stringify(expenses)); }, [expenses]);
+  useEffect(() => { window.localStorage.setItem('saraya-payments-v3', JSON.stringify(payments)); }, [payments]);
+  useEffect(() => { window.localStorage.setItem('saraya-expenses-v3', JSON.stringify(expenses)); }, [expenses]);
   const [inventory, setInventory] = useState<InventoryItem[]>(() => {
     if (typeof window === 'undefined') return INITIAL_INVENTORY;
     try { return JSON.parse(window.localStorage.getItem('saraya-inventory') || '') || INITIAL_INVENTORY; } catch { return INITIAL_INVENTORY; }
   });
   useEffect(() => { window.localStorage.setItem('saraya-inventory', JSON.stringify(inventory)); }, [inventory]);
   const [staff, setStaff] = usePersistentState<Employee[]>('saraya-staff-v1', INITIAL_STAFF, isNonEmptyArray);
-  const [clients, setClients] = usePersistentState<ClientProfile[]>('saraya-clients-v1', INITIAL_CLIENTS, isNonEmptyArray);
+  const [clients, setClients] = usePersistentState<ClientProfile[]>('saraya-clients-v2', INITIAL_CLIENTS, isNonEmptyArray);
   const [siteContent, setSiteContent] = usePersistentState<SiteContent>('saraya-site-content-v1', DEFAULT_SITE_CONTENT, (saved) => Boolean(saved && typeof saved === 'object' && 'texts' in saved));
   const [editPermissions, setEditPermissions] = usePersistentState<EditPermissions>('saraya-edit-permissions-v1', DEFAULT_EDIT_PERMISSIONS, (saved) => Boolean(saved && typeof saved === 'object'));
   const [companyProfile, setCompanyProfile] = useState(() => {
@@ -444,7 +443,10 @@ export default function App() {
       {currentTab === 'dashboard' && canAccess(portalUser, 'dashboard') && <DashboardView bookings={bookings} halls={halls} language={language} onNavigateTab={(tab) => setCurrentTab(tab)} />}
       {currentTab === 'bookings' && canAccess(portalUser, 'bookings') && <BookingsView bookings={bookings} halls={halls} onOpenNewBooking={() => { if (may('bookings')) { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } }} onSelectBookingForProfit={(b) => setSelectedBookingForProfit(b)} hideProfit={portalUser?.role === 'finance'} onSelectBookingForInvoice={(b) => setSelectedBookingForInvoice(b)} onUpdateBookingStatus={(id, status) => { if (may('bookings')) handleUpdateBookingStatus(id, status); }} sellingPricesOnly={Boolean(portalUser?.sellingPricesOnly)}  language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={portalUser?.role === 'ceo'} canOverrideConflict={may('booking_override')} currentUser={portalUser} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} />}
       {currentTab === 'agenda' && canAccess(portalUser, 'agenda') && <CalendarAgendaView bookings={bookings} halls={halls} onSelectBooking={(b) => setSelectedBookingForInvoice(b)} onOpenNewBooking={may('bookings') ? () => { setPreselectedHallId(undefined); setIsNewBookingModalOpen(true); } : undefined} language={language} services={servicesCatalogue} priceBook={priceBook} canDiscount={isCeo} canOverrideConflict={may('booking_override')} currentUser={portalUser} hideFinancials={Boolean(portalUser?.sellingPricesOnly)} onEditBooking={may('bookings') && !portalUser?.sellingPricesOnly ? handleEditBooking : undefined} onDeleteBooking={may('bookings') ? handleDeleteBooking : undefined} />}
-      {currentTab === 'event_designer' && canAccess(portalUser, 'event_designer') && <EventLayoutDesigner language={language} halls={halls} onUpdateHall={handleUpdateHall} />}
+      {currentTab === 'event_designer' && canAccess(portalUser, 'event_designer') && (canAccess(portalUser, 'studio_3d') && isProLicensed()
+        // 3D opens as Pro by default once 3D Studio Pro is activated on this device (Pro is always in English).
+        ? <EventLayoutDesigner key="pro" language="en" halls={halls} onUpdateHall={handleUpdateHall} edition="pro" />
+        : <EventLayoutDesigner key="basic" language={language} halls={halls} onUpdateHall={handleUpdateHall} />)}
       {currentTab === 'studio_3d' && canAccess(portalUser, 'studio_3d') && <Studio3DProView language={language} halls={halls} onUpdateHall={handleUpdateHall} />}
       {currentTab === 'catering' && canAccess(portalUser, 'catering') && viewOnly('catering', <CateringMenuView language={language} />)}
       {currentTab === 'contracts' && canAccess(portalUser, 'contracts') && viewOnly('contracts', <ContractsView bookings={bookings} language={language} canEdit={may('contracts')} company={companyProfile} />)}

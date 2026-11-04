@@ -9,7 +9,6 @@ import { eventDetailsSummary } from '../data/eventTypes';
 import { bookingTotals } from '../data/recordFields';
 import { RecordEditorModal, RowActions, type FieldDef } from './RecordEditor';
 import { usePersistentState, isNonEmptyArray } from '../utils/usePersistentState';
-import { SAMPLE_CONTRACTS, markSamplesMerged, mergeSampleEvents } from '../data/sampleEvents';
 import { BrandLogo } from './BrandLogo';
 import { DaliCredit } from './DaliCredit';
 import { type ContractTerms, useContractTerms } from './ContractTermsEditor';
@@ -26,13 +25,7 @@ interface ContractsViewProps {
 
 type Status = ContractAgreement['status'];
 
-const INITIAL_CONTRACTS: ContractAgreement[] = [
-  {
-    id: 'cnt-1', contractNumber: 'CTR-2026-101', bookingCode: 'BK-2026-101', clientName: 'أحمد محمود السعيد', clientPhone: '01023456789',
-    clientNationalId: '29304151201934', hallName: 'قاعة اركان', date: '2026-11-16', timeSlot: '18:00 – 23:30',
-    totalAmount: 130000, depositAmount: 30000, securityDeposit: 5000, status: 'signed', signedDate: '2026-09-01', termsApproved: true,
-  },
-];
+const INITIAL_CONTRACTS: ContractAgreement[] = [];
 
 const contractFields: FieldDef[] = [
   { key: 'contractNumber', ar: 'رقم العقد', en: 'Contract no.', required: true },
@@ -73,7 +66,7 @@ const fromBooking = (bk: Booking, number: string): ContractAgreement => ({
 
 export function ContractsView({ bookings, language, canEdit = true, company }: ContractsViewProps) {
   const { isAr, tr, egp } = makeTr(language);
-  const [contracts, setContracts] = usePersistentState<ContractAgreement[]>('saraya-contracts-v1', INITIAL_CONTRACTS, isNonEmptyArray);
+  const [contracts, setContracts] = usePersistentState<ContractAgreement[]>('saraya-contracts-v2', INITIAL_CONTRACTS, isNonEmptyArray);
   const [terms] = useContractTerms();
   const [editingContract, setEditingContract] = useState<ContractAgreement | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -82,7 +75,6 @@ export function ContractsView({ bookings, language, canEdit = true, company }: C
   const [filter, setFilter] = useState<Status | 'all'>('all');
 
   // Add the sample contracts once to a browser that saved its contracts before they existed.
-  useEffect(() => { setContracts((prev) => mergeSampleEvents(prev, SAMPLE_CONTRACTS, 'contracts')); markSamplesMerged('contracts'); }, [setContracts]);
 
   const saveContract = (c: ContractAgreement) => setContracts((prev) => prev.some((x) => x.id === c.id) ? prev.map((x) => x.id === c.id ? c : x) : [c, ...prev]);
   const deleteContract = (id: string) => setContracts((prev) => prev.filter((x) => x.id !== id));

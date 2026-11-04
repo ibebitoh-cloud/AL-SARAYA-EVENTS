@@ -10,6 +10,7 @@ import {
 } from '../data/eventOptions';
 import { PreparedOperation } from '../data/preparedOperations';
 import { EventLayout3D } from './EventLayout3D';
+import { isProLicensed } from '../data/proFeatures';
 import { autoLayout, defaultDecorFor, hallDimensions } from '../data/venueModel';
 import { sound } from '../utils/soundEffects';
 import { findBookingConflict, uniqueBookingCode } from '../utils/bookingRules';
@@ -287,7 +288,7 @@ export function ChoiceSessionView({ op, hall, priceBook, existingBookings, onCha
                         <button type="button" aria-label="إغلاق" onClick={() => setShow3D(false)} className="rounded-full border border-slate-700 p-1.5 hover:text-white"><X className="h-3.5 w-3.5" /></button>
                       </div>
                       <div className="h-[460px] sm:h-[520px]">
-                        <EventLayout3D key={`${tableOption?.id}-${tableCount}`} items={layout.items} width={layout.width} depth={layout.depth} hall={layout.dims} decor={layout.decor} language="ar" mode="overview" readOnly />
+                        <EventLayout3D key={`${tableOption?.id}-${tableCount}`} items={layout.items} width={layout.width} depth={layout.depth} hall={layout.dims} decor={layout.decor} language="ar" tier={isProLicensed() ? 'pro' : 'basic'} mode="overview" readOnly />
                       </div>
                     </div>
                   )}
