@@ -9,6 +9,8 @@ export type Language = 'ar' | 'en';
 
 /** The two Al-Saraya locations. Each has its own full price list. */
 export type LocationId = 'arcane' | 'porto';
+/** Places a service can be priced for: the two locations, plus any other place (e.g. the client's own venue). */
+export type PriceLocationId = LocationId | 'other';
 
 export type VenueTab =
   | 'home'
@@ -247,7 +249,8 @@ export interface LocationPriceList {
   services: Record<string, PriceEntry>;
 }
 
-export type PriceBook = Record<LocationId, LocationPriceList>;
+/** Arcane and Porto have full price lists; `other` holds service prices for any other place. */
+export type PriceBook = Record<LocationId, LocationPriceList> & { other?: LocationPriceList };
 
 export interface PaymentReceipt {
   id: string;
