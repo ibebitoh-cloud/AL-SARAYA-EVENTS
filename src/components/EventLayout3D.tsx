@@ -42,8 +42,15 @@ type Props = {
   readOnly?: boolean;
   /** Text tiled over the 3D view only (e.g. DEMO). */
   watermark?: string;
-  onSelect?: (id: string | null) => void;
+  /** `toggle` = add/remove this item from a multi-selection instead of selecting only it. */
+  onSelect?: (id: string | null, toggle?: boolean) => void;
   selectedId?: string | null;
+  /** Every selected item (bulk selection). */
+  selectedIds?: string[];
+  /** Taps add to / remove from the selection. */
+  multiSelect?: boolean;
+  /** Bulk move: final positions of all items dragged together. */
+  onMoveMany?: (moves: { id: string; x: number; y: number }[]) => void;
   rotationMode?: boolean;
   onMove?: (id: string, x: number, y: number) => void;
   onRotate?: (id: string, delta?: number) => void;
@@ -57,11 +64,10 @@ const CONTROLS_URL = 'three/addons/controls/OrbitControls.js';
 const UTILS_URL = 'three/addons/utils/BufferGeometryUtils.js';
 const ROOM_ENV_URL = 'three/addons/environments/RoomEnvironment.js';
 const POST_URLS = ['three/addons/postprocessing/EffectComposer.js', 'three/addons/postprocessing/RenderPass.js', 'three/addons/postprocessing/UnrealBloomPass.js', 'three/addons/postprocessing/OutputPass.js'];
-const MOOD_KEY = 'saraya-3d-pro-mood';
 
 const modeToView = (mode?: Props['mode'], tier: Props['tier'] = 'basic'): View3D => (mode === 'pov' && tier === 'pro' ? 'walk' : mode === 'plan' ? 'plan' : '3d');
 
-export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, watermark, caption, selectedId, rotationMode = false, onSelect, onMove, onRotate, onViewChange }: Props) {
+export function EventLayout3D({ items, width, depth, language, mode = 'overview', hall, decor, tier = 'basic', readOnly = false, watermark, caption, selectedId, selectedIds, multiSelect = false, rotationMode = false, onSelect, onMove, onMoveMany, onRotate, onViewChange }: Props) {
   const isAr = language === 'ar';
   const hostRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<any>(null);
@@ -69,7 +75,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   const [failed, setFailed] = useState(false);
   const [view, setView] = useState<View3D>(() => modeToView(mode, tier));
   const [measure, setMeasure] = useState(true);
-  const [mood, setMood] = useState<Mood3D>(() => { try { const m = window.localStorage.getItem(MOOD_KEY); return m === 'evening' || m === 'party' ? m : 'day'; } catch { return 'day'; } });
+  // Pro always opens in Evening lighting (user request, 2026-11-04); Day and Party are one tap away.
+  const [mood, setMood] = useState<Mood3D>('evening');
   const [tour, setTour] = useState(false);
   const [guestsOn, setGuestsOn] = useState(false);
   const guestsRef = useRef(guestsOn);
@@ -94,6 +101,12 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   selectRef.current = onSelect;
   const moveRef = useRef(onMove);
   moveRef.current = onMove;
+  const moveManyRef = useRef(onMoveMany);
+  moveManyRef.current = onMoveMany;
+  const selectedIdsRef = useRef(selectedIds);
+  selectedIdsRef.current = selectedIds;
+  const multiRef = useRef(multiSelect);
+  multiRef.current = multiSelect;
   const readOnlyRef = useRef(readOnly);
   readOnlyRef.current = readOnly;
   const viewRef = useRef(view);
@@ -232,7 +245,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           linen: std('#E8EDF4', 0.6), runner: std('#E8EDF4', 0.6), chair: std('#8A9AB8', 0.7), chairFrame: std('#8A9AB8', 0.7),
           gold: std('#C9A45A', 0.4, 0.35), black: std('#171B22', 0.6), stage: std('#2C79B9', 0.5), backdrop: std('#6E7EA3', 0.6),
           sofa: std('#E8EDF4', 0.6), lens: std('#171B22', 0.6), flower: std('#6E7EA3', 0.7), flowerAccent: std('#6E7EA3', 0.7), leaf: std('#6E7EA3', 0.7),
-          silver: std('#6E7EA3', 0.6),
+          silver: std('#6E7EA3', 0.6), warmGlow: std('#E8EDF4', 0.6), candle: std('#E8EDF4', 0.6), wood: std('#8A9AB8', 0.7),
         });
       }
       const ledTexture = canvasTexture(1024, 576, (ctx) => {
@@ -778,6 +791,420 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const tableNumbers = new Map<string, number>();
       /** Dance floor materials, so Party mode can make them glow. */
       const danceMats: any[] = [];
+      // ── Catalogue objects (Basic and Pro). Basic gets the same shapes in the plain massing colours; Pro adds gold, flowers and glow. ──
+      const sph = (parent: any, r: number, mat: any, x: number, y: number, z: number, shadow = false) => mesh(parent, sphereGeo, mat, [x, y, z], [r, r, r], shadow);
+      /** Many spheres of one material in a single draw call. Each entry is [x, y, z, radius]. */
+      const balls = (parent: any, mat: any, pts: number[][], sx = 1, sy = 1) => {
+        if (!pts.length) return;
+        const inst = new THREE.InstancedMesh(sphereGeo, mat, pts.length);
+        pts.forEach(([x, y, z, r], i) => { tmpM.compose(tmpP.set(x, y, z), tmpQ.identity(), tmpS2.set(r * sx, r * sy, r * sx)); inst.setMatrixAt(i, tmpM); });
+        inst.castShadow = false; inst.receiveShadow = true;
+        parent.add(inst);
+      };
+      const rod = (parent: any, mat: any, x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, r = 0.02) => {
+        const len = Math.hypot(x1 - x0, y1 - y0, z1 - z0);
+        const m = mesh(parent, unitCyl, mat, [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2], [r, len, r], false);
+        m.quaternion.setFromUnitVectors(up, new THREE.Vector3(x1 - x0, y1 - y0, z1 - z0).normalize());
+        return m;
+      };
+      const chairsAt = (parent: any, spots: { x: number; y: number; z: number; ry: number }[]) => {
+        if (!pro) { instanced(parent, basicChairGeo, M.chair, spots, false); return; }
+        instanced(parent, chairFrameGeo, M.chairFrame, spots);
+        instanced(parent, chairCushionGeo, M.chair, spots);
+        if (richFlowers) instanced(parent, sashGeo, M.sash, spots, false);
+      };
+      const counter = (parent: any, w: number, d: number, h = 0.9, mat = M.black) => { box(parent, w, h, d, mat, 0, h / 2); box(parent, w + 0.06, 0.04, d + 0.06, pro ? M.gold : M.ivory, 0, h + 0.02); };
+      const neutral = (c: string, r = 0.6, m = 0, extra: Record<string, unknown> = {}) => pro ? std(c, r, m, extra) : std('#8A9AB8', 0.7);
+      M.water = pro ? std('#7FC8D8', 0.05, 0.1, { transparent: true, opacity: 0.7 }) : std('#8A9AB8', 0.5);
+      M.ice = pro ? std('#E3F6FC', 0.05, 0.05, { transparent: true, opacity: 0.78 }) : std('#E8EDF4', 0.5);
+      M.carpet = neutral('#7A1626', 0.95);
+      M.trunk = neutral('#5A4330', 0.85);
+      M.screenWhite = std(pro ? '#F7F7F5' : '#E8EDF4', 0.6);
+      M.velvet = neutral('#5B1A2A', 0.75);
+      M.balloonA = pro ? std(style.flower, 0.25, 0.05) : std('#8A9AB8', 0.6);
+      M.balloonB = pro ? std(style.flowerAccent, 0.25, 0.05) : std('#E8EDF4', 0.6);
+      M.balloonC = pro ? std('#E9CF94', 0.2, 0.6) : std('#6E7EA3', 0.6);
+      M.fog = std('#FFFFFF', 1, 0, { transparent: true, opacity: 0.16, depthWrite: false });
+      M.neon = pro ? std('#FFFFFF', 0.4, 0, { emissive: new THREE.Color('#FF6FB0'), emissiveIntensity: 2.6 }) : std('#E8EDF4', 0.6);
+      const brightKids = ['#F2B544', '#5BB8E8', '#E86A8A', '#7CCB7A', '#B48CE0'];
+      const kidMats = brightKids.map((c) => pro ? std(c, 0.5) : std('#8A9AB8', 0.7));
+      const textPlane = (text: string, color: string, glow: string, font: string) => canvasTexture(512, 256, (ctx) => {
+        ctx.clearRect(0, 0, 512, 256);
+        ctx.fillStyle = color; ctx.shadowColor = glow; ctx.shadowBlur = 20;
+        ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, 256, 132);
+      });
+      const welcomeTex = pro ? textPlane('Welcome', '#8C6A2E', 'rgba(0,0,0,0)', 'italic 600 112px "Readex Pro", serif') : null;
+      const neonTex = pro ? textPlane('Mr & Mrs', '#FFF0F7', '#FF5FA2', '600 120px "Readex Pro", sans-serif') : null;
+      const hangTop = () => (outdoor ? 4.2 : Math.max(2.6, ceilingM) - 0.25);
+
+      /** Draws a catalogue object into `group`. Returns the label height, or null if the type is not one of these. */
+      const buildExtra = (group: any, item: LayoutItem, w: number, d: number): number | null => {
+        switch (item.type) {
+          case 'head_table': {
+            box(group, w, 0.025, d, M.linen, 0, 0.75); box(group, w, 0.73, d, M.linen, 0, 0.365);
+            if (pro) { box(group, w, 0.5, 0.01, M.runner, 0, 0.5, d / 2 + 0.01, false); for (let i = 0; i < 3; i++) flowerCluster(group, -w / 3 + (w / 3) * i, 0.9, d / 2 - 0.2, 0.22); }
+            const n = Math.max(1, Math.floor(w / 0.65));
+            chairsAt(group, Array.from({ length: n }, (_, i) => ({ x: -w / 2 + (w / n) * (i + 0.5), y: 0, z: -d / 2 - 0.38, ry: Math.PI })));
+            return 1.5;
+          }
+          case 'kids_table': {
+            const r = w / 2 - 0.15;
+            cyl(group, r, 0.03, kidMats[0], 0, 0.54); cyl(group, 0.05, 0.52, M.ivory, 0, 0.26);
+            for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; cyl(group, 0.14, 0.32, kidMats[(i % 4) + 1], Math.cos(a) * (r + 0.22), 0.16, Math.sin(a) * (r + 0.22)); }
+            if (pro) balls(group, M.balloonA, [[0, 0.62, 0, 0.06]]);
+            return 1.1;
+          }
+          case 'sofa': case 'armchair': {
+            box(group, w, 0.42, d, M.sofa, 0, 0.21); box(group, w, 0.45, 0.18, M.sofa, 0, 0.63, -d / 2 + 0.09);
+            for (const x of [-w / 2 + 0.08, w / 2 - 0.08]) box(group, 0.16, 0.62, d, pro ? M.gold : M.sofa, x, 0.31);
+            if (pro) { const n = Math.max(1, Math.round((w - 0.3) / 0.6)); for (let i = 0; i < n; i++) box(group, 0.4, 0.34, 0.1, M.runner, -w / 2 + 0.15 + ((w - 0.3) / n) * (i + 0.5), 0.62, -d / 2 + 0.22); }
+            return 1.3;
+          }
+          case 'ottoman': cyl(group, w / 2, 0.42, pro ? M.runner : M.sofa, 0, 0.21); if (pro) cyl(group, w / 2 + 0.005, 0.03, M.gold, 0, 0.03); return 0.9;
+          case 'bench': {
+            box(group, w, 0.06, d * 0.8, pro ? M.wood : M.sofa, 0, 0.45);
+            box(group, w, 0.35, 0.05, pro ? M.wood : M.sofa, 0, 0.7, -d / 2 + 0.03);
+            for (const x of [-w / 2 + 0.1, w / 2 - 0.1]) for (const z of [-d * 0.3, d * 0.3]) box(group, 0.05, 0.43, 0.05, M.black, x, 0.215, z);
+            return 1.2;
+          }
+          case 'bar_stool':
+            cyl(group, 0.2, 0.02, M.black, 0, 0.01); cyl(group, 0.025, 0.74, pro ? M.silver : M.chairFrame, 0, 0.38);
+            cyl(group, 0.19, 0.07, M.chair, 0, 0.78);
+            { const ring = new THREE.Mesh(own(new THREE.TorusGeometry(0.15, 0.012, 6, 20)), pro ? M.silver : M.chairFrame); ring.rotation.x = Math.PI / 2; ring.position.y = 0.3; group.add(ring); }
+            return 1.2;
+          case 'projector_screen': {
+            const sh = Math.min(w * 0.6, (ceilingM || 6) - 1.2);
+            for (const x of [-w / 2, w / 2]) { box(group, 0.06, sh + 1, 0.06, M.black, x, (sh + 1) / 2); box(group, 0.08, 0.04, d, M.black, x, 0.02); }
+            mesh(group, own(new THREE.PlaneGeometry(w - 0.1, sh)), M.screenWhite, [0, 1 + sh / 2 - 0.05, 0.01], undefined, false);
+            box(group, w, 0.06, 0.08, M.black, 0, 1 + sh);
+            return sh + 1.5;
+          }
+          case 'tv_stand':
+            box(group, 0.7, 0.04, 0.5, M.black, 0, 0.02); box(group, 0.08, 1.3, 0.08, M.black, 0, 0.65);
+            box(group, w, w * 0.58, 0.06, M.black, 0, 1.25 + w * 0.29);
+            mesh(group, own(new THREE.PlaneGeometry(w - 0.06, w * 0.58 - 0.06)), M.led, [0, 1.25 + w * 0.29, 0.035], undefined, false);
+            return 1.25 + w * 0.58 + 0.4;
+          case 'mic_stand':
+            cyl(group, 0.14, 0.02, M.black, 0, 0.01); cyl(group, 0.012, 1.45, M.silver, 0, 0.73);
+            rod(group, M.silver, 0, 1.45, 0, 0, 1.55, 0.18, 0.01); cyl(group, 0.025, 0.12, M.black, 0, 1.58, 0.2);
+            return 2;
+          case 'speaker':
+            box(group, w, 0.9, d, M.black, 0, 0.45); box(group, w * 0.9, 1.1, d * 0.9, M.black, 0, 1.45);
+            for (const [yy, rr] of [[0.45, 0.22], [1.25, 0.16], [1.75, 0.08]] as const) { const c = mesh(group, unitCyl, M.silver, [0, yy, d / 2 + 0.005], [rr, 0.01, rr], false); c.rotation.x = Math.PI / 2; }
+            return 2.6;
+          case 'piano': {
+            box(group, w, 0.32, d * 0.55, M.black, 0, 0.82, d * 0.2);
+            const tail = mesh(group, unitCyl, M.black, [0, 0.82, -d * 0.1], [w / 2, 0.32, d * 0.42]);
+            tail.scale.set(w / 2, 0.32, d * 0.42);
+            const lid = box(group, w * 0.95, 0.02, d * 0.8, M.black, 0, 1.25, -d * 0.05); lid.rotation.z = 0.5; lid.position.x = -0.15;
+            box(group, w, 0.06, 0.18, M.ivory, 0, 0.96, d / 2 - 0.05); box(group, w, 0.02, 0.07, M.black, 0, 1.0, d / 2 - 0.1, false);
+            for (const [x, z] of [[-w / 2 + 0.12, d / 2 - 0.15], [w / 2 - 0.12, d / 2 - 0.15], [0, -d / 2 + 0.2]]) box(group, 0.08, 0.66, 0.08, M.black, x, 0.33, z);
+            box(group, 0.9, 0.08, 0.35, M.black, 0, 0.48, d / 2 + 0.35); for (const x of [-0.4, 0.4]) box(group, 0.05, 0.44, 0.3, M.black, x, 0.22, d / 2 + 0.35);
+            return 1.9;
+          }
+          case 'band_riser': {
+            const h = 0.4;
+            box(group, w, h, d, M.stage, 0, h / 2);
+            if (pro) box(group, w + 0.02, 0.04, d + 0.02, M.gold, 0, h - 0.01);
+            // Drum kit and two microphones.
+            cyl(group, 0.28, 0.35, M.ivory, 0, h + 0.3, -d / 4); for (const x of [-0.5, 0.5]) cyl(group, 0.2, 0.25, M.ivory, x, h + 0.5, -d / 4 + 0.1);
+            for (const x of [-0.8, 0.9]) { cyl(group, 0.18, 0.01, M.black, x - 0.2, h + 0.95, -d / 4 + 0.2, false); cyl(group, 0.01, 0.95, M.silver, x - 0.2, h + 0.48, -d / 4 + 0.2); }
+            for (const x of [-w / 4, w / 4]) { cyl(group, 0.012, 1.4, M.silver, x, h + 0.7, d / 4); cyl(group, 0.025, 0.1, M.black, x, h + 1.42, d / 4); }
+            return h + 1.8;
+          }
+          case 'round_buffet': {
+            const r = w / 2;
+            cyl(group, r, 0.88, M.linen, 0, 0.44); cyl(group, r + 0.03, 0.03, pro ? M.gold : M.linen, 0, 0.9);
+            if (pro) {
+              const lidGeo = own(new THREE.CylinderGeometry(0.15, 0.15, 0.42, 14, 1, false, 0, Math.PI));
+              const n = Math.max(4, Math.floor((Math.PI * 2 * (r - 0.3)) / 0.6));
+              for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; const lid = mesh(group, lidGeo, M.silver, [Math.cos(a) * (r - 0.3), 0.96, Math.sin(a) * (r - 0.3)]); lid.rotation.set(0, -a + Math.PI / 2, Math.PI / 2); }
+              cyl(group, 0.04, 0.5, M.gold, 0, 1.15); flowerCluster(group, 0, 1.45, 0, 0.3);
+            } else for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; box(group, 0.4, 0.1, 0.3, M.silver, Math.cos(a) * (r - 0.3), 0.95, Math.sin(a) * (r - 0.3)); }
+            return 1.9;
+          }
+          case 'coffee_station': case 'juice_station': case 'water_station': {
+            counter(group, w, d, 0.9, item.type === 'coffee_station' ? M.black : M.linen);
+            box(group, w, 1.2, 0.05, M.backdrop, 0, 1.5, -d / 2 + 0.03);
+            if (item.type === 'coffee_station') {
+              box(group, 0.55, 0.45, 0.4, M.silver, -w / 4, 1.15); box(group, 0.4, 0.06, 0.3, M.black, -w / 4, 0.95, 0.05);
+              const cups: { x: number; y: number; z: number; ry: number }[] = [];
+              for (let i = 0; i < 12; i++) cups.push({ x: w / 8 + (i % 4) * 0.12, y: 0.93, z: -0.1 + Math.floor(i / 4) * 0.12, ry: 0 });
+              instanced(group, glassGeo, M.plate, cups, false);
+            } else {
+              const n = item.type === 'water_station' ? 2 : 3;
+              const juice = [style.flowerAccent, '#F2B544', '#E86A3A'];
+              for (let i = 0; i < n; i++) {
+                const x = -w / 2 + (w / n) * (i + 0.5);
+                cyl(group, 0.13, 0.45, M.glass, x, 1.15, 0, false);
+                cyl(group, 0.12, 0.32, item.type === 'water_station' ? M.water : (pro ? std(juice[i % 3], 0.2, 0, { transparent: true, opacity: 0.85 }) : M.water), x, 1.08, 0, false);
+                cyl(group, 0.14, 0.03, pro ? M.gold : M.silver, x, 1.39);
+              }
+            }
+            if (pro) flowerCluster(group, w / 2 - 0.25, 1.05, 0.1, 0.13);
+            return 2.4;
+          }
+          case 'live_cooking': {
+            counter(group, w, d, 0.9, M.silver);
+            for (const x of [-w / 2 + 0.05, w / 2 - 0.05]) box(group, 0.06, 2.2, 0.06, M.silver, x, 1.1, -d / 2 + 0.05);
+            box(group, w, 0.35, d * 0.9, M.silver, 0, 2.1, 0);
+            for (const x of [-w / 4, w / 4]) { cyl(group, 0.18, 0.04, M.black, x, 0.94); cyl(group, 0.16, 0.08, M.silver, x, 1.0); }
+            box(group, w * 0.9, 0.04, 0.4, M.wood, 0, 0.93, d / 2 - 0.25);
+            return 2.6;
+          }
+          case 'popcorn_cart': case 'ice_cream_cart': {
+            box(group, w, 0.75, d, item.type === 'popcorn_cart' ? kidMats[2] : kidMats[1], 0, 0.55);
+            for (const x of [-w / 2 + 0.15, w / 2 - 0.15]) { const wh = mesh(group, unitCyl, M.black, [x, 0.17, d / 2 + 0.02], [0.17, 0.04, 0.17]); wh.rotation.x = Math.PI / 2; }
+            if (item.type === 'popcorn_cart') {
+              box(group, w * 0.8, 0.6, d * 0.8, M.glass, 0, 1.25, 0, false); balls(group, std('#F6E3B0', 0.8), Array.from({ length: pro ? 30 : 10 }, (_, i) => [((i * 37) % 10) / 10 * w * 0.6 - w * 0.3, 1.02 + ((i * 13) % 5) * 0.03, ((i * 17) % 10) / 10 * d * 0.6 - d * 0.3, 0.05]));
+              const roof = mesh(group, own(new THREE.ConeGeometry(Math.max(w, d) * 0.7, 0.3, 4)), kidMats[2], [0, 1.72, 0]); roof.rotation.y = Math.PI / 4;
+            } else {
+              for (let i = 0; i < 4; i++) cyl(group, 0.1, 0.06, [M.ivory, kidMats[2], kidMats[3], kidMats[0]][i], -w / 2 + 0.25 + i * ((w - 0.5) / 3), 0.96, 0, false);
+              cyl(group, 0.02, 1.3, M.silver, 0, 1.6);
+              mesh(group, own(new THREE.ConeGeometry(0.9, 0.35, 12)), pro ? M.runner : M.ivory, [0, 2.15, 0]);
+            }
+            return 2.4;
+          }
+          case 'potted_plant':
+            cyl(group, 0.22, 0.45, pro ? M.gold : M.ivory, 0, 0.225);
+            balls(group, M.leaf, [[0, 0.75, 0, 0.3], [0.15, 1.0, 0.05, 0.22], [-0.12, 0.98, -0.06, 0.2], [0, 1.15, 0, 0.16]]);
+            return 1.6;
+          case 'palm_tree': {
+            cyl(group, 0.35, 0.5, pro ? M.gold : M.ivory, 0, 0.25);
+            const top = 2.9;
+            for (let i = 0; i < 7; i++) cyl(group, 0.09 - i * 0.004, (top - 0.5) / 7 + 0.02, M.trunk, Math.sin(i * 0.4) * 0.05, 0.5 + ((top - 0.5) / 7) * (i + 0.5), 0);
+            for (let i = 0; i < 8; i++) {
+              const a = (i / 8) * Math.PI * 2;
+              const frond = mesh(group, unitBox, M.leaf, [Math.cos(a) * 0.55, top - 0.15, Math.sin(a) * 0.55], [1.2, 0.02, 0.28], false);
+              frond.rotation.set(0, -a, -0.45);
+            }
+            return top + 0.6;
+          }
+          case 'light_tree': {
+            cyl(group, 0.3, 0.4, pro ? M.gold : M.ivory, 0, 0.2);
+            cyl(group, 0.07, 1.5, M.trunk, 0, 1.15);
+            const blobs = [[0, 2.1, 0, 0.55], [0.4, 1.9, 0.1, 0.4], [-0.38, 1.95, -0.08, 0.42], [0.1, 2.45, -0.2, 0.38], [-0.1, 1.8, 0.35, 0.35]];
+            balls(group, pro ? M.flower : M.leaf, blobs);
+            if (pro) {
+              const n = lite ? 30 : 70; const bulbs: number[][] = [];
+              for (let i = 0; i < n; i++) { const b = blobs[i % blobs.length]; const a = i * 2.4, e = ((i * 7) % 10) / 10 - 0.3; bulbs.push([b[0] + Math.cos(a) * b[3] * 0.98, b[1] + e * b[3], b[2] + Math.sin(a) * b[3] * 0.98, 0.025]); }
+              balls(group, M.warmGlow, bulbs);
+            }
+            return 3.2;
+          }
+          case 'column':
+            box(group, w, 0.12, w, pro ? M.gold : M.ivory, 0, 0.06); cyl(group, w * 0.34, 2.1, M.ivory, 0, 1.17);
+            box(group, w, 0.12, w, pro ? M.gold : M.ivory, 0, 2.28);
+            if (pro) flowerCluster(group, 0, 2.5, 0, 0.3);
+            return 3;
+          case 'backdrop': {
+            const h = Math.min(2.8, (ceilingM || 6) - 0.3);
+            box(group, w, h, 0.12, M.backdrop, 0, h / 2);
+            for (const x of [-w / 2, w / 2]) box(group, 0.1, 0.06, d, M.black, x, 0.03);
+            if (pro) { box(group, w + 0.1, 0.08, 0.16, M.gold, 0, h); for (const x of [-w / 2, w / 2]) box(group, 0.08, h, 0.16, M.gold, x, h / 2); for (const x of [-w / 2 + 0.3, w / 2 - 0.3]) flowerCluster(group, x, h - 0.1, 0.12, 0.3); }
+            return h + 0.5;
+          }
+          case 'balloon_arch': case 'balloons': {
+            const pts: [number[][], number[][], number[][]] = [[], [], []];
+            if (item.type === 'balloon_arch') {
+              const R = w / 2, n = lite ? 26 : 44;
+              for (let i = 0; i <= n; i++) {
+                const a = Math.PI * (i / n);
+                for (let k = 0; k < 3; k++) { const rr = R + (k - 1) * 0.12, r = 0.13 + ((i + k) % 3) * 0.025; pts[(i + k) % 3].push([Math.cos(a) * rr, 0.15 + Math.sin(a) * rr * 0.85, (k - 1) * 0.1, r]); }
+              }
+              for (const x of [-R, R]) box(group, 0.3, 0.12, 0.3, M.black, x, 0.06);
+            } else {
+              for (let i = 0; i < 7; i++) { const a = i * 0.9, h = 1.5 + ((i * 3) % 5) * 0.12, x = Math.cos(a) * 0.22, z = Math.sin(a) * 0.22; pts[i % 3].push([x, h, z, 0.18]); rod(group, M.silver, 0, 0.12, 0, x, h - 0.17, z, 0.003); }
+              cyl(group, 0.1, 0.12, pro ? M.gold : M.black, 0, 0.06);
+            }
+            balls(group, M.balloonA, pts[0], 1, 1.12); balls(group, M.balloonB, pts[1], 1, 1.12); balls(group, M.balloonC, pts[2], 1, 1.12);
+            return item.type === 'balloon_arch' ? w / 2 + 0.7 : 2.3;
+          }
+          case 'candelabra': {
+            cyl(group, 0.16, 0.04, M.gold, 0, 0.02); cyl(group, 0.025, 1.05, M.gold, 0, 0.55);
+            const tips: [number, number][] = [[0, 0]];
+            for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2; tips.push([Math.cos(a) * 0.24, Math.sin(a) * 0.24]); rod(group, M.gold, 0, 1.0, 0, Math.cos(a) * 0.24, 1.1, Math.sin(a) * 0.24, 0.012); }
+            for (const [x, z] of tips) { cyl(group, 0.04, 0.02, M.gold, x, 1.1 + (x || z ? 0 : 0.05)); cyl(group, 0.022, 0.18, M.candle, x, 1.2 + (x || z ? 0 : 0.05), z, false); }
+            if (pro) flowerCluster(group, 0, 0.95, 0, 0.12);
+            return 1.8;
+          }
+          case 'lanterns': {
+            [[-0.25, 0.7, 0], [0.18, 0.5, 0.1], [0.3, 0.35, -0.15]].forEach(([x, h, z]) => {
+              const s = h * 0.45;
+              box(group, s, h, s, M.glass, x, h / 2, z, false);
+              for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(group, 0.02, h, 0.02, pro ? M.gold : M.black, x + (dx * s) / 2, h / 2, z + (dz * s) / 2, false);
+              box(group, s + 0.04, 0.03, s + 0.04, pro ? M.gold : M.black, x, h, z); cyl(group, s * 0.25, h * 0.35, M.candle, x, h * 0.18, z, false);
+            });
+            return 1.2;
+          }
+          case 'welcome_sign': {
+            for (const [x, z] of [[-0.3, 0.12], [0.3, 0.12]]) rod(group, M.wood, x, 0, z, x * 0.7, 1.6, -0.05, 0.02);
+            rod(group, M.wood, 0, 0, -0.35, 0, 1.55, -0.05, 0.02);
+            const board = box(group, w * 0.8, w * 1.05, 0.03, M.ivory, 0, 1.05, 0.05); board.rotation.x = -0.12;
+            if (welcomeTex) { const sign = mesh(group, own(new THREE.PlaneGeometry(w * 0.72, w * 0.36)), std('#FFFFFF', 0.6, 0, { map: welcomeTex, transparent: true }), [0, 1.12, 0.075], undefined, false); sign.rotation.x = -0.12; box(group, w * 0.84, 0.03, 0.04, M.gold, 0, 1.05 + w * 0.52, 0.0); flowerCluster(group, -w * 0.3, 0.55, 0.12, 0.14); }
+            return 2;
+          }
+          case 'red_carpet':
+            box(group, w, 0.012, d, M.carpet, 0, 0.006, 0, false);
+            if (pro) for (const x of [-w / 2 + 0.06, w / 2 - 0.06]) box(group, 0.03, 0.014, d, M.gold, x, 0.007, 0, false);
+            return 0.5;
+          case 'spotlight': {
+            for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2; rod(group, M.black, Math.cos(a) * 0.35, 0, Math.sin(a) * 0.35, 0, 1.0, 0, 0.015); }
+            cyl(group, 0.02, 1.4, M.black, 0, 1.6);
+            const head = mesh(group, unitCyl, M.black, [0, 2.35, 0.05], [0.13, 0.35, 0.13]); head.rotation.x = 1.0;
+            const lens = mesh(group, unitCyl, M.lens, [0, 2.24, 0.22], [0.1, 0.01, 0.1], false); lens.rotation.x = 1.0;
+            return 2.9;
+          }
+          case 'uplight':
+            box(group, 0.24, 0.2, 0.24, M.black, 0, 0.1); cyl(group, 0.09, 0.01, M.lens, 0, 0.205, 0, false);
+            return 0.6;
+          case 'moving_head': {
+            box(group, 0.42, 0.18, 0.42, M.black, 0, 0.09);
+            for (const x of [-0.16, 0.16]) box(group, 0.04, 0.3, 0.12, M.black, x, 0.33);
+            const headM = mesh(group, unitCyl, M.black, [0, 0.42, 0], [0.13, 0.3, 0.13]); headM.rotation.x = 0.6;
+            const lens = mesh(group, unitCyl, M.lens, [0, 0.5, 0.13], [0.1, 0.01, 0.1], false); lens.rotation.x = 0.6;
+            return 1;
+          }
+          case 'string_lights': {
+            const h = Math.min(3, (ceilingM || 6) - 0.2);
+            box(group, w, 0.05, 0.05, pro ? M.gold : M.black, 0, h);
+            for (const x of [-w / 2, w / 2]) box(group, 0.05, h, 0.05, pro ? M.gold : M.black, x, h / 2);
+            const strands = Math.max(4, Math.round(w / (lite ? 0.3 : 0.18)));
+            const bulbs: number[][] = [];
+            for (let i = 0; i < strands; i++) { const x = -w / 2 + (w / strands) * (i + 0.5); rod(group, M.black, x, h, 0, x, 0.3, 0, 0.003); for (let k = 0; k < (lite ? 6 : 12); k++) bulbs.push([x, 0.35 + ((h - 0.4) * k) / (lite ? 6 : 12) + (i % 2) * 0.08, 0.01, 0.022]); }
+            balls(group, pro ? M.warmGlow : M.ivory, bulbs);
+            return h + 0.4;
+          }
+          case 'fog_machine':
+            box(group, w, 0.28, d, M.black, 0, 0.14); cyl(group, 0.04, 0.12, M.silver, 0, 0.14, d / 2 + 0.05);
+            if (pro && !lite) balls(group, M.fog, [[0, 0.25, 0.8, 0.45], [0.3, 0.2, 1.4, 0.55], [-0.35, 0.22, 1.9, 0.6], [0.1, 0.25, 2.5, 0.7]], 1.4, 0.5);
+            return 0.8;
+          case 'chandelier': case 'crystal_chandelier': {
+            const top = hangTop();
+            const big = item.type === 'crystal_chandelier' && pro;
+            cyl(group, 0.012, 0.6, pro ? M.gold : M.silver, 0, top - 0.3);
+            const tiers = big ? [0.95, 0.7, 0.45] : [0.6];
+            tiers.forEach((R, t) => {
+              const y = top - 0.65 - t * 0.35;
+              const ring = new THREE.Mesh(own(new THREE.TorusGeometry(R, 0.03, 8, 40)), pro ? M.gold : M.silver); ring.rotation.x = Math.PI / 2; ring.position.y = y; group.add(ring);
+              const n = Math.round(R * (big ? 26 : 10));
+              const drops: number[][] = [], bulbs: number[][] = [];
+              for (let i = 0; i < n; i++) {
+                const a = (i / n) * Math.PI * 2;
+                bulbs.push([Math.cos(a) * R, y + 0.07, Math.sin(a) * R, 0.05]);
+                if (big) for (let k = 1; k <= (lite ? 2 : 4); k++) drops.push([Math.cos(a) * R, y - k * 0.09, Math.sin(a) * R, 0.03]);
+              }
+              balls(group, pro ? M.warmGlow : M.ivory, bulbs);
+              if (big) balls(group, M.crystal || M.glass, drops, 1, 1.4);
+            });
+            if (big) sph(group, 0.22, M.crystal || M.glass, 0, top - 1.45, 0);
+            return top - 1.8;
+          }
+          case 'stanchions': {
+            const n = Math.max(2, Math.round(w / 1.3) + 1);
+            for (let i = 0; i < n; i++) {
+              const x = -w / 2 + (w / (n - 1)) * i;
+              cyl(group, 0.15, 0.03, pro ? M.gold : M.silver, x, 0.015); cyl(group, 0.025, 0.95, pro ? M.gold : M.silver, x, 0.5); sph(group, 0.045, pro ? M.gold : M.silver, x, 0.98, 0);
+              if (i < n - 1) { const x2 = -w / 2 + (w / (n - 1)) * (i + 1); const mid = (x + x2) / 2; rod(group, M.velvet, x, 0.92, 0, mid, 0.8, 0, 0.02); rod(group, M.velvet, mid, 0.8, 0, x2, 0.92, 0, 0.02); }
+            }
+            return 1.5;
+          }
+          case 'cloakroom': {
+            counter(group, w, 0.6, 1.0, M.black); box(group, w, 0.04, 0.04, M.silver, 0, 1.75, -d / 2 + 0.2);
+            for (const x of [-w / 2 + 0.05, w / 2 - 0.05]) box(group, 0.04, 1.75, 0.04, M.silver, x, 0.875, -d / 2 + 0.2);
+            const coats = ['#1E2230', '#7A1F3D', '#3A3F58', '#C9B79C', '#0F3D2E', '#2B2B2E'];
+            const n = Math.max(3, Math.floor(w / 0.22));
+            for (let i = 0; i < n; i++) box(group, 0.12, 0.9, 0.4, pro ? std(coats[i % coats.length], 0.85) : M.chair, -w / 2 + 0.2 + ((w - 0.4) / (n - 1)) * i, 1.25, -d / 2 + 0.2);
+            return 2.3;
+          }
+          case 'kids_area': {
+            const tiles = 4;
+            for (let i = 0; i < tiles; i++) for (let j = 0; j < tiles; j++) box(group, w / tiles - 0.02, 0.04, d / tiles - 0.02, kidMats[(i + j) % kidMats.length], -w / 2 + (w / tiles) * (i + 0.5), 0.02, -d / 2 + (d / tiles) * (j + 0.5), false);
+            // Low fence, a slide and a ball pit.
+            for (const [x, z, fw, fd] of [[0, -d / 2, w, 0.05], [0, d / 2, w * 0.6, 0.05], [-w / 2, 0, 0.05, d], [w / 2, 0, 0.05, d]] as const) box(group, fw, 0.6, fd, M.ivory, x, 0.3, z);
+            box(group, 0.8, 1.0, 0.8, kidMats[1], -w / 4, 0.5, -d / 4);
+            { const slide = box(group, 0.6, 0.05, 1.6, kidMats[2], -w / 4, 0.55, -d / 4 + 1.05); slide.rotation.x = 0.6; }
+            cyl(group, 0.85, 0.4, kidMats[3], w / 4, 0.2, d / 6);
+            balls(group, kidMats[0], Array.from({ length: pro ? 40 : 12 }, (_, i) => { const a = i * 2.4, rr = 0.7 * Math.sqrt(((i * 7) % 10) / 10); return [w / 4 + Math.cos(a) * rr, 0.42, d / 6 + Math.sin(a) * rr, 0.07]; }));
+            return 1.6;
+          }
+          case 'arch_gate': {
+            const h = Math.min(2.4, (ceilingM || 6) - 1.2), R = w / 2;
+            for (const x of [-R, R]) { box(group, 0.36, 0.2, 0.36, pro ? M.gold : M.ivory, x, 0.1); cyl(group, 0.13, h, M.ivory, x, 0.2 + h / 2); }
+            const arc = new THREE.Mesh(own(new THREE.TorusGeometry(R, 0.12, 10, 32, Math.PI)), pro ? M.gold : M.ivory);
+            arc.position.y = 0.2 + h; arc.castShadow = true; group.add(arc);
+            if (pro) { for (let i = 0; i <= 16; i++) { const a = Math.PI * (i / 16); rose(group, 0.13, i % 3 ? M.flower : M.flowerAccent, Math.cos(a) * R, 0.2 + h + Math.sin(a) * R, 0.1); } for (const x of [-R, R]) flowerCluster(group, x, 0.5, 0.25, 0.25); }
+            return h + R + 0.7;
+          }
+        }
+        if (!pro) return null;
+        switch (item.type) {
+          case 'royal_chairs': {
+            for (const x of [-0.5, 0.5]) {
+              box(group, 0.75, 0.48, 0.7, M.velvet, x, 0.24); box(group, 0.82, 0.05, 0.76, M.gold, x, 0.49);
+              box(group, 0.75, 1.0, 0.12, M.velvet, x, 1.0, -0.3); box(group, 0.85, 0.1, 0.16, M.gold, x, 1.53, -0.3);
+              sph(group, 0.09, M.gold, x, 1.65, -0.3);
+              for (const sx of [-0.4, 0.4]) box(group, 0.07, 0.6, 0.7, M.gold, x + sx, 0.42);
+            }
+            flowerCluster(group, 0, 0.55, -0.1, 0.18);
+            return 2.1;
+          }
+          case 'ice_sculpture': {
+            box(group, w, 0.025, d, M.linen, 0, 0.75); box(group, w, 0.73, d, M.linen, 0, 0.365);
+            box(group, 0.6, 0.15, 0.4, M.ice, 0, 0.84);
+            const body = sph(group, 0.28, M.ice, 0, 1.1, 0); body.scale.set(0.28, 0.2, 0.18);
+            const neck = new THREE.Mesh(own(new THREE.TorusGeometry(0.2, 0.05, 8, 16, Math.PI * 0.9)), M.ice); neck.position.set(0.12, 1.32, 0); neck.rotation.z = -0.3; group.add(neck);
+            sph(group, 0.07, M.ice, -0.06, 1.48, 0);
+            for (const s of [-1, 1]) { const wing = sph(group, 0.2, M.ice, -0.08, 1.2, s * 0.16); wing.scale.set(0.24, 0.12, 0.05); wing.rotation.z = 0.5; }
+            for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; cyl(group, 0.03, 0.1, M.candle, Math.cos(a) * 0.45, 0.82, Math.sin(a) * 0.3, false); }
+            return 2;
+          }
+          case 'floral_pillar': {
+            cyl(group, 0.25, 0.08, M.gold, 0, 0.04); cyl(group, 0.12, 1.8, M.ivory, 0, 0.98);
+            for (let i = 0; i < (richFlowers ? 18 : 8); i++) { const a = i * 0.9, y = 0.3 + i * (1.5 / (richFlowers ? 18 : 8)); rose(group, 0.1, i % 3 ? M.flower : M.flowerAccent, Math.cos(a) * 0.15, y, Math.sin(a) * 0.15); }
+            cyl(group, 0.25, 0.06, M.gold, 0, 1.9); flowerCluster(group, 0, 2.15, 0, 0.32);
+            return 2.8;
+          }
+          case 'floral_swing': {
+            const h = 2.5;
+            for (const x of [-w / 2, w / 2]) { rod(group, M.gold, x, 0, -d / 2 + 0.1, x, h, 0, 0.04); rod(group, M.gold, x, 0, d / 2 - 0.1, x, h, 0, 0.04); }
+            rod(group, M.gold, -w / 2, h, 0, w / 2, h, 0, 0.05);
+            for (const x of [-0.6, 0.6]) rod(group, M.ivory, x, h, 0, x, 0.65, 0, 0.012);
+            box(group, 1.4, 0.06, 0.5, M.ivory, 0, 0.62); box(group, 1.4, 0.45, 0.05, M.ivory, 0, 0.88, -0.22);
+            for (let i = 0; i < 14; i++) rose(group, 0.12, i % 3 ? M.flower : M.flowerAccent, -w / 2 + (w / 13) * i, h + 0.05, 0.05);
+            for (const x of [-0.6, 0.6]) for (let k = 0; k < 6; k++) rose(group, 0.08, k % 2 ? M.leaf : M.flower, x, 0.8 + k * 0.28, 0.02);
+            return h + 0.6;
+          }
+          case 'pergola': {
+            const h = Math.min(2.6, (ceilingM || 6) - 0.3);
+            for (const [x, z] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) { box(group, 0.12, h, 0.12, M.ivory, x, h / 2, z); box(group, 0.25, 0.08, 0.25, M.gold, x, 0.04, z); }
+            for (const z of [-d / 2, d / 2]) box(group, w + 0.3, 0.12, 0.12, M.ivory, 0, h, z);
+            for (let i = 0; i <= 5; i++) box(group, 0.08, 0.08, d + 0.3, M.ivory, -w / 2 + (w / 5) * i, h + 0.1, 0);
+            const drape = mesh(group, own(new THREE.PlaneGeometry(w, d)), std(style.linen, 0.85, 0, { side: THREE.DoubleSide, transparent: true, opacity: 0.6 }), [0, h + 0.16, 0], undefined, false); drape.rotation.x = -Math.PI / 2;
+            for (let i = 0; i < (richFlowers ? 22 : 10); i++) { const t = i / ((richFlowers ? 22 : 10) - 1); rose(group, 0.13, i % 3 ? M.flower : M.flowerAccent, -w / 2 + w * t, h + 0.05, -d / 2); if (i % 2 === 0) rose(group, 0.11, M.leaf, -w / 2 + w * t, h - 0.08, -d / 2 + 0.05); }
+            for (const x of [-w / 2, w / 2]) flowerCluster(group, x, h - 0.1, -d / 2, 0.35);
+            return h + 0.7;
+          }
+          case 'water_fountain': {
+            const r = w / 2;
+            cyl(group, r, 0.35, M.ivory, 0, 0.175); cyl(group, r - 0.08, 0.02, M.water, 0, 0.34, 0, false);
+            cyl(group, 0.12, 0.9, M.ivory, 0, 0.7); cyl(group, r * 0.45, 0.12, M.ivory, 0, 1.15); cyl(group, r * 0.4, 0.02, M.water, 0, 1.21, 0, false);
+            cyl(group, 0.06, 0.35, M.ivory, 0, 1.35);
+            const jet = mesh(group, own(new THREE.ConeGeometry(0.16, 0.6, 12, 1, true)), M.water, [0, 1.75, 0], undefined, false); jet.rotation.x = Math.PI;
+            const fall = new THREE.Mesh(own(new THREE.CylinderGeometry(r * 0.42, r * 0.55, 0.85, 24, 1, true)), M.water); fall.position.y = 0.78; group.add(fall);
+            return 2.3;
+          }
+          case 'neon_sign': {
+            for (const x of [-w / 2 + 0.1, w / 2 - 0.1]) { cyl(group, 0.12, 0.02, M.black, x, 0.01); cyl(group, 0.015, 1.6, M.black, x, 0.8); }
+            box(group, w, 0.8, 0.02, M.glass, 0, 1.6);
+            mesh(group, own(new THREE.PlaneGeometry(w * 0.95, w * 0.475)), std('#FFFFFF', 0.4, 0, { map: neonTex, transparent: true, emissive: new THREE.Color('#FFFFFF'), emissiveMap: neonTex, emissiveIntensity: 2.6 }), [0, 1.6, 0.02], undefined, false);
+            return 2.4;
+          }
+        }
+        return null;
+      };
+
       const buildItem = (item: LayoutItem) => {
         const group = new THREE.Group();
         group.userData.itemId = item.id;
@@ -1114,8 +1541,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           flowerCluster(group, -w * 0.02, 0.88, -0.1, 0.14);
           labelY = 1.5;
         } else {
-          box(group, w, 0.9, d, M.ivory, 0, 0.45);
-          labelY = 1.4;
+          const extraY = buildExtra(group, item, w, d);
+          if (extraY === null) { box(group, w, 0.9, d, M.ivory, 0, 0.45); labelY = 1.4; } else labelY = extraY;
         }
 
         if (item.type === 'table' && pro && guestsRef.current) addGuests(group, item);
@@ -1173,7 +1600,10 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const outline = new THREE.LineLoop(outlineGeo, own(new THREE.LineBasicMaterial({ color: '#E9CF94', depthTest: false })));
       outline.renderOrder = 9;
       outline.visible = false;
-      scene.add(outline);
+      const outlineGroup = new THREE.Group();
+      outlineGroup.add(outline);
+      scene.add(outlineGroup);
+      const outlines = [outline];
 
       // ── Pro lighting scenes: warm pools of light for Evening, moving colour beams for Party ──
       const lightTop = outdoor ? 4.4 : Math.max(2.4, ceilingM) - 0.3;
@@ -1384,8 +1814,8 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         renderer.setPixelRatio(ratio);
         renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
         if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(Math.max(1, r.width), Math.max(1, r.height)); }
-        const wasVisible = outline.visible;
-        outline.visible = false;
+        const wasVisible = outlineGroup.visible;
+        outlineGroup.visible = false;
         draw();
         const shotCanvas = document.createElement('canvas');
         const cw = renderer.domElement.width, chh = renderer.domElement.height;
@@ -1393,7 +1823,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         shotCanvas.width = cw; shotCanvas.height = chh + strip;
         const ctx = shotCanvas.getContext('2d')!;
         ctx.drawImage(renderer.domElement, 0, 0);
-        outline.visible = wasVisible;
+        outlineGroup.visible = wasVisible;
         renderer.setPixelRatio(basePixelRatio);
         renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
         if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(Math.max(1, r.width), Math.max(1, r.height)); }
@@ -1462,7 +1892,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
       const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-      let dragging: { id: string; group: any; offset: any; pointerId: number; mode: 'move' | 'rotate'; startClientX: number; startRotation: number } | null = null;
+      let dragging: { id: string; group: any; offset: any; pointerId: number; mode: 'move' | 'rotate'; startClientX: number; startRotation: number; start: any; others: { id: string; group: any; start: any }[] } | null = null;
       let looking: { pointerId: number; x: number; y: number; yaw: number; pitch: number } | null = null;
       let dragRaf = 0;
       let pendingPointer: PointerEvent | null = null;
@@ -1488,13 +1918,24 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         if (!group.userData.itemId) return;
         const item = itemsRef.current.find((i) => i.id === group.userData.itemId);
         if (!item) return;
-        selectRef.current?.(item.id);
-        if (rotationModeRef.current) {
-          dragging = { id: item.id, group, offset: null, pointerId: e.pointerId, mode: 'rotate', startClientX: e.clientX, startRotation: group.rotation.y };
+        // Bulk selection: Select mode or Shift/Ctrl adds or removes; dragging a selected item moves the whole selection.
+        const current = selectedIdsRef.current?.length ? selectedIdsRef.current : selectedIdRef.current ? [selectedIdRef.current] : [];
+        const wasSelected = current.includes(item.id);
+        const toggle = multiRef.current || e.shiftKey || e.ctrlKey || e.metaKey;
+        let groupIds: string[];
+        if (toggle) {
+          selectRef.current?.(item.id, true);
+          if (wasSelected) return;
+          groupIds = [...current, item.id];
+        } else if (wasSelected && current.length > 1) groupIds = current;
+        else { selectRef.current?.(item.id); groupIds = [item.id]; }
+        const others = groupIds.filter((id) => id !== item.id).map((id) => itemRoot.children.find((child: any) => child.userData?.itemId === id)).filter(Boolean).map((g: any) => ({ id: g.userData.itemId as string, group: g, start: g.position.clone() }));
+        if (rotationModeRef.current && !others.length) {
+          dragging = { id: item.id, group, offset: null, pointerId: e.pointerId, mode: 'rotate', startClientX: e.clientX, startRotation: group.rotation.y, start: group.position.clone(), others: [] };
         } else {
           const point = new THREE.Vector3();
           if (!raycaster.ray.intersectPlane(floorPlane, point)) return;
-          dragging = { id: item.id, group, offset: group.position.clone().sub(point), pointerId: e.pointerId, mode: 'move', startClientX: e.clientX, startRotation: group.rotation.y };
+          dragging = { id: item.id, group, offset: group.position.clone().sub(point), pointerId: e.pointerId, mode: 'move', startClientX: e.clientX, startRotation: group.rotation.y, start: group.position.clone(), others };
         }
         orbit.enabled = false;
         renderer.domElement.style.cursor = 'grabbing';
@@ -1518,6 +1959,10 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
         next.x = Math.max(-W / 2 + 0.2, Math.min(W / 2 - 0.2, next.x));
         next.z = Math.max(-D / 2 + 0.2, Math.min(D / 2 - 0.2, next.z));
         dragging.group.position.copy(next);
+        for (const o of dragging.others) {
+          o.group.position.x = Math.max(-W / 2 + 0.2, Math.min(W / 2 - 0.2, o.start.x + next.x - dragging.start.x));
+          o.group.position.z = Math.max(-D / 2 + 0.2, Math.min(D / 2 - 0.2, o.start.z + next.z - dragging.start.z));
+        }
       };
       const onPointerMove = (e: PointerEvent) => {
         if (looking && e.pointerId === looking.pointerId) {
@@ -1539,8 +1984,10 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           const delta = -((dragging.group.rotation.y - dragging.startRotation) * 180) / Math.PI;
           if (Math.abs(delta) >= 3) rotateRef.current?.(id, delta);
         } else {
-          const p = dragging.group.position;
-          moveRef.current?.(id, Math.max(0, Math.min(100, (p.x / W) * 100 + 50)), Math.max(0, Math.min(100, (p.z / D) * 100 + 50)));
+          const pct = (p: any) => ({ x: Math.max(0, Math.min(100, (p.x / W) * 100 + 50)), y: Math.max(0, Math.min(100, (p.z / D) * 100 + 50)) });
+          const moved = dragging.group.position.distanceTo(dragging.start) > 0.01;
+          if (dragging.others.length) { if (moved) moveManyRef.current?.([{ id, ...pct(dragging.group.position) }, ...dragging.others.map((o) => ({ id: o.id, ...pct(o.group.position) }))]); }
+          else if (moved) { const p = pct(dragging.group.position); moveRef.current?.(id, p.x, p.y); }
         }
         dragging = null;
         pendingPointer = null;
@@ -1647,13 +2094,20 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           sp.pts.geometry.attributes.position.needsUpdate = true;
         }
         const selectedGroup = selectedIdRef.current ? itemRoot.children.find((child: any) => child.userData?.itemId === selectedIdRef.current) : null;
-        if (selectedGroup && !walk.active) {
-          const fp = selectedGroup.userData.footprint || { w: 1, d: 1 };
-          outline.visible = true;
-          outline.position.set(selectedGroup.position.x, 0.06, selectedGroup.position.z);
-          outline.rotation.y = selectedGroup.rotation.y;
-          outline.scale.set(fp.w + 0.2, 1, fp.d + 0.2);
-        } else outline.visible = false;
+        const allSelected = walk.active ? [] : (selectedIdsRef.current?.length ? selectedIdsRef.current : selectedIdRef.current ? [selectedIdRef.current] : []);
+        let shown = 0;
+        for (const id of allSelected) {
+          const g = itemRoot.children.find((child: any) => child.userData?.itemId === id);
+          if (!g) continue;
+          if (!outlines[shown]) { const extra = new THREE.LineLoop(outlineGeo, outline.material); extra.renderOrder = 9; outlineGroup.add(extra); outlines.push(extra); }
+          const o = outlines[shown++];
+          const fp = g.userData.footprint || { w: 1, d: 1 };
+          o.visible = true;
+          o.position.set(g.position.x, 0.06, g.position.z);
+          o.rotation.y = g.rotation.y;
+          o.scale.set(fp.w + 0.2, 1, fp.d + 0.2);
+        }
+        for (let i = shown; i < outlines.length; i++) outlines[i].visible = false;
         const rotationBar = rotationBarRef.current;
         if (rotationBar && selectedGroup && !walk.active) {
           selectedGroup.getWorldPosition(projected);
@@ -1716,7 +2170,7 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
   useEffect(() => { engineRef.current?.rebuild?.(); }, [items, guestsOn]);
   useEffect(() => { engineRef.current?.applyView?.(view); onViewChange?.(view); }, [view, ready]);
   useEffect(() => { engineRef.current?.applyMeasure?.(); }, [measure, ready]);
-  useEffect(() => { engineRef.current?.applyMood?.(mood); try { window.localStorage.setItem(MOOD_KEY, mood); } catch {} }, [mood, ready]);
+  useEffect(() => { engineRef.current?.applyMood?.(mood); }, [mood, ready]);
   useEffect(() => { engineRef.current?.setTour?.(tour); }, [tour, ready, view]);
   stopTourRef.current = () => setTour(false);
   useEffect(() => { if (!toast) return; const t = window.setTimeout(() => setToast(''), 2600); return () => window.clearTimeout(t); }, [toast]);
@@ -1827,9 +2281,13 @@ export function EventLayout3D({ items, width, depth, language, mode = 'overview'
           </div>
         </div>
       </div>}
-      {!readOnly && view !== 'walk' && rotationMode && selectedId && items.some((item) => item.id === selectedId) && <div ref={rotationBarRef} data-rotation-ui className="pointer-events-auto absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-1 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" style={{ left: '50%', top: '50%' }} onPointerDown={(event) => event.stopPropagation()}>
-        <button type="button" title={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} aria-label={isAr ? 'تدوير عكس عقارب الساعة' : 'Rotate counterclockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, -15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCcw className="h-4 w-4" /></button>
-        <button type="button" title={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} aria-label={isAr ? 'تدوير مع عقارب الساعة' : 'Rotate clockwise'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 15); }} className="flex h-8 w-8 items-center justify-center rounded-full text-amber-200 hover:bg-slate-800"><RotateCw className="h-4 w-4" /></button>
+      {!readOnly && view !== 'walk' && selectedId && (selectedIds?.length ?? 0) <= 1 && items.some((item) => item.id === selectedId) && <div ref={rotationBarRef} data-rotation-ui className="pointer-events-auto absolute z-20 flex -translate-x-1/2 -translate-y-full items-center gap-0.5 rounded-full border border-amber-300/70 bg-slate-950/95 p-1 shadow-xl" style={{ left: '50%', top: '50%' }} onPointerDown={(event) => event.stopPropagation()}>
+        <button type="button" title={isAr ? 'تدوير 45° لليسار' : 'Rotate 45° left'} aria-label={isAr ? 'تدوير 45° لليسار' : 'Rotate 45° left'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, -45); }} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800"><RotateCcw className="h-3.5 w-3.5" />45</button>
+        <button type="button" title={isAr ? 'تدوير 15° لليسار' : 'Rotate 15° left'} aria-label={isAr ? 'تدوير 15° لليسار' : 'Rotate 15° left'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, -15); }} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800"><RotateCcw className="h-3.5 w-3.5" />15</button>
+        <span className="min-w-9 text-center text-[10px] font-bold tabular-nums text-white">{((Math.round(items.find((item) => item.id === selectedId)?.rotation ?? 0) % 360) + 360) % 360}°</span>
+        <button type="button" title={isAr ? 'تدوير 15° لليمين' : 'Rotate 15° right'} aria-label={isAr ? 'تدوير 15° لليمين' : 'Rotate 15° right'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 15); }} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800"><RotateCw className="h-3.5 w-3.5" />15</button>
+        <button type="button" title={isAr ? 'تدوير 45° لليمين' : 'Rotate 45° right'} aria-label={isAr ? 'تدوير 45° لليمين' : 'Rotate 45° right'} onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 45); }} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800"><RotateCw className="h-3.5 w-3.5" />45</button>
+        <button type="button" title={isAr ? 'ربع لفة' : 'Quarter turn'} aria-label={isAr ? 'ربع لفة' : 'Quarter turn'} data-quarter onClick={(event) => { event.stopPropagation(); rotateRef.current?.(selectedId, 90); }} className="flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full px-1.5 text-[10px] font-black text-amber-200 hover:bg-slate-800">+90°</button>
       </div>}
 
       <div className="pointer-events-none absolute inset-x-2 top-2 z-10 flex flex-wrap items-start justify-between gap-2">
