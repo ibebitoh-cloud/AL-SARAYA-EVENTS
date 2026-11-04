@@ -1,5 +1,6 @@
-import { motion, useReducedMotion } from 'motion/react';
+import { m as motion, useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
+import { isLiteMode } from '../../utils/liteMode';
 
 // Adapted from the 21st.dev "RevealText" component: letters pop in one by one, a colour
 // sweep runs across them once they settle, and hovering (or tapping) a letter fills it
@@ -49,7 +50,8 @@ export function RevealText({
   const letterCount = text.replace(/\s+/g, '').length;
 
   useEffect(() => {
-    if (reduceMotion) return;
+    // Lite mode (slow devices): no automatic photo wave; a letter still shows its photo when tapped.
+    if (reduceMotion || isLiteMode()) return;
     // Run the colour sweep once the last letter's spring has settled.
     const totalDelay = (letterCount - 1) * letterDelay * 1000 + springDuration;
     const timer = setTimeout(() => { setShowOverlay(true); setPhotosOn(true); }, totalDelay);

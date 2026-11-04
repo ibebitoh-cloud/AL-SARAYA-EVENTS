@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import { X, Printer, CheckCircle2, Shield, Calendar, Phone, MapPin, Receipt } from 'lucide-react';
 import { Booking, Language } from '../types/venueSystem';
 import { makeTr, eventTypeLabel } from '../utils/tr';

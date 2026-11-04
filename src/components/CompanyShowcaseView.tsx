@@ -1,5 +1,5 @@
 import { useState, useId } from 'react';
-import { motion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import {
   Sparkles,
   Building2,

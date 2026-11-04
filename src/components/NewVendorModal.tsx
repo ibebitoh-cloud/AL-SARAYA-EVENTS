@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import { X, Building2 } from 'lucide-react';
 import { Vendor } from '../types/event';
 import { sound } from '../utils/soundEffects';

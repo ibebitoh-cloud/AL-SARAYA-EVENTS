@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion, useMotionValue, useSpring } from 'motion/react';
+import { m as motion, useMotionValue, useSpring } from 'motion/react';
 
 export function PointerAura() {
   const [isVisible, setIsVisible] = useState(false);

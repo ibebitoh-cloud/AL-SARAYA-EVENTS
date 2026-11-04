@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import { Users, Search, CheckCircle2, UserCheck, Plus, Sparkles, Filter, Shield } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Guest, TableAssignment } from '../types/event';

@@ -1,5 +1,5 @@
 import { useState, useRef, MouseEvent } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { m as motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { Users, Plus, ShieldCheck, Sparkles, UserCheck, Utensils, Maximize2 } from 'lucide-react';
 import { TableAssignment, Guest } from '../types/event';
 import { sound } from '../utils/soundEffects';

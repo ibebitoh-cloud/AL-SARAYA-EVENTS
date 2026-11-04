@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, ChangeEvent } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import {
   X,
   Save,

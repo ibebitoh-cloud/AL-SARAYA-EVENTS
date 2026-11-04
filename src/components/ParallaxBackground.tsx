@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { motion, useScroll, useTransform, useSpring, useMotionValue } from 'motion/react';
+import { m as motion, useScroll, useTransform, useSpring, useMotionValue } from 'motion/react';
 
 export function ParallaxBackground() {
   const { scrollY } = useScroll();

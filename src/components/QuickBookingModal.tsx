@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import { X, Check, Calendar, MapPin, Phone, User, AlertTriangle } from 'lucide-react';
 import { Booking, Hall, Language } from '../types/venueSystem';
 import { LOCATIONS, hallLocation } from '../data/locations';

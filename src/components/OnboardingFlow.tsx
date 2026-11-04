@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m as motion } from 'motion/react';
 import { X, ChevronLeft, ChevronRight, CalendarDays, Images, Wallet, Users, LayoutDashboard, CheckCircle2, Sparkles } from 'lucide-react';
 import { Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';

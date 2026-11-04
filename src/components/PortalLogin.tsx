@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import { ShieldCheck, UserRound, ArrowRight } from 'lucide-react';
 import { Language } from '../types/venueSystem';
 import { SYSTEM_USERS, SystemUser } from '../data/systemProfiles';

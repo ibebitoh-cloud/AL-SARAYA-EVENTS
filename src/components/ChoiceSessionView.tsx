@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import { ArrowLeft, ArrowRight, CalendarCheck, Check, Cuboid, MapPin, Minus, Plus, Printer, Users, X } from 'lucide-react';
 import { Booking, BookingServiceItem, Hall, HallLayoutItem, PriceBook } from '../types/venueSystem';
 import { eventTypeConfig } from '../data/eventTypes';

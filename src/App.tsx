@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import {
   INITIAL_BOOKINGS,
   INITIAL_HALLS,
@@ -24,21 +24,24 @@ import { usePersistentState, isNonEmptyArray } from './utils/usePersistentState'
 import { normalizeBooking } from './data/recordFields';
 import { DEFAULT_SITE_CONTENT, SiteContent, siteText } from './data/siteContent';
 import { DEFAULT_EDIT_PERMISSIONS, EditArea, EditPermissions, canEdit } from './data/editPermissions';
-import { VenueHeaderNav } from './components/VenueHeaderNav';
+// Portal-only pieces: website visitors never download them.
+const VenueHeaderNav = lazy(() => import('./components/VenueHeaderNav').then((m) => ({ default: m.VenueHeaderNav })));
 import { SarayaBrandHeader } from './components/SarayaBrandHeader';
-import BeamWordmarkFooter from './components/ui/beam-wordmark-footer';
+// Below the fold: the footer downloads after the first screen is up.
+const BeamWordmarkFooter = lazy(() => import('./components/ui/beam-wordmark-footer'));
 import { DaliCredit, DaliOverlayCredit } from './components/DaliCredit';
+import { NearViewport } from './components/ui/near-viewport';
 import { SAMPLE_BOOKINGS, markSamplesMerged, mergeSampleEvents } from './data/sampleEvents';
 import { DaliLoader, DaliLoaderOverlay, GlobalDaliLoader } from './components/DaliLoader';
 import { BrandLogo, BRAND_LOGOS } from './components/BrandLogo';
 import { HoneyEmberBackground } from './components/ui/honey-ember-background';
-import { BottomNavBar } from './components/ui/bottom-nav-bar';
+const BottomNavBar = lazy(() => import('./components/ui/bottom-nav-bar').then((m) => ({ default: m.BottomNavBar })));
 import { Calendar, CalendarDays, Images, LayoutDashboard, Package, Receipt, Users, Wallet } from 'lucide-react';
 import { SarayaCustomerHomepage } from './components/SarayaCustomerHomepage';
 import { ALSARAYA_PHOTOS, VenuePhoto } from './data/venueImages';
 const CustomerSectionView = lazy(() => import('./components/CustomerSectionView').then((m) => ({ default: m.CustomerSectionView })));
-import { PortalLogin } from './components/PortalLogin';
-import { NotificationBell } from './components/NotificationBell';
+const PortalLogin = lazy(() => import('./components/PortalLogin').then((m) => ({ default: m.PortalLogin })));
+const NotificationBell = lazy(() => import('./components/NotificationBell').then((m) => ({ default: m.NotificationBell })));
 import { NOTIFICATIONS_KEY, StaffNotification, clearNotificationsForUser, notificationFor } from './data/notifications';
 import { SystemUser, canAccess, landingTab, resolveSystemUser, removeStaleUserData, PRICE_VISIBILITY_KEY, type PriceVisibility, SYSTEM_USERS } from './data/systemProfiles';
 import { buildInitialPriceBook, initialOtherPrices } from './data/pricing';
@@ -425,7 +428,7 @@ export default function App() {
     {/* The home page and the public section pages sit on a full-screen animated background. */}
     {(currentTab === 'home' || currentTab.startsWith('public_')) && !portalLoginOpen && <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true"><HoneyEmberBackground className="h-full w-full" theme={theme} /></div>}
     {!isInternalManagementScreen && <SarayaBrandHeader language={language} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onToggleLanguage={toggleLanguage} instagramUrl={companyProfile.instagramUrl} tiktokUrl={companyProfile.tiktokUrl} onOpenBookingModal={() => openCustomerBooking()} onNavigateSection={navigateSection} onOpenManagementPortal={() => { sound.click(650); if (portalUser && portalUser.role !== 'customer') { setPortalLoginOpen(false); setCurrentTab(landingTab(portalUser)); } else { setPortalLoginOpen(true); setCurrentTab('home'); } window.scrollTo({ top: 0, behavior: 'smooth' }); }} isManagementMode={false} onExitManagementMode={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
-    {!portalLoginOpen && portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && <VenueHeaderNav currentTab={currentTab} language={language} user={may('site_content') && !canAccess(portalUser, 'site_content') ? { ...portalUser, permissions: [...portalUser.permissions, 'site_content'] } : portalUser} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onTabChange={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onToggleLanguage={toggleLanguage} onOpenTour={() => setIsOnboardingOpen(true)} onGoToWebsite={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} notificationBell={tabAllowed('bookings') ? <NotificationBell notifications={notifications} userId={portalUser.id} language={language} onMarkAllRead={() => setNotifications((prev) => prev.map((n) => n.readBy.includes(portalUser.id) ? n : { ...n, readBy: [...n.readBy, portalUser.id] }))} onClear={(id) => setNotifications((prev) => clearNotificationsForUser(prev, portalUser.id, id ? [id] : undefined))} onOpen={(n) => { setNotifications((prev) => prev.map((x) => x.id === n.id && !x.readBy.includes(portalUser.id) ? { ...x, readBy: [...x.readBy, portalUser.id] } : x)); setCurrentTab('bookings'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /> : undefined} onLogout={() => { sound.swoosh(); setPortalUser(null); window.localStorage.removeItem('saraya-portal-user'); window.localStorage.removeItem('saraya-portal-user-id'); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
+    {!portalLoginOpen && portalUser && currentTab !== 'home' && !currentTab.startsWith('public_') && <Suspense fallback={null}><VenueHeaderNav currentTab={currentTab} language={language} user={may('site_content') && !canAccess(portalUser, 'site_content') ? { ...portalUser, permissions: [...portalUser.permissions, 'site_content'] } : portalUser} theme={theme} onToggleTheme={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')} onTabChange={(tab) => { setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onToggleLanguage={toggleLanguage} onOpenTour={() => setIsOnboardingOpen(true)} onGoToWebsite={() => { sound.swoosh(); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} notificationBell={tabAllowed('bookings') ? <NotificationBell notifications={notifications} userId={portalUser.id} language={language} onMarkAllRead={() => setNotifications((prev) => prev.map((n) => n.readBy.includes(portalUser.id) ? n : { ...n, readBy: [...n.readBy, portalUser.id] }))} onClear={(id) => setNotifications((prev) => clearNotificationsForUser(prev, portalUser.id, id ? [id] : undefined))} onOpen={(n) => { setNotifications((prev) => prev.map((x) => x.id === n.id && !x.readBy.includes(portalUser.id) ? { ...x, readBy: [...x.readBy, portalUser.id] } : x)); setCurrentTab('bookings'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /> : undefined} onLogout={() => { sound.swoosh(); setPortalUser(null); window.localStorage.removeItem('saraya-portal-user'); window.localStorage.removeItem('saraya-portal-user-id'); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></Suspense>}
     {portalWelcome && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-md px-4" onClick={() => setPortalWelcome(null)}><motion.div initial={{opacity:0,scale:.96,y:10}} animate={{opacity:1,scale:1,y:0}} className="w-full max-w-md rounded-3xl border border-amber-400/20 bg-slate-900 p-8 text-center shadow-2xl"><div className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-400">WELCOME</div><h1 className="mt-3 text-3xl font-black text-white">{language === 'ar' ? `أهلاً بك، ${portalWelcome.nameAr}` : `Welcome, ${portalWelcome.name}`}</h1><p className="mt-2 text-xs text-slate-500">{language === 'ar' ? 'تم تسجيل دخولك إلى نظام الإدارة' : 'You are signed in to the management system'}</p><button onClick={() => setPortalWelcome(null)} className="mt-6 px-5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold">{language === 'ar' ? 'دخول النظام' : 'Enter system'}</button></motion.div></div>}
     <main style={isInternalManagementScreen ? portalBeside : undefined} className={`relative flex-1 w-full px-3 sm:px-6 lg:px-8 pt-6 overflow-x-hidden ${isInternalManagementScreen ? 'lg:flex-none max-w-none pb-6 sm:px-4 lg:px-8 lg:pb-8 transition-[width,margin] duration-300 ease-out' : 'max-w-7xl mx-auto'}`}><AnimatePresence initial={false}><motion.div onTouchStart={handleScreenTouchStart} onTouchEnd={handleScreenTouchEnd} key={currentTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.08 }}><Suspense fallback={<DaliLoader language={language} className="min-h-[50vh]" />}>
       {portalLoginOpen && <PortalLogin language={language} users={SYSTEM_USERS.map((u) => resolveSystemUser(u.id, priceVisibility)!).filter(Boolean)} onLogin={(user) => { setPortalUser(user); setPortalLoginOpen(false); setPortalWelcome(user); setCurrentTab(user.role === 'customer' ? landingTab(user) : canAccess(user, 'dashboard') ? 'dashboard' : landingTab(user)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onBack={() => setPortalLoginOpen(false)} />}
@@ -454,10 +457,10 @@ export default function App() {
       {currentTab === 'staff' && canAccess(portalUser, 'staff') && viewOnly('staff', <StaffView staff={staff} bookings={bookings} onAddStaff={handleAddStaff} onUpdateStaffAttendance={handleUpdateStaffAttendance}  language={language} onEditStaff={handleEditStaff} onDeleteStaff={handleDeleteStaff} />)}
       {currentTab === 'reports' && canAccess(portalUser, 'reports') && <ReportsView bookings={bookings} expenses={expenses} payments={payments} inventory={inventory} staff={staff}  language={language} />}
     </Suspense></motion.div></AnimatePresence></main>
-    {!isInternalManagementScreen ? <BeamWordmarkFooter
+    {!isInternalManagementScreen ? <NearViewport minHeight={420}><Suspense fallback={<div className="mt-12 min-h-[420px] w-full" aria-hidden="true" />}><BeamWordmarkFooter
       className="mt-12 w-full"
       dir={isAr ? 'rtl' : 'ltr'}
-      logoSrc={theme === 'dark' ? BRAND_LOGOS.full.white : '/brand/elsaraya-logo-gold.png'} logoAlt="ELSARAYA EVENTS" brand={companyProfile.nameEn}
+      logoSrc={theme === 'dark' ? BRAND_LOGOS.full.white : BRAND_LOGOS.full.gold} logoAlt="ELSARAYA EVENTS" brand={companyProfile.nameEn}
       background={theme === 'dark' ? '#070b12' : '#faf9f6'}
       ink={theme === 'dark' ? '#f8fafc' : '#0f172a'}
       muted={theme === 'dark' ? '#94a3b8' : '#64748b'}
@@ -489,7 +492,7 @@ export default function App() {
           { label: isAr ? 'بوابة الموظفين' : 'Staff Portal', onClick: () => { sound.click(650); setPortalLoginOpen(true); setCurrentTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
         ] },
       ]}
-    /> :
+    /></Suspense></NearViewport> :
     <footer ref={footerRef} className={`mt-12 w-full border-t px-4 py-8 sm:px-6 lg:px-8 transition-[width,margin,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${theme === 'dark' ? 'border-white/10 bg-[#0d0d0f]' : 'border-slate-200 bg-white'} ${isInternalManagementScreen ? 'lg:px-8' : ''}`} style={isInternalManagementScreen ? portalBeside : undefined}>
       <div className={`mx-auto ${isInternalManagementScreen ? 'w-full max-w-none' : 'max-w-7xl'}`}>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
@@ -543,9 +546,9 @@ export default function App() {
     <Suspense fallback={null}>{isOnboardingOpen && <OnboardingFlow isOpen language={language} onClose={() => setIsOnboardingOpen(false)} onComplete={() => setIsOnboardingOpen(false)} onNavigate={(tab) => { setCurrentTab(tab); setIsOnboardingOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}</Suspense>
     {/* Room under the footer so the bar never covers its last lines; same colour as the portal footer. */}
     {showBottomNav && <div aria-hidden className={`h-[calc(80px+env(safe-area-inset-bottom))] w-full shrink-0 lg:hidden ${theme === 'dark' ? 'bg-[#0d0d0f]' : 'bg-white'}`} />}
-    {showBottomNav && <BottomNavBar stickyBottom tone={theme} className="lg:hidden" style={{ insetInlineStart: 'var(--portal-nav-w, 0px)', maxWidth: 'calc(100vw - var(--portal-nav-w, 0px) - 16px)' }} ariaLabel={isAr ? 'التنقل السريع' : 'Quick navigation'}
+    {showBottomNav && <Suspense fallback={null}><BottomNavBar stickyBottom tone={theme} className="lg:hidden" style={{ insetInlineStart: 'var(--portal-nav-w, 0px)', maxWidth: 'calc(100vw - var(--portal-nav-w, 0px) - 16px)' }} ariaLabel={isAr ? 'التنقل السريع' : 'Quick navigation'}
       activeId={currentTab}
-      items={portalBottomTabs.map(([tab, arLabel, enLabel, icon]) => ({ id: tab, label: isAr ? arLabel : enLabel, icon, onSelect: () => { sound.click(650); setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); } }))} />}
+      items={portalBottomTabs.map(([tab, arLabel, enLabel, icon]) => ({ id: tab, label: isAr ? arLabel : enLabel, icon, onSelect: () => { sound.click(650); setCurrentTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); } }))} /></Suspense>}
     <DaliOverlayCredit />
     <GlobalDaliLoader language={language} />
   </div>);

@@ -1,12 +1,12 @@
-import fullWhite from '../assets/images/logo/elsaraya-logo-white.png';
-import fullDark from '../assets/images/logo/elsaraya-logo-dark.png';
-import horizontalWhite from '../assets/images/logo/elsaraya-logo-horizontal-white.png';
-import horizontalDark from '../assets/images/logo/elsaraya-logo-horizontal-dark.png';
-import markWhite from '../assets/images/logo/elsaraya-mark-white.png';
-import markDark from '../assets/images/logo/elsaraya-mark-dark.png';
-import fullGold from '../assets/images/logo/elsaraya-logo-gold.png';
-import horizontalGold from '../assets/images/logo/elsaraya-logo-horizontal-gold.png';
-import markGold from '../assets/images/logo/elsaraya-mark-gold.png';
+import fullWhite from '../assets/images/logo/elsaraya-logo-white.webp';
+import fullDark from '../assets/images/logo/elsaraya-logo-dark.webp';
+import horizontalWhite from '../assets/images/logo/elsaraya-logo-horizontal-white.webp';
+import horizontalDark from '../assets/images/logo/elsaraya-logo-horizontal-dark.webp';
+import markWhite from '../assets/images/logo/elsaraya-mark-white.webp';
+import markDark from '../assets/images/logo/elsaraya-mark-dark.webp';
+import fullGold from '../assets/images/logo/elsaraya-logo-gold.webp';
+import horizontalGold from '../assets/images/logo/elsaraya-logo-horizontal-gold.webp';
+import markGold from '../assets/images/logo/elsaraya-mark-gold.webp';
 
 /** The ELSARAYA EVENTS logo. White sits on dark surfaces; gold (brand gradient) is the on-screen logo for light mode; dark is for paper. */
 export const BRAND_LOGOS = {
