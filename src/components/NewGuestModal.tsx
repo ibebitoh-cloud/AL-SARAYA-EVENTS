@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import { X, UserPlus, Sparkles } from 'lucide-react';
 import { Guest, TableAssignment } from '../types/event';
 import { sound } from '../utils/soundEffects';

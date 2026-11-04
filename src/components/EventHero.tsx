@@ -1,5 +1,5 @@
 import { useRef, MouseEvent } from 'react';
-import { motion, useScroll, useTransform, useSpring, useMotionValue } from 'motion/react';
+import { m as motion, useScroll, useTransform, useSpring, useMotionValue } from 'motion/react';
 import { Calendar, Sparkles, Play, Users, DollarSign, ArrowDown, Activity } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { EventDetails } from '../types/event';

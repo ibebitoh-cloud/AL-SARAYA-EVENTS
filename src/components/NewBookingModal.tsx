@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import { X, AlertTriangle, Sparkles, Check, ArrowRight, MapPin, Package as PackageIcon } from 'lucide-react';
 import { Booking, Hall, ServiceDefinition, EventType, LocationId, PriceBook, BookingServiceItem, Language } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';

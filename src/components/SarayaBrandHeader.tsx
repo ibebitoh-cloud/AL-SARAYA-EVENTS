@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
+import { m as motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import {
   Volume2,
   VolumeX,

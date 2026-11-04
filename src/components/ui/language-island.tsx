@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import { Globe } from 'lucide-react';
 
 /** The spring every "dynamic island" morph on the site uses, so they all move alike. */

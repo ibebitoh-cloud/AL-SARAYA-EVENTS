@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import { FileText, CheckCircle2, Printer, Search, Plus, Eye, X, ScrollText, CalendarDays, MapPin, Users } from 'lucide-react';
 import { Booking, Language, ContractAgreement } from '../types/venueSystem';
 import { sound } from '../utils/soundEffects';

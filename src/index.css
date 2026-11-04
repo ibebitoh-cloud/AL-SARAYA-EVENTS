@@ -943,3 +943,19 @@ html[data-theme="light"] textarea::placeholder {
 /* BrandLogo tone="auto": white logo in dark mode, gold logo in light mode. */
 html[data-theme="light"] .brand-logo-on-dark,
 html:not([data-theme="light"]) .brand-logo-on-light { display: none !important; }
+
+/* LITE MODE (html.lite, set in index.html for slow, low-memory devices; see src/utils/liteMode.ts).
+   Glass blur is the most expensive effect for an old tablet GPU: every blurred panel re-blurs what
+   is behind it on each scroll frame. Lite mode drops it and makes those panels a little more solid,
+   stops the moving background and the hero shine, and skips smooth scrolling. */
+html.lite *,
+html.lite *::before,
+html.lite *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html.lite { scroll-behavior: auto !important; }
+html.lite .rpb-blob { animation: none !important; will-change: auto !important; }
+html.lite .hero-gold-foil { animation: none !important; will-change: auto !important; }
+html.lite .animate-pulse,
+html.lite .animate-ping { animation: none !important; }

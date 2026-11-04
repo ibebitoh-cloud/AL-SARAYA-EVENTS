@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { motion, useScroll, useTransform, useVelocity, useSpring, AnimatePresence } from 'motion/react';
+import { m as motion, useScroll, useTransform, useVelocity, useSpring, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
   Maximize2,

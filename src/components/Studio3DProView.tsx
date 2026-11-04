@@ -4,8 +4,8 @@ import type { Hall, Language } from '../types/venueSystem';
 import { EventLayoutDesigner } from './EventLayoutDesigner';
 import { BrandLogo } from './BrandLogo';
 import { PRO_3D, PRO_3D_LICENSE_KEY, PRO_3D_STORAGE_KEY, hashProKey, isProLicensed } from '../data/proFeatures';
-import previewPro from '../assets/images/studio3d/preview-pro.jpg';
-import previewBasic from '../assets/images/studio3d/preview-basic.jpg';
+import previewPro from '../assets/images/studio3d/preview-pro.webp';
+import previewBasic from '../assets/images/studio3d/preview-basic.webp';
 
 type DemoState = { used: number; activeUntil?: number };
 

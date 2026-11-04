@@ -31,6 +31,8 @@
     <!-- The DALI STUDIO "D" loader. These styles are here, not in index.css, so the same drawn D
          shows while the app downloads; src/components/DaliLoader.tsx uses them after that. -->
     <!-- The site always opens in the dark (black) theme; the light toggle only lasts for the current visit. -->
+    <!-- Lite mode for slow, low-memory devices (see src/utils/liteMode.ts). ?lite=1 / ?lite=0 force it on or off. -->
+    <script>(function(){var d=document.documentElement,n=navigator,v=null;try{var q=new URLSearchParams(location.search).get('lite');if(q==='1'||q==='0')localStorage.setItem('saraya-lite',q);v=localStorage.getItem('saraya-lite')}catch(e){}var auto=(n.deviceMemory&&n.deviceMemory<=2)||(n.hardwareConcurrency&&n.hardwareConcurrency<=2)||(n.connection&&n.connection.saveData)||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);if(v==='1'||(v!=='0'&&auto))d.classList.add('lite')})();</script>
     <script>document.documentElement.dataset.theme='dark';document.documentElement.style.colorScheme='dark';try{localStorage.removeItem('saraya-theme')}catch(e){}</script>
     <style>
       .dali-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 12px;font-family:'Readex Pro','Cairo',sans-serif;--dl-size:56px}

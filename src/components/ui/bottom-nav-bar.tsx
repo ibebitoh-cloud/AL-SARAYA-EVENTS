@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType, type CSSProperties } from 'react';
-import { motion } from 'motion/react';
+import { m as motion } from 'motion/react';
 
 import { cn } from '@/src/lib/utils';
 

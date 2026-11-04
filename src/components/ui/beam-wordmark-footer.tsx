@@ -405,7 +405,9 @@ export default function BeamWordmarkFooter({
   const [reduced, setReduced] = React.useState(false)
   React.useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const onMq = () => setReduced(mq.matches)
+    // Lite mode (slow devices, see src/utils/liteMode.ts) holds the beam still too.
+    const lite = document.documentElement.classList.contains("lite")
+    const onMq = () => setReduced(lite || mq.matches)
     onMq()
     mq.addEventListener("change", onMq)
     return () => mq.removeEventListener("change", onMq)

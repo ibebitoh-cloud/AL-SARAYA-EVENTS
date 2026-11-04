@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import { X, Clock, MapPin, Sparkles, Mic, Tv, Lightbulb, Volume2 } from 'lucide-react';
 import { RunsheetItem, EventPhase } from '../types/event';
 import { sound } from '../utils/soundEffects';

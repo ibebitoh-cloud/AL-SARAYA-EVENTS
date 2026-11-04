@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import { DollarSign, CheckCircle2, Clock, Phone, AlertCircle, Plus, Sparkles, Building2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Vendor } from '../types/event';

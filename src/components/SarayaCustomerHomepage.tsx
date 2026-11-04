@@ -1,5 +1,5 @@
-import { useState, useEffect, type ReactNode } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { useState, useEffect, lazy, Suspense, type ReactNode } from 'react';
+import { m as motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import {
   Calendar,
   Heart,
@@ -30,13 +30,17 @@ import {
 import { Hall, Language, Booking } from '../types/venueSystem';
 import { ALSARAYA_PHOTOS, VenuePhoto } from '../data/venueImages';
 import { BrandLogo } from './BrandLogo';
+import { photoSrcSet, smallPhoto } from '../data/responsivePhotos';
 import { RevealText } from './ui/reveal-text';
+import { NearViewport } from './ui/near-viewport';
 import { SERVICE_KEYS, SiteContent, siteText, pickServicePhotos } from '../data/siteContent';
-import { CustomerSuccessStories } from './CustomerSuccessStories';
 import ballroomImg from '../assets/images/alsaraya_grand_ballroom_1791458716707.webp';
 import koshaImg from '../assets/images/alsaraya_royal_kosha_1791458732633.webp';
 import gardenImg from '../assets/images/alsaraya_garden_terrace_1791458767479.webp';
 import diningImg from '../assets/images/alsaraya_banquet_dining_1791458748323.webp';
+
+// Far down the page, so it downloads after the first screen.
+const CustomerSuccessStories = lazy(() => import('./CustomerSuccessStories').then((m) => ({ default: m.CustomerSuccessStories })));
 
 interface SarayaCustomerHomepageProps {
   halls: Hall[];
@@ -225,8 +229,9 @@ export function SarayaCustomerHomepage({
     if (w < weddingPhotos.length) letterPhotos.push(weddingPhotos[w++]);
     if (pa < partyPhotos.length) letterPhotos.push(partyPhotos[pa++]);
   }
-  // Letter fills are at most a few hundred pixels wide, so ask the photo CDNs for a smaller copy.
-  for (let i = 0; i < letterPhotos.length; i++) letterPhotos[i] = letterPhotos[i].replace(/([?&]w=)1800\b/, '$1900');
+  // Letter fills are at most a few hundred pixels wide: use the 768 px copy of built-in photos
+  // and ask the photo CDNs for a smaller copy.
+  for (let i = 0; i < letterPhotos.length; i++) letterPhotos[i] = smallPhoto(letterPhotos[i]).replace(/([?&]w=)(1800|1200)\b/, '$1700');
   const photoFor = (categories: readonly string[], index = 0) => {
     const matches = displayPhotos.filter((p) => categories.includes(p.category));
     return (matches[index] ?? matches[0] ?? displayPhotos[index % Math.max(1, displayPhotos.length)])?.src || '';
@@ -411,6 +416,9 @@ export function SarayaCustomerHomepage({
                 <div className="relative aspect-[16/10] overflow-hidden">
                   <img
                     src={photoSrc}
+                    srcSet={photoSrcSet(photoSrc)}
+                    sizes="(min-width: 640px) 50vw, 100vw"
+                    decoding="async"
                     alt={isAr ? titleAr : titleEn}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -466,6 +474,9 @@ export function SarayaCustomerHomepage({
                   {src ? (
                     <img
                       src={src}
+                      srcSet={photoSrcSet(src)}
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      decoding="async"
                       alt={name}
                       loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
@@ -538,6 +549,9 @@ export function SarayaCustomerHomepage({
                   <div className="aspect-[16/10] overflow-hidden bg-slate-900">
                     <img
                       src={src}
+                      srcSet={photoSrcSet(src)}
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      decoding="async"
                       alt={siteText(content, `services.${key}.title`, isAr)}
                       loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
@@ -628,6 +642,9 @@ export function SarayaCustomerHomepage({
               >
                 <img
                   src={photo.src}
+                  srcSet={photoSrcSet(photo.src)}
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  decoding="async"
                   alt={isAr ? photo.titleAr : photo.titleEn}
                   loading="lazy"
                   className="h-full min-h-48 w-full object-cover transition duration-700 group-hover:scale-105"
@@ -671,11 +688,15 @@ export function SarayaCustomerHomepage({
       {/* =========================================================================
           CUSTOMER SUCCESS STORIES (VIDEO TESTIMONIALS)
           ========================================================================= */}
-      <CustomerSuccessStories
-        language={language}
-        theme={theme}
-        onOpenBookingModal={onOpenBookingModal}
-      />
+      <NearViewport id="stories" minHeight={480}>
+        <Suspense fallback={<div className="min-h-[480px]" aria-hidden="true" />}>
+          <CustomerSuccessStories
+            language={language}
+            theme={theme}
+            onOpenBookingModal={onOpenBookingModal}
+          />
+        </Suspense>
+      </NearViewport>
 
       {/* =========================================================================
           CLOSING GRAND BOOKING CALL TO ACTION

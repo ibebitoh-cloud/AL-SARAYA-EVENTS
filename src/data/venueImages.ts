@@ -10,7 +10,7 @@ import gardenImg from '../assets/images/alsaraya_garden_terrace_1791458767479.we
 export const BIRTHDAY_DECORATION_PHOTOS: VenuePhoto[] = [
   {
     id: 'birthday-1',
-    src: 'https://images.unsplash.com/photo-1774290687117-eb1769c33df3?auto=format&fit=crop&fm=jpg&q=85&w=1800',
+    src: 'https://images.unsplash.com/photo-1774290687117-eb1769c33df3?auto=format&fit=crop&fm=jpg&q=75&w=1200',
     titleAr: 'ديكور عيد ميلاد فاخر بالبالونات وطاولة الحلوى',
     titleEn: 'Luxury Birthday Balloon & Dessert Setup',
     hallNameAr: 'تجهيزات أعياد الميلاد',
@@ -23,7 +23,7 @@ export const BIRTHDAY_DECORATION_PHOTOS: VenuePhoto[] = [
   },
   {
     id: 'birthday-2',
-    src: 'https://images.unsplash.com/photo-1741969494307-55394e3e4071?auto=format&fit=crop&fm=jpg&q=85&w=1800',
+    src: 'https://images.unsplash.com/photo-1741969494307-55394e3e4071?auto=format&fit=crop&fm=jpg&q=75&w=1200',
     titleAr: 'قوس بالونات وطاولة عيد الميلاد',
     titleEn: 'Birthday Balloon Arch & Party Table',
     hallNameAr: 'تجهيزات أعياد الميلاد',
@@ -36,7 +36,7 @@ export const BIRTHDAY_DECORATION_PHOTOS: VenuePhoto[] = [
   },
   {
     id: 'birthday-3',
-    src: 'https://images.pexels.com/photos/16032215/pexels-photo-16032215/free-photo-of-neon-sign-with-balls-on-wall.jpeg?auto=compress&dpr=1&w=1800',
+    src: 'https://images.pexels.com/photos/16032215/pexels-photo-16032215/free-photo-of-neon-sign-with-balls-on-wall.jpeg?auto=compress&dpr=1&w=1200',
     titleAr: 'ديكور عيد ميلاد أسود وذهبي',
     titleEn: 'Black & Gold Birthday Backdrop',
     hallNameAr: 'تجهيزات أعياد الميلاد',
@@ -146,7 +146,7 @@ export const ALSARAYA_PHOTOS: VenuePhoto[] = [
   },
   {
     id: 'photo-8',
-    src: 'https://images.unsplash.com/photo-1676027649792-9e6b014a0e2f?auto=format&fit=crop&fm=jpg&q=85&w=1800',
+    src: 'https://images.unsplash.com/photo-1676027649792-9e6b014a0e2f?auto=format&fit=crop&fm=jpg&q=75&w=1200',
     titleAr: 'حفلة بجوار حمام السباحة',
     titleEn: 'Poolside Celebration',
     hallNameAr: 'حمام السباحة',
@@ -162,7 +162,7 @@ export const ALSARAYA_PHOTOS: VenuePhoto[] = [
   },
   {
     id: 'photo-9',
-    src: 'https://images.unsplash.com/photo-1752766074168-44afdbaaf390?auto=format&fit=crop&fm=jpg&q=85&w=1800',
+    src: 'https://images.unsplash.com/photo-1752766074168-44afdbaaf390?auto=format&fit=crop&fm=jpg&q=75&w=1200',
     titleAr: 'عشاء على الروف',
     titleEn: 'Rooftop Dinner',
     hallNameAr: 'الروف',

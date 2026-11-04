@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Volume2, VolumeX, Calendar, Plus, Sparkles, ChevronDown, Compass } from 'lucide-react';
-import { motion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import { sound } from '../utils/soundEffects';
 import { EventDetails } from '../types/event';
 

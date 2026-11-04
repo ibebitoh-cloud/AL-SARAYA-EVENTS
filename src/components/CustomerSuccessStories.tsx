@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m as motion, AnimatePresence } from 'motion/react';
 import {
   Play,
   Star,
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Award,
 } from 'lucide-react';
+import { photoSrcSet } from '../data/responsivePhotos';
 import { CoupleTestimonial, Language } from '../types/venueSystem';
 import { INITIAL_COUPLE_TESTIMONIALS } from '../data/coupleTestimonialsData';
 
@@ -109,6 +110,9 @@ export function CustomerSuccessStories({
             <div className="relative aspect-[16/10] overflow-hidden bg-slate-950">
               <img
                 src={story.thumbnailUrl}
+                srcSet={photoSrcSet(story.thumbnailUrl)}
+                sizes="(min-width: 768px) 33vw, 100vw"
+                decoding="async"
                 alt={isAr ? story.coupleNamesAr : story.coupleNamesEn}
                 loading="lazy"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, useScroll, useSpring, useVelocity } from 'motion/react';
+import { m as motion, useScroll, useSpring, useVelocity } from 'motion/react';
 import { ArrowDown, ArrowUp, Zap, Sparkles } from 'lucide-react';
 import { sound } from '../utils/soundEffects';
 
