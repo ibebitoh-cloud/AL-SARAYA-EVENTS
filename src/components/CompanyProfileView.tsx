@@ -3,9 +3,9 @@ import { Building2, CalendarDays, Users, BriefcaseBusiness, Package, WalletCards
 import { Booking, Employee, Expense, Hall, InventoryItem, PaymentReceipt, ServiceDefinition, Language } from '../types/venueSystem';
 import { SYSTEM_USERS } from '../data/systemProfiles';
 import { ALSARAYA_PHOTOS } from '../data/venueImages';
-import { EventLayoutDesigner } from './EventLayoutDesigner';
-import { Hall3DProfile, HallDimensions, HallFloor } from '../types/venueSystem';
-import { FLOOR_OPTIONS, autoLayout, hallDimensions, seatedCapacity } from '../data/venueModel';
+import { Hall3DDefaultsEditor } from './Hall3DDefaultsEditor';
+import { HallDimensions, HallFloor } from '../types/venueSystem';
+import { FLOOR_OPTIONS, hallDimensions, seatedCapacity } from '../data/venueModel';
 import { BRAND_LOGOS } from './BrandLogo';
 import { RecordEditorModal, RowActions } from './RecordEditor';
 import { hallFields } from '../data/recordFields';
@@ -46,11 +46,6 @@ export function CompanyProfileView({ language, halls, bookings, services, client
   const openHallEditor = (hall: Hall) => { setDraftHall({ ...hall }); setEditingHall(hall); };
   const saveHall = () => { if (!draftHall) return; onUpdateHall(draftHall); setEditingHall(null); };
   const saveCompany = () => { onUpdateCompanyProfile(draftCompany); setEditingCompany(false); };
-  const default3D = (hall: Hall): Hall3DProfile => {
-    const dims = hallDimensions(hall);
-    return { width: dims.widthM, depth: dims.depthM, items: autoLayout({ widthM: dims.widthM, depthM: dims.depthM, guests: hall.capacity, pool: dims.pool }).items };
-  };
-  const hallDesign = (hall: Hall) => hall.default3D ?? default3D(hall);
 
   const readPhotos = (files: FileList | null) => {
     if (!draftHall || !files?.length) return;
@@ -80,7 +75,7 @@ export function CompanyProfileView({ language, halls, bookings, services, client
         <div className="mt-4 grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
           {halls.map((hall) => <div key={hall.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60">
             <div className="relative h-32 bg-slate-900">{hall.photoUrl || hall.photo || ALSARAYA_PHOTOS.find((photo) => photo.hallId === hall.id)?.src ? <img src={hall.photoUrl || hall.photo || ALSARAYA_PHOTOS.find((photo) => photo.hallId === hall.id)?.src} alt={hall.nameEn || hall.name} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950 text-slate-400"><div className="text-center"><ImageIcon className="mx-auto mb-1 h-7 w-7 text-amber-300/70" /><span className="text-xs font-bold">{ar ? hall.name : (hall.nameEn || hall.name)}</span></div></div>}</div>
-            <div className="p-3"><div className="flex items-start justify-between gap-2"><div className="text-sm font-black text-white">{ar ? hall.name : (hall.nameEn || hall.name)}</div>{onDeleteHall && <RowActions language={language} onDelete={() => onDeleteHall(hall.id)} />}</div><div className="mt-1 text-[10px] text-slate-500">{hall.capacity} {ar ? 'ضيف' : 'guests'}</div>{!readOnly && <div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => openHallEditor(hall)} className="rounded-lg border border-slate-700 bg-slate-900 py-2 text-xs font-bold text-slate-200 flex items-center justify-center gap-2"><Pencil className="w-3.5 h-3.5" />{ar ? 'تعديل' : 'Edit'}</button><button type="button" onClick={() => setEditing3DHall(hall)} className="rounded-lg border border-amber-500/30 bg-amber-400/10 py-2 text-xs font-bold text-amber-300 flex items-center justify-center gap-2">3D</button></div>}</div>
+            <div className="p-3"><div className="flex items-start justify-between gap-2"><div className="text-sm font-black text-white">{ar ? hall.name : (hall.nameEn || hall.name)}</div>{onDeleteHall && <RowActions language={language} onDelete={() => onDeleteHall(hall.id)} />}</div><div className="mt-1 text-[10px] text-slate-500">{hall.capacity} {ar ? 'ضيف' : 'guests'}</div>{!readOnly && <div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => openHallEditor(hall)} className="rounded-lg border border-slate-700 bg-slate-900 py-2 text-xs font-bold text-slate-200 flex items-center justify-center gap-2"><Pencil className="w-3.5 h-3.5" />{ar ? 'تعديل' : 'Edit'}</button><button type="button" onClick={() => setEditing3DHall(hall)} className="rounded-lg border border-amber-500/30 bg-amber-400/10 py-2 text-xs font-bold text-amber-300 flex items-center justify-center gap-2">{ar ? 'تصميم 3D الافتراضي' : '3D defaults'}</button></div>}</div>
           </div>)}
         </div>
       </section>
@@ -137,6 +132,6 @@ export function CompanyProfileView({ language, halls, bookings, services, client
         <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditingHall(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-white">{ar ? 'إلغاء' : 'Cancel'}</button><button type="button" onClick={saveHall} className="px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-2"><Save className="w-3.5 h-3.5" />{ar ? 'حفظ القاعة' : 'Save Hall'}</button></div>
       </div></div>}
       {newHall && onAddHall && <RecordEditorModal title={ar ? 'إضافة قاعة جديدة' : 'Add venue'} fields={hallFields} value={newHall} language={language} onClose={() => setNewHall(null)} onSave={(h) => { onAddHall({ ...h, photo: h.photoUrl }); setNewHall(null); }} />}
-      {editing3DHall && <div className="fixed inset-0 z-[90] bg-slate-950 p-2 sm:p-4 overflow-auto"><div className="mx-auto max-w-7xl"><div className="mb-2 flex items-center justify-between"><div><div className="text-xs font-black uppercase tracking-wider text-amber-400">3D HALL PROFILE</div><div className="text-lg font-black text-white">{ar ? editing3DHall.name : (editing3DHall.nameEn || editing3DHall.name)}</div></div><button type="button" onClick={() => setEditing3DHall(null)} className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white">{ar ? 'إغلاق' : 'Close'}</button></div><EventLayoutDesigner language={language} initialDesign={hallDesign(editing3DHall)} hallDims={hallDimensions(editing3DHall)} onClose={() => setEditing3DHall(null)} onSaveDesign={(design) => { onUpdateHall({ ...editing3DHall, default3D: design }); setEditing3DHall({ ...editing3DHall, default3D: design }); }} /></div></div>}    </div>
+      {editing3DHall && <Hall3DDefaultsEditor hall={editing3DHall} language={language} onUpdateHall={onUpdateHall} onClose={() => setEditing3DHall(null)} />}    </div>
   );
 }
