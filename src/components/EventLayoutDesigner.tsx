@@ -77,19 +77,23 @@ interface DesignerProps { language: Language; initialDesign?: Hall3DProfile; onS
 
 const STORAGE_BASIC = 'saraya-event-layout-design-v1';
 const STORAGE_PRO = 'saraya-3d-studio-pro-design-v1';
+/** The hall the designer opens on. */
+const DEFAULT_HALL_ID = 'arcane-hall';
 
 export function EventLayoutDesigner({ language, initialDesign, onSaveDesign, onClose, halls = [], onUpdateHall, hallDims: fixedHallDims, edition = 'basic', canSave = true, demo = false }: DesignerProps) {
   const pro = edition === 'pro';
   const storageKey = pro ? STORAGE_PRO : STORAGE_BASIC;
   const isAr = language === 'ar';
-  const [locationId, setLocationId] = useState<LocationId>(() => halls[0] ? hallLocation(halls[0]) : 'arcane');
+  // Always opens on Arcane Hall (user request, 2026-11-04), falling back to any Arcane venue, then the first hall.
+  const defaultHall = halls.find((hall) => hall.id === DEFAULT_HALL_ID) || halls.find((hall) => hallLocation(hall) === 'arcane') || halls[0];
+  const [locationId, setLocationId] = useState<LocationId>(() => defaultHall ? hallLocation(defaultHall) : 'arcane');
   const locationHalls = halls.filter((hall) => hallLocation(hall) === locationId);
-  const [hallId, setHallId] = useState(() => halls.find((hall) => hallLocation(hall) === 'arcane')?.id || halls[0]?.id || '');
+  const [hallId, setHallId] = useState(() => defaultHall?.id || '');
   const activeHall = halls.find((hall) => hall.id === hallId);
   const [eventKind, setEventKind] = useState<EventKind>('engagement');
   const [locationKind, setLocationKind] = useState<LocationKind>(halls.length || fixedHallDims ? 'saraya' : 'client');
   const [guests, setGuests] = useState(initialDesign?.guests ?? 250);
-  const initialHall = halls.find((hall) => hall.id === (halls.find((entry) => hallLocation(entry) === 'arcane')?.id || halls[0]?.id));
+  const initialHall = defaultHall;
   const [width, setWidth] = useState(fixedHallDims?.widthM ?? (initialHall ? hallDimensions(initialHall).widthM : initialDesign?.width ?? 20));
   const [depth, setDepth] = useState(fixedHallDims?.depthM ?? (initialHall ? hallDimensions(initialHall).depthM : initialDesign?.depth ?? 30));
   const [decor, setDecor] = useState<string>(initialDesign?.decor ?? initialHall?.default3D?.decor ?? 'royal_gold');

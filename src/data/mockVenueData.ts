@@ -107,113 +107,10 @@ export const INITIAL_SERVICES: ServiceDefinition[] = [
   },
 ];
 
-export const INITIAL_BOOKINGS: Booking[] = [
-  {
-    id: 'bk-1',
-    code: 'BK-2026-101',
-    clientName: 'أحمد محمود السعيد',
-    clientPhone: '01023456789',
-    clientAddress: 'التجمع الخامس · القاهرة',
-    clientNotes: 'العميل يفضل الإضاءة الهادئة الدافئة في الزفة',
-    eventType: 'wedding',
-    eventDetails: { brideName: 'منى أحمد', groomName: 'كريم محمود' },
-    date: '2026-11-16',
-    startTime: '18:00',
-    endTime: '23:30',
-    hallId: 'arcane-hall',
-    hallName: 'قاعة اركان',
-    locationId: 'arcane',
-    guestCount: 450,
-    basePrice: 45000,
-    services: [
-      {
-        id: 'bs-1',
-        serviceId: 'srv-1',
-        name: 'بوفيه مفتوح فاخر (شامل المشاوي والحلويات)',
-        quantity: 450,
-        unitPrice: 150,
-        costPrice: 95,
-        totalPrice: 67500,
-        totalCost: 42750,
-      },
-      {
-        id: 'bs-2',
-        serviceId: 'srv-2',
-        name: 'كوشة عروس ملكية ديزاين حديث بالورد',
-        quantity: 1,
-        unitPrice: 9000,
-        costPrice: 4500,
-        totalPrice: 9000,
-        totalCost: 4500,
-      },
-      {
-        id: 'bs-3',
-        serviceId: 'srv-6',
-        name: 'تصوير فيديو 4K وكرين وفوتوغرافي ألبوم جلد',
-        quantity: 1,
-        unitPrice: 8500,
-        costPrice: 3800,
-        totalPrice: 8500,
-        totalCost: 3800,
-      },
-    ],
-    totalPrice: 130000, // 45000 + 67500 + 9000 + 8500
-    deposit: 30000,
-    paidAmount: 110000,
-    remainingAmount: 20000,
-    securityDeposit: 5000,
-    securityDepositStatus: 'held',
-    status: 'confirmed',
-    notes: 'متبقي دفعة 20,000 ج تستحق قبل موعد الفرح بيومين',
-    assignedStaff: [
-      { staffId: 'emp-1', name: 'كابتن محمود عبد العال', role: 'مشرف القاعة', wage: 800 },
-      { staffId: 'emp-2', name: 'مروان الشريف', role: 'مهندس صوت ودي جي', wage: 1200 },
-      { staffId: 'emp-3', name: 'سارة إبراهيم', role: 'مشرفة استقبال', wage: 600 },
-      { staffId: 'emp-4', name: 'أحمد جلال', role: 'فني إضاءة ومؤثرات', wage: 700 },
-    ],
-    suppliesCost: 3500,
-    directExpenses: 1500,
-  },
-];
+// No bookings, receipts or contracts ship with the app: the client starts with a clean slate (user request, 2026-11-04).
+export const INITIAL_BOOKINGS: Booking[] = [];
 
-export const INITIAL_PAYMENTS: PaymentReceipt[] = [
-  {
-    id: 'rcp-1',
-    receiptNo: 'REC-0981',
-    bookingId: 'bk-1',
-    bookingCode: 'BK-2026-101',
-    clientName: 'أحمد محمود السعيد',
-    amount: 30000,
-    date: '2026-09-15',
-    method: 'transfer',
-    type: 'deposit',
-    notes: 'عربون الحجز الأولي تحويل بنكي',
-  },
-  {
-    id: 'rcp-2',
-    receiptNo: 'REC-0982',
-    bookingId: 'bk-1',
-    bookingCode: 'BK-2026-101',
-    clientName: 'أحمد محمود السعيد',
-    amount: 5000,
-    date: '2026-09-15',
-    method: 'cash',
-    type: 'security_deposit',
-    notes: 'مبلغ تأمين القاعة نقداً في الخزينة',
-  },
-  {
-    id: 'rcp-3',
-    receiptNo: 'REC-1012',
-    bookingId: 'bk-1',
-    bookingCode: 'BK-2026-101',
-    clientName: 'أحمد محمود السعيد',
-    amount: 80000,
-    date: '2026-10-02',
-    method: 'card',
-    type: 'installment',
-    notes: 'الدفعة الثانية بفيزا إلكترونية',
-  },
-];
+export const INITIAL_PAYMENTS: PaymentReceipt[] = [];
 
 export const INITIAL_EXPENSES: Expense[] = [
   {
@@ -233,17 +130,6 @@ export const INITIAL_EXPENSES: Expense[] = [
     date: '2026-10-03',
     paidTo: 'شركة كاريير إيجيبت',
     notes: 'شحن فريون وفلاتر هواء استعداداً للموسم',
-  },
-  {
-    id: 'exp-3',
-    title: 'مشتريات خامات بوفيه وعصائر لفرح أحمد السعيد',
-    category: 'event_supplies',
-    amount: 18500,
-    date: '2026-10-07',
-    bookingId: 'bk-1',
-    bookingCode: 'BK-2026-101',
-    paidTo: 'شركة ميتكو لتوريدات اللحوم',
-    notes: 'لحوم بلدي طازجة ودواجن ومستلزمات شواء',
   },
   {
     id: 'exp-4',
@@ -392,49 +278,5 @@ export const INITIAL_STAFF: Employee[] = [
   },
 ];
 
-export const INITIAL_CLIENTS: ClientProfile[] = [
-  {
-    id: 'cl-1',
-    name: 'أحمد محمود السعيد',
-    phone: '01023456789',
-    address: 'التجمع الخامس · القاهرة',
-    totalBookingsCount: 1,
-    totalSpent: 130000,
-    currentBalanceDue: 20000,
-    heldSecurityDeposit: 5000,
-    notes: 'عميل مميز · طلب زفة خاصة بالدفوف',
-  },
-  {
-    id: 'cl-2',
-    name: 'طارق عبد الرحيم الزيات',
-    phone: '01198765432',
-    address: 'المعادي · القاهرة',
-    totalBookingsCount: 1,
-    totalSpent: 42750,
-    currentBalanceDue: 17750,
-    heldSecurityDeposit: 3000,
-    notes: 'حجز خطوبة مع إمكانية حجز الفرح لاحقاً',
-  },
-  {
-    id: 'cl-3',
-    name: 'شركة النيل للتقنية والذكاء الاصطناعي',
-    phone: '01234567890',
-    address: 'القرية الذكية · الجيزة',
-    totalBookingsCount: 2,
-    totalSpent: 115000,
-    currentBalanceDue: 0,
-    heldSecurityDeposit: 5000,
-    notes: 'عميل شركات سنوي · يسدد بالتحويل البنكي فوراً',
-  },
-  {
-    id: 'cl-4',
-    name: 'خالد عبد السلام المنشاوي',
-    phone: '01011223344',
-    address: 'الشيخ زايد',
-    totalBookingsCount: 1,
-    totalSpent: 26000,
-    currentBalanceDue: 0,
-    heldSecurityDeposit: 0,
-    notes: 'تم رد التأمين بالكامل والحساب خالص',
-  },
-];
+// Sample clients came with the sample bookings, so they are gone too.
+export const INITIAL_CLIENTS: ClientProfile[] = [];

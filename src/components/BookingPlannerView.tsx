@@ -8,6 +8,7 @@ import { servicePriceAt } from '../data/pricing';
 import { bookingTotals } from '../data/recordFields';
 import { autoLayout, hallDimensions } from '../data/venueModel';
 import { EventLayout3D } from './EventLayout3D';
+import { isProLicensed } from '../data/proFeatures';
 
 interface Props {
   booking: Booking;
@@ -48,6 +49,7 @@ export function BookingPlannerView({ booking, halls, services, priceBook, langua
     return { dims, items };
   }, [hall, booking.guestCount, booking.eventType]);
 
+  const pro3D = useMemo(() => isProLicensed(), []);
   const BackIcon = isAr ? ArrowRight : ArrowLeft;
   const detailFields = cfg.fields.filter((f) => booking.eventDetails?.[f.key]?.trim());
   const row = (label: React.ReactNode, value: React.ReactNode) => (
@@ -115,14 +117,14 @@ export function BookingPlannerView({ booking, halls, services, priceBook, langua
 
       {booking.notes && <div className={`${card} text-sm text-slate-300`}><span className="font-bold text-amber-300">{tr('ملاحظات الحجز: ', 'Booking notes: ')}</span>{booking.notes}</div>}
 
-      {/* Basic 3D model */}
+      {/* 3D model: Pro when 3D Studio Pro is activated on this device, Basic otherwise. */}
       <section className={card}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-amber-300"><Box className="h-4 w-4" /> {tr('نموذج القاعة ثلاثي الأبعاد', '3D model of the hall')}<span className="rounded-full border border-slate-600 px-2 py-0.5 text-[10px] font-black tracking-widest text-slate-300">BASIC</span></h3>
+          <h3 className="flex items-center gap-2 text-sm font-bold text-amber-300"><Box className="h-4 w-4" /> {tr('نموذج القاعة ثلاثي الأبعاد', '3D model of the hall')}{pro3D ? <span className="rounded-full bg-gradient-to-r from-[#E9CF94] via-[#C49A52] to-[#8C6A2E] px-2 py-0.5 text-[10px] font-black tracking-widest text-[#0D0D0F]">PRO</span> : <span className="rounded-full border border-slate-600 px-2 py-0.5 text-[10px] font-black tracking-widest text-slate-300">BASIC</span>}</h3>
           <span className="text-[11px] text-slate-400">{hallName} · {scene.dims.widthM}×{scene.dims.depthM} {tr('م', 'm')} · {booking.guestCount} {tr('فرد', 'guests')}</span>
         </div>
         <div className="h-[340px] overflow-hidden rounded-2xl border border-slate-800 sm:h-[min(420px,62vh)] sm:min-h-[320px]">
-          <EventLayout3D items={scene.items} width={scene.dims.widthM} depth={scene.dims.depthM} language={language} hall={scene.dims} tier="basic" mode="overview" readOnly />
+          <EventLayout3D items={scene.items} width={scene.dims.widthM} depth={scene.dims.depthM} language={language} hall={scene.dims} decor={pro3D ? hall?.default3D?.decor : undefined} tier={pro3D ? 'pro' : 'basic'} mode="overview" readOnly />
         </div>
         <p className="mt-2 text-[11px] text-slate-500">{hall?.default3D?.items?.length ? tr('التصميم المحفوظ لهذه القاعة.', 'The saved layout for this hall.') : tr('توزيع تلقائي حسب عدد المدعوين. عدّله من شاشة مصمم المناسبة.', 'Automatic layout for the guest count. Change it in the Event Designer.')}</p>
       </section>
