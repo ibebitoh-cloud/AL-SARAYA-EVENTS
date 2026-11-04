@@ -18,6 +18,8 @@ interface Props {
   priceBook: PriceBook;
   existingBookings: Booking[];
   onCreateBooking: (booking: Booking) => void;
+  /** Selling-prices-only users: no payments or deposits in the booking view. */
+  sellingPricesOnly?: boolean;
 }
 
 const card = 'rounded-3xl border border-slate-800 bg-slate-900/70 p-5 sm:p-6';
@@ -38,7 +40,7 @@ const blankOperation = (halls: Hall[]): PreparedOperation => {
  * Event Planner. The team prepares each operation before the meeting (client, type, hall, date, guests);
  * in the meeting the customer only chooses in the choice session. Selling prices only.
  */
-export function PackageBuilderView({ language = 'ar', halls, services, priceBook, existingBookings, onCreateBooking }: Props) {
+export function PackageBuilderView({ language = 'ar', halls, services, priceBook, existingBookings, onCreateBooking, sellingPricesOnly = false }: Props) {
   const { isAr, tr } = makeTr(language);
   const [ops, setOps] = useState<PreparedOperation[]>(loadPreparedOperations);
   const [filter, setFilter] = useState<'all' | 'ready' | 'session' | 'booked'>('all');
@@ -62,7 +64,7 @@ export function PackageBuilderView({ language = 'ar', halls, services, priceBook
 
   const plannedBooking = existingBookings.find((b) => b.id === bookingId);
   if (plannedBooking) {
-    return <BookingPlannerView booking={plannedBooking} halls={halls} services={services} priceBook={priceBook} language={language} onBack={() => setBookingId(null)} />;
+    return <BookingPlannerView booking={plannedBooking} halls={halls} services={services} priceBook={priceBook} language={language} onBack={() => setBookingId(null)} hidePayments={sellingPricesOnly} />;
   }
 
   if (draft) {

@@ -32,6 +32,8 @@ interface BookingsViewProps {
   onUpdateBookingStatus: (bookingId: string, status: BookingStatus) => void;
   /** Operations staff: selling price total only (no profit calculator, payments or deposits). */
   sellingPricesOnly?: boolean;
+  /** The accountant has no profit calculator, so the button is hidden. */
+  hideProfit?: boolean;
   language?: Language;
   halls?: Hall[];
   onEditBooking?: (booking: Booking) => void;
@@ -53,6 +55,7 @@ export function BookingsView({
   onSelectBookingForInvoice,
   onUpdateBookingStatus,
   sellingPricesOnly = false,
+  hideProfit = false,
   language = 'ar',
   halls = [],
   onEditBooking,
@@ -212,7 +215,7 @@ export function BookingsView({
                 {/* Right Quick Action Buttons */}
                 <div className="flex flex-wrap items-center gap-2 self-end lg:self-center">
                   <RowActions language={language} onEdit={onEditBooking ? () => setEditingBooking(bk) : undefined} onDelete={onDeleteBooking ? () => onDeleteBooking(bk.id) : undefined} />
-                  {!sellingPricesOnly && <button
+                  {!sellingPricesOnly && !hideProfit && <button
                     onClick={() => {
                       sound.click(600);
                       onSelectBookingForProfit(bk);
