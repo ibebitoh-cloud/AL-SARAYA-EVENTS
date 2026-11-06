@@ -26,7 +26,8 @@ export const PRO_3D = {
   paymentUrl: '',
 };
 
-export const PRO_3D_STORAGE_KEY = 'saraya-3d-studio-pro-demo-v1';
+/** Demo-session counter. Bumping the version resets every browser back to the full demoSessions (reset 2026-11-06, user request). */
+export const PRO_3D_STORAGE_KEY = 'saraya-3d-studio-pro-demo-v2';
 /** Where an accepted key's hash is remembered on this browser. */
 export const PRO_3D_LICENSE_KEY = 'saraya-3d-studio-pro-license-v1';
 
